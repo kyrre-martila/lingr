@@ -388,7 +388,7 @@ It is built to make attention feel meaningful again.
 
 ---
 
-> Some people are worth taking time with.
+> Some people are worth to lingr 💕
 
 ---
 
