@@ -46,10 +46,10 @@ export const createNavigation = ({
   const mobileLinks = wrapper.querySelectorAll('.nav-mobile a')
   const allLinks = wrapper.querySelectorAll('a')
 
-  const closeMenu = () => {
+  const closeMenu = ({ returnFocus = true } = {}) => {
     toggle?.setAttribute('aria-expanded', 'false')
     mobileMenu.hidden = true
-    toggle?.focus()
+    if (returnFocus) toggle?.focus()
   }
 
   toggle?.addEventListener('click', () => {
@@ -59,7 +59,11 @@ export const createNavigation = ({
     if (!isExpanded) mobileLinks[0]?.focus()
   })
 
-  mobileLinks.forEach((link) => link.addEventListener('click', closeMenu))
+  mobileLinks.forEach((link) =>
+    link.addEventListener('click', () => {
+      closeMenu({ returnFocus: false })
+    })
+  )
   wrapper.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') {
       event.preventDefault()

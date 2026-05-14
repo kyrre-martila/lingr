@@ -1,44 +1,40 @@
-# Run 2 Notes — App Shell and Authenticated Layout Architecture
+# Run 2 Notes — Route-Aware Navigation and Page Identity Stabilization
 
-## App shell architecture decisions
-- Added a dedicated `createAppShell` renderer that composes a shared authenticated header, shared main container, and shared footer for route-level app surfaces.
-- Introduced lightweight route rendering in `main.js` using `window.location.pathname` and `history.pushState` for authenticated routes.
-- Kept `/` as a distinct marketing/landing composition with its own navigation links and section stack.
-- Applied app shell rendering to `/discovery`, `/conversations`, and `/profile` only.
+## Navigation changes
+- Centralized authenticated route metadata in `apps/web/src/routes.js` so labels and path mappings are not hard-coded repeatedly across shell and pages.
+- Expanded authenticated nav coverage to include `/onboarding`, `/discovery`, `/conversations`, and `/profile`.
+- Kept calm/stable active-route styling by using subtle background + inset border treatment (no high-contrast redesign), with `aria-current="page"` retained on active links.
+- Preserved client-side route navigation (`history.pushState`) and ensured mobile menu closes when a route link is selected.
+- Preserved Escape-to-close behavior and focus return to nav toggle when closing via keyboard Escape.
 
-## Layout primitives introduced
-- Added `createPageContainer` for consistent max-width and horizontal rhythm across authenticated pages.
-- Added `createPageSection` for semantic page scaffolding with reusable eyebrow, title (`h1`), and lead description support.
-- Added app-shell CSS hooks (`app-main`, `app-page-container`, `app-page-section`, `app-page-title`) to centralize page spacing and container behavior.
+## Page structure changes
+- Added a shared route metadata model (eyebrow/title/description) and reused `createPageSection` for all app routes to keep page identity consistent.
+- Added `/onboarding` to the app-shell route map with a route-level page header and description.
+- Updated onboarding section to support a compact embedded mode so route-level `h1` remains the single primary heading while existing flow logic is reused.
+- Ensured app routes (`/onboarding`, `/discovery`, `/conversations`, `/profile`) each have one clear route-level `h1`.
 
-## Reused vs duplicated components
-### Reused
-- Existing feature modules were reused without logic rewrites:
-  - `createDiscoverySection`
-  - `createConversationsSection`
-  - `createProfileExperienceSection`
-- Existing global `createFooter` reused in both landing and app-shell contexts.
-- Existing `createNavigation` upgraded to support configurable item sets and subtle route active states.
+## Accessibility notes
+- Active nav state remains semantic via `aria-current="page"`.
+- Mobile nav interactions continue to support:
+  - focus shift to first menu item when opened
+  - Escape to close and return focus to toggle
+  - close on route selection
+- Onboarding compact mode hides duplicated inner title/subtitle visually and for screen flow (`sr-only`) to prevent heading duplication and preserve route-level hierarchy.
 
-### Reduced duplication
-- Header/nav composition for authenticated pages moved into `createAppShell`.
-- Per-page container and heading spacing moved to primitives instead of repeated route-specific wrappers.
-
-## Deferred improvements
-- Migration to semantic path-based links on landing page remains deferred (landing keeps anchor-based in-page navigation).
-- Full router abstraction (including nested routes, 404 component, and transition hooks) deferred for a later pass.
-- Comprehensive token replacement for remaining raw color literals in older components still deferred.
-- No authentication state gating is implemented yet (intentionally out of scope).
+## Deferred issues
+- Landing (`/`) still uses in-page anchor navigation and is intentionally not merged into authenticated route nav semantics.
+- Full router abstraction (404 route, nested routes, transition lifecycle hooks) remains deferred.
+- Broader design-token cleanup beyond touched nav/page-shell styles remains deferred.
 
 ## Manual testing checklist
-- [ ] Visit `/` and verify landing visuals remain separate from authenticated app shell.
-- [ ] Visit `/discovery` and confirm shared app header/mobile nav/footer render correctly.
-- [ ] Visit `/conversations` and confirm identical shell spacing/container behavior.
-- [ ] Visit `/profile` and confirm identical shell spacing/container behavior.
-- [ ] On mobile width, open app nav and verify:
-  - [ ] focus moves to first menu item
-  - [ ] Escape closes the menu and returns focus to toggle
-  - [ ] selecting a route closes menu and navigates
-- [ ] Verify active nav state is visible but subtle for current authenticated route.
-- [ ] Verify each authenticated page has one clear `h1` and preserves semantic section headings below.
-- [ ] Verify keyboard navigation and focus-visible styles are still present on interactive controls.
+- [ ] Visit `/` and confirm landing nav behavior is unchanged (anchor-based sections still work).
+- [ ] Visit `/onboarding`, `/discovery`, `/conversations`, and `/profile` and confirm:
+  - [ ] app shell renders consistently
+  - [ ] route-level eyebrow/title/description render consistently
+  - [ ] exactly one clear route-level `h1` appears per route
+- [ ] On mobile width for each app route:
+  - [ ] open menu and verify focus moves to first link
+  - [ ] press Escape and verify menu closes + focus returns to toggle
+  - [ ] activate a route link and verify menu closes and navigation occurs
+- [ ] Verify active route indicator is visible but subtle in both desktop and mobile nav.
+- [ ] Verify keyboard focus-visible states remain present for nav and interactive controls.

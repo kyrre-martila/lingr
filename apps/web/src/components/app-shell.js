@@ -1,12 +1,7 @@
 import { createNavigation } from './navigation.js'
 import { createFooter } from './footer.js'
 import { createPageContainer } from './layout.js'
-
-const appNavItems = [
-  { label: 'Discovery', href: '/discovery' },
-  { label: 'Conversations', href: '/conversations' },
-  { label: 'Profile', href: '/profile' }
-]
+import { APP_NAV_ITEMS } from '../routes.js'
 
 export const createAppShell = ({ activePath, pageBuilder }) => {
   const fragment = document.createDocumentFragment()
@@ -16,8 +11,9 @@ export const createAppShell = ({ activePath, pageBuilder }) => {
   const headerContainer = createPageContainer({ className: 'app-shell-header__inner' })
   headerContainer.append(
     createNavigation({
-      items: appNavItems,
+      items: APP_NAV_ITEMS,
       brandHref: '/discovery',
+      brandLabel: 'Lingr app home',
       isRouteActive: (href) => href === activePath,
       onNavigate: (href) => {
         window.history.pushState({}, '', href)
