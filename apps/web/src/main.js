@@ -11,6 +11,8 @@ import { createConversationsSection } from './components/conversations/index.js'
 import { createProfileExperienceSection } from './components/profile-experience.js'
 import { createAppShell } from './components/app-shell.js'
 import { createPageSection } from './components/layout.js'
+import { createOnboardingSection } from './components/onboarding/index.js'
+import { APP_ROUTE_META } from './routes.js'
 
 const root = document.body
 
@@ -36,25 +38,31 @@ const renderLandingPage = () => {
   document.querySelector('#footer-content')?.append(createFooter())
 }
 
-const buildDiscoveryPage = () => {
-  const page = createPageSection({ eyebrow: 'Daily pacing', title: 'Discovery', description: 'Three thoughtful introductions, shared with care.' })
-  page.append(createDiscoverySection())
+const createRoutePage = (path, contentBuilder) => {
+  const meta = APP_ROUTE_META[path]
+  const page = createPageSection({ eyebrow: meta.eyebrow, title: meta.title, description: meta.description })
+  page.append(contentBuilder())
   return page
 }
 
-const buildConversationsPage = () => {
-  const page = createPageSection({ eyebrow: 'Intentional exchange', title: 'Conversations', description: 'Gentle prompts and space to respond with presence.' })
-  page.append(createConversationsSection())
+const buildOnboardingPage = () => {
+  const page = createRoutePage('/onboarding', () => createOnboardingSection({ compactHeader: true }))
+  page.classList.add('app-page-section--onboarding')
   return page
+}
+
+const buildDiscoveryPage = () => createRoutePage('/discovery', createDiscoverySection)
+
+const buildConversationsPage = () => {
+  return createRoutePage('/conversations', createConversationsSection)
 }
 
 const buildProfilePage = () => {
-  const page = createPageSection({ eyebrow: 'Depth over polish', title: 'Profile', description: 'A living portrait shaped by reflection and rhythm.' })
-  page.append(createProfileExperienceSection())
-  return page
+  return createRoutePage('/profile', createProfileExperienceSection)
 }
 
 const routeMap = {
+  '/onboarding': buildOnboardingPage,
   '/discovery': buildDiscoveryPage,
   '/conversations': buildConversationsPage,
   '/profile': buildProfilePage

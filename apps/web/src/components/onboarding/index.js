@@ -83,7 +83,7 @@ const requiredFieldsByStep = {
   reflection: ['reflection']
 }
 
-export const createOnboardingSection = () => {
+export const createOnboardingSection = ({ compactHeader = false } = {}) => {
   const state = {
     name: '',
     age: '',
@@ -101,7 +101,7 @@ export const createOnboardingSection = () => {
     <div class="container onboarding-shell">
       <div class="onboarding-progress" role="status" aria-live="polite"></div>
       <article class="onboarding-card">
-        <p class="eyebrow">Onboarding</p>
+        <p class="eyebrow" data-onboarding-eyebrow>Onboarding</p>
         <h2 id="onboarding-title"></h2>
         <p class="onboarding-subtitle"></p>
         <form class="onboarding-form" novalidate>
@@ -117,6 +117,7 @@ export const createOnboardingSection = () => {
   `
 
   const form = section.querySelector('.onboarding-form')
+  const eyebrow = section.querySelector('[data-onboarding-eyebrow]')
   const title = section.querySelector('#onboarding-title')
   const subtitle = section.querySelector('.onboarding-subtitle')
   const progress = section.querySelector('.onboarding-progress')
@@ -124,6 +125,12 @@ export const createOnboardingSection = () => {
   const backBtn = section.querySelector('[data-back]')
   const nextBtn = section.querySelector('[data-next]')
   const errorEl = section.querySelector('.onboarding-error')
+
+  if (compactHeader) {
+    eyebrow?.remove()
+    title.classList.add('sr-only')
+    subtitle.classList.add('sr-only')
+  }
 
   const persistFromInputs = () => {
     const data = new FormData(form)
