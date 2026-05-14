@@ -3,6 +3,7 @@ const navItems = [
   { label: 'How it Works', href: '#how-it-works' },
   { label: 'Glimps', href: '#glimps' },
   { label: 'Safety', href: '#safety' },
+  { label: 'Profiles', href: '#profile-experience' },
   { label: 'Join Lingr', href: '#cta' }
 ]
 
