@@ -16,6 +16,7 @@ const values = [
 export const createPhilosophySection = () => {
   const section = document.createElement('section')
   section.className = 'section section--paper'
+  section.id = 'philosophy'
   section.setAttribute('aria-labelledby', 'philosophy-title')
 
   const cards = values
