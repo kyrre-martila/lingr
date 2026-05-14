@@ -33,7 +33,7 @@ Most dating apps encourage people to process each other quickly.
 
 Lingr is built around a different belief:
 
-> Some people are worth taking time with.
+> Some people are worth to lingr 💕
 
 The app is intentionally designed to create:
 
