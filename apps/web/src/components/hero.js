@@ -16,7 +16,7 @@ export const createHeroSection = () => {
           <a class="button button--ghost" href="#how-it-works">See how it works</a>
         </div>
       </div>
-      <aside class="hero-card" aria-label="Daily glimpse preview">
+      <aside class="hero-card" aria-label="Daily Glimps preview">
         <p class="hero-card__label">Today's Glimps</p>
         <p class="hero-card__text">"Rain on glass, mint tea, and finally breathing again."</p>
         <p class="hero-card__meta">Shared 2h ago · Layer 1</p>

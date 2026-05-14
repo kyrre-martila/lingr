@@ -1,4 +1,5 @@
 import { createField, createIntentionsField } from './form-controls.js'
+import { createStepFlowController } from '../step-flow.js'
 
 const intentionOptions = [
   'Slow dating',
@@ -91,7 +92,6 @@ export const createOnboardingSection = () => {
     reflection: ''
   }
 
-  let stepIndex = 0
   const section = document.createElement('section')
   section.className = 'section section--paper'
   section.id = 'onboarding'
@@ -106,7 +106,7 @@ export const createOnboardingSection = () => {
         <p class="onboarding-subtitle"></p>
         <form class="onboarding-form" novalidate>
           <div class="onboarding-step" data-step-content></div>
-          <p class="onboarding-error" role="alert" aria-live="assertive"></p>
+          <p class="onboarding-error status-notice status-notice--error" role="status" aria-live="polite" hidden></p>
           <div class="onboarding-actions">
             <button class="button button--ghost" type="button" data-back>Back</button>
             <button class="button" type="submit" data-next>Continue</button>
@@ -150,61 +150,28 @@ export const createOnboardingSection = () => {
     return ''
   }
 
-  const render = () => {
-    const steps = createSteps(state)
-    const step = steps[stepIndex]
-    title.textContent = step.title
-    subtitle.textContent = step.description
-    progress.textContent = `Step ${stepIndex + 1} of ${steps.length}`
-    backBtn.disabled = stepIndex === 0
-    nextBtn.textContent = stepIndex === steps.length - 1 ? 'Finish' : 'Continue'
-    errorEl.textContent = ''
-
-    stepHost.classList.remove('is-visible')
-    stepHost.innerHTML = ''
-    const rendered = step.render()
-    if (typeof rendered === 'string') {
-      stepHost.innerHTML = rendered
-    } else if (rendered?.wrapper) {
-      stepHost.append(rendered.wrapper)
-    } else {
-      stepHost.append(rendered)
-    }
-
-    requestAnimationFrame(() => stepHost.classList.add('is-visible'))
-  }
-
-  form.addEventListener('submit', (event) => {
-    event.preventDefault()
-    persistFromInputs()
-
-    const steps = createSteps(state)
-    const current = steps[stepIndex]
-    const error = validateStep(current.id)
-    if (error) {
-      errorEl.textContent = error
-      return
-    }
-
-    if (stepIndex < steps.length - 1) {
-      stepIndex += 1
-      render()
-      return
-    }
-
-    nextBtn.disabled = true
-    nextBtn.textContent = 'Complete'
-    errorEl.textContent = 'Onboarding complete. We will save this to your profile in a future release.'
-  })
-
-  backBtn.addEventListener('click', () => {
-    persistFromInputs()
-    if (stepIndex > 0) {
-      stepIndex -= 1
-      render()
+  const controller = createStepFlowController({
+    form,
+    stepHost,
+    title,
+    subtitle,
+    progress,
+    backBtn,
+    nextBtn,
+    errorEl,
+    steps: createSteps(state),
+    persist: persistFromInputs,
+    validateStep,
+    renderStep: (step) => step.render(),
+    getNextLabel: (index, total) => (index === total - 1 ? 'Finish' : 'Continue'),
+    onComplete: ({ announceError }) => {
+      nextBtn.disabled = true
+      nextBtn.textContent = 'Complete'
+      announceError('Onboarding complete. We will save this to your profile in a future release.')
+      section.querySelector('#onboarding-title')?.focus?.()
     }
   })
 
-  render()
+  controller.render()
   return section
 }

@@ -33,11 +33,27 @@ export const createNavigation = () => {
 
   const toggle = wrapper.querySelector('.nav-toggle')
   const mobileMenu = wrapper.querySelector('#mobile-menu')
+  const mobileLinks = wrapper.querySelectorAll('.nav-mobile a')
+
+  const closeMenu = () => {
+    toggle?.setAttribute('aria-expanded', 'false')
+    mobileMenu.hidden = true
+    toggle?.focus()
+  }
 
   toggle?.addEventListener('click', () => {
     const isExpanded = toggle.getAttribute('aria-expanded') === 'true'
     toggle.setAttribute('aria-expanded', String(!isExpanded))
     mobileMenu.hidden = isExpanded
+    if (!isExpanded) mobileLinks[0]?.focus()
+  })
+
+  mobileLinks.forEach((link) => link.addEventListener('click', closeMenu))
+  wrapper.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') {
+      event.preventDefault()
+      closeMenu()
+    }
   })
 
   return wrapper
