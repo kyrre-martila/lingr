@@ -6,7 +6,7 @@ export const createFooter = () => {
     <div class="container site-footer__inner">
       <p class="brand" aria-label="Lingr">Lingr</p>
       <p class="site-footer__copy">A calmer way to meet. Thoughtful by design.</p>
-      <a href="#main-content" class="site-footer__top">Back to top</a>
+      <a href="/" class="site-footer__top">Back to top</a>
     </div>
   `
 

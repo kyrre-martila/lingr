@@ -12,8 +12,8 @@ export const createHeroSection = () => {
           Lingr helps you move from first curiosity to real emotional clarity — gently, gradually, and with intention.
         </p>
         <div class="hero__actions">
-          <a class="button" href="#cta">Join the early list</a>
-          <a class="button button--ghost" href="#how-it-works">See how it works</a>
+          <a class="button" href="/">Join the early list</a>
+          <a class="button button--ghost" href="/#how-it-works">See how it works</a>
         </div>
       </div>
       <aside class="hero-card" aria-label="Daily Glimps preview">
