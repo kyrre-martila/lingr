@@ -5,6 +5,7 @@ import { createHowItWorksSection } from './components/how-it-works.js'
 import { createGlimpsSection } from './components/glimps.js'
 import { createSafetySection } from './components/safety.js'
 import { createCtaSection } from './components/cta.js'
+import { createOnboardingSection } from './components/onboarding/index.js'
 import { createFooter } from './components/footer.js'
 
 const main = document.querySelector('#main-content')
@@ -19,6 +20,7 @@ main.append(
   createHowItWorksSection(),
   createGlimpsSection(),
   createSafetySection(),
+  createOnboardingSection(),
   createCtaSection()
 )
 

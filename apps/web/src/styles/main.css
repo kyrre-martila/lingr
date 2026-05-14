@@ -82,3 +82,26 @@ p { margin: 0 0 var(--space-3); }
   .cta { grid-template-columns: 1.3fr 1fr; }
   .site-footer__inner { grid-template-columns: auto 1fr auto; align-items: center; }
 }
+
+.onboarding-shell { max-width: 38rem; }
+.onboarding-card { background: #fffdf9; border: 1px solid #1c2b2514; border-radius: var(--radius-lg); padding: var(--space-5); box-shadow: 0 1rem 2.4rem #00000008; }
+.onboarding-progress { color: var(--muted); font-size: 0.95rem; margin-bottom: var(--space-3); }
+.onboarding-subtitle { color: var(--muted); margin-bottom: var(--space-4); }
+.onboarding-step { min-height: 11rem; opacity: 0; transform: translateY(10px); transition: opacity 260ms ease, transform 260ms ease; }
+.onboarding-step.is-visible { opacity: 1; transform: translateY(0); }
+.onboarding-field { margin-bottom: var(--space-4); }
+.onboarding-label { display: block; font-weight: 600; margin-bottom: var(--space-2); }
+.onboarding-input { width: 100%; border: 1px solid #1c2b252a; border-radius: 0.9rem; padding: 0.85rem 1rem; font: inherit; background: #fff; color: var(--text); }
+.onboarding-input:focus-visible { outline: 2px solid #d4896a80; outline-offset: 1px; border-color: var(--accent); }
+.onboarding-helper { color: var(--muted); font-size: 0.95rem; }
+.onboarding-options { border: 0; margin: 0; padding: 0; }
+.onboarding-options__list { display: grid; gap: var(--space-2); }
+.onboarding-option { display: flex; gap: var(--space-2); align-items: center; border: 1px solid #1c2b2518; border-radius: 0.8rem; padding: 0.8rem 0.9rem; background: #fffcf8; }
+.onboarding-option:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px #d4896a33; }
+.onboarding-actions { display: flex; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-4); }
+.onboarding-error { min-height: 1.5rem; margin: 0; color: #8f3a2a; font-weight: 500; }
+.onboarding-review { display: grid; gap: var(--space-2); margin: 0 0 var(--space-3); }
+.onboarding-review div { display: flex; justify-content: space-between; gap: var(--space-3); border-bottom: 1px solid #1c2b2512; padding-bottom: 0.4rem; }
+.onboarding-review dt { font-weight: 600; }
+.onboarding-review dd { margin: 0; color: var(--muted); text-align: right; }
+.onboarding-copy { font-size: 1.05rem; max-width: 42ch; }
