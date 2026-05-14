@@ -7,6 +7,7 @@ import { createSafetySection } from './components/safety.js'
 import { createCtaSection } from './components/cta.js'
 import { createOnboardingSection } from './components/onboarding/index.js'
 import { createFooter } from './components/footer.js'
+import { createConversationsSection } from './components/conversations/index.js'
 
 const main = document.querySelector('#main-content')
 const headerContent = document.querySelector('#header-content')
@@ -20,6 +21,7 @@ main.append(
   createHowItWorksSection(),
   createGlimpsSection(),
   createSafetySection(),
+  createConversationsSection(),
   createOnboardingSection(),
   createCtaSection()
 )
