@@ -1,6 +1,7 @@
 const navItems = [
   { label: 'Philosophy', href: '#philosophy' },
   { label: 'How it Works', href: '#how-it-works' },
+  { label: 'Discovery', href: '#discovery' },
   { label: 'Glimps', href: '#glimps' },
   { label: 'Safety', href: '#safety' },
   { label: 'Profiles', href: '#profile-experience' },

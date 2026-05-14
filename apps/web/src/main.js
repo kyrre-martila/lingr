@@ -3,6 +3,7 @@ import { createHeroSection } from './components/hero.js'
 import { createPhilosophySection } from './components/philosophy.js'
 import { createHowItWorksSection } from './components/how-it-works.js'
 import { createGlimpsSection } from './components/glimps.js'
+import { createDiscoverySection } from './components/discovery.js'
 import { createSafetySection } from './components/safety.js'
 import { createCtaSection } from './components/cta.js'
 import { createOnboardingSection } from './components/onboarding/index.js'
@@ -20,6 +21,7 @@ main.append(
   createHeroSection(),
   createPhilosophySection(),
   createHowItWorksSection(),
+  createDiscoverySection(),
   createGlimpsSection(),
   createSafetySection(),
   createConversationsSection(),

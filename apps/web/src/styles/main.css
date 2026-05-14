@@ -220,3 +220,52 @@ p { margin: 0 0 var(--space-3); }
     transform: translateY(-1px);
   }
 }
+
+.discovery-shell { max-width: 48rem; }
+.discovery-date { color: var(--muted); margin-top: calc(var(--space-3) * -0.5); }
+.daily-connections { display: grid; gap: var(--space-4); margin-top: var(--space-2); }
+.daily-connection-card { display: grid; gap: var(--space-3); background: #fffefb; }
+.daily-connection-card__header { display: flex; justify-content: space-between; gap: var(--space-2); align-items: start; flex-wrap: wrap; }
+.daily-connection-card__header h3 { margin-bottom: 0.1rem; font-size: 1.5rem; }
+.daily-connection-card__header p { margin: 0; color: var(--muted); }
+.daily-connection-card__intention { margin: 0; font-size: 1.02rem; }
+.daily-connection-card__hint { margin: 0; color: #43534c; }
+.daily-connection-card__previews { display: grid; gap: var(--space-2); }
+.discovery-preview { border: 1px solid #1c2b2512; border-radius: 0.9rem; background: #fff; padding: var(--space-3); }
+.discovery-preview__label { margin: 0 0 0.4rem; color: var(--muted); font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; }
+.discovery-preview h4, .discovery-preview p { margin: 0; }
+.discovery-preview__prompt { font-weight: 600; margin-bottom: 0.3rem !important; }
+.discovery-intro-limit__label, .discovery-intro-limit__note { color: var(--muted); }
+.discovery-intro-limit__label { margin: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.07em; }
+.discovery-intro-limit__count { margin: 0.25rem 0; }
+.discovery-intro-limit__track { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem; margin: 0.8rem 0; }
+.discovery-intro-limit__track span { height: 0.4rem; border-radius: 999px; background: #eadfd4; }
+.discovery-intro-limit__track .is-used { background: #d5b19a; }
+.discovery-intro-limit__note { margin: 0; }
+.discovery-empty h3 { margin-bottom: var(--space-2); }
+.discovery-empty p { margin-bottom: var(--space-3); color: var(--muted); }
+.discovery-recommendations h3 { margin-bottom: var(--space-2); }
+.discovery-recommendations p { color: var(--muted); }
+.discovery-recommendations__list { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: grid; gap: var(--space-2); }
+.discovery-recommendations__list li { border: 1px solid #1c2b2512; border-radius: 0.8rem; padding: 0.8rem 0.9rem; background: #fff; }
+.discovery-recommendations__list li p { margin: 0; }
+
+@media (min-width: 44rem) {
+  .daily-connection-card__previews { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .daily-connection-card,
+  .discovery-preview,
+  .discovery-recommendations__list li {
+    transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+  }
+  .daily-connection-card:focus-visible,
+  .daily-connection-card:hover,
+  .discovery-preview:hover,
+  .discovery-recommendations__list li:hover {
+    transform: translateY(-1px);
+    border-color: #1c2b2523;
+    box-shadow: 0 0.7rem 1.4rem #00000008;
+  }
+}
