@@ -1,0 +1,19 @@
+import { routes } from './routes/index.js'
+import { errorHandler, notFound } from './http/errors.js'
+import { withRequestContext } from './middleware/request-context.js'
+import { assertJsonRequest } from './middleware/validate-json.js'
+
+export const createApp = () => (req, res) => {
+  try {
+    withRequestContext(req)
+    assertJsonRequest(req)
+
+    const pathname = new URL(req.url, 'http://localhost').pathname
+    const route = routes.find((entry) => entry.method === req.method && entry.path === pathname)
+
+    if (!route) throw notFound(pathname)
+    return route.handler(req, res)
+  } catch (error) {
+    return errorHandler(error, req, res)
+  }
+}
