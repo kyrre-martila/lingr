@@ -45,3 +45,64 @@
 - [ ] Confirm no DB schema, endpoint logic, auth-provider wiring, or realtime implementation was introduced.
 - [ ] Confirm deferred decisions are captured for unresolved backend architecture choices.
 - [ ] Confirm recommended implementation order is practical and aligns with prior run boundaries.
+
+---
+
+## Run 4 Extension — API Architecture Groundwork
+
+## Files/modules created
+- `reviews/run-4-api-architecture.md` (new architecture blueprint for platform-neutral API/service layering)
+
+## Files/modules updated
+- `reviews/run-4-notes.md` (extended with architecture decisions, migration assumptions, risks, and manual review checklist for API layer)
+
+## Architecture decisions made
+- Defined a layered API architecture split into:
+  - contracts
+  - service boundaries
+  - transport abstraction
+  - domain client implementations
+- Established nine future-facing domain client/service boundaries:
+  - auth
+  - profile
+  - glimps
+  - discovery
+  - spark
+  - window
+  - conversations
+  - compatibility
+  - safety
+- Standardized canonical envelope patterns for:
+  - success responses
+  - failure responses
+  - async UI state (`idle/loading/success/error`)
+- Standardized error taxonomy for:
+  - validation
+  - domain
+  - auth/permission
+  - safety/moderation
+  - retryable failures
+- Locked transport neutrality target so future implementations can swap between REST, RPC, or BFF without rewriting UI consumers.
+
+## Migration assumptions
+- Existing frontend behavior remains unchanged while mock services are wrapped with contract-compliant response adapters.
+- UI should consume service interfaces and async-state envelopes rather than direct transport APIs.
+- Transport adapter injection becomes the only required change when introducing real backend connectivity.
+- Domain-by-domain migration is preferred over big-bang replacement.
+- A mock transport remains available for local development even after backend adapters are introduced.
+
+## Risks identified
+- Contract drift risk if envelopes/error categories are not codified in shared constants and tested.
+- Adapter bypass risk if feature modules call mock data directly instead of service interfaces.
+- Over-generalization risk if transport layer leaks implementation-specific semantics too early.
+- Auth boundary erosion risk if provider-specific logic is embedded into non-auth domain services.
+- Cross-platform inconsistency risk if mobile/web diverge on error mapping or safety contract handling.
+
+## Manual review checklist
+- [ ] Confirm all nine domain boundaries are documented and non-overlapping.
+- [ ] Confirm success/failure envelope conventions are explicit and consistent with Run 4 data contracts.
+- [ ] Confirm loading/error/success async-state contract is documented for UI consumers.
+- [ ] Confirm required error categories include validation/domain/auth/permission/safety/retryable.
+- [ ] Confirm no real HTTP/backend/auth-provider/database/realtime implementation was introduced.
+- [ ] Confirm migration strategy preserves existing UI behavior and allows domain-by-domain backend rollout.
+- [ ] Confirm mobile reuse constraints are explicitly captured.
