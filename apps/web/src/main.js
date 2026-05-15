@@ -9,6 +9,7 @@ import { createFooter } from './components/footer.js'
 import { createAppShell } from './components/app-shell.js'
 import { ROUTE_PAGE_BUILDERS } from './app/page-builders.js'
 import { setMockSessionState } from './state/session.js'
+import { createNotFoundView } from './components/not-found.js'
 
 const root = document.body
 
@@ -48,8 +49,13 @@ const renderApp = () => {
   const pageBuilder = routeMap[path]
 
   root.innerHTML = ''
-  if (!pageBuilder) {
+  if (path === '/') {
     renderLandingPage()
+    return
+  }
+
+  if (!pageBuilder) {
+    root.append(createNotFoundView())
     return
   }
 

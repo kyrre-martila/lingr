@@ -255,7 +255,7 @@ p { margin: 0 0 var(--space-3); }
 .discovery-intro-limit__label, .discovery-intro-limit__note { color: var(--muted); }
 .discovery-intro-limit__label { margin: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.07em; }
 .discovery-intro-limit__count { margin: 0.25rem 0; }
-.discovery-intro-limit__track { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem; margin: 0.8rem 0; }
+.discovery-intro-limit__track { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem; margin: 0.8rem 0; }
 .discovery-intro-limit__track span { height: 0.4rem; border-radius: 999px; background: #eadfd4; }
 .discovery-intro-limit__track .is-used { background: #d5b19a; }
 .discovery-intro-limit__note { margin: 0; }
