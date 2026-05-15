@@ -166,3 +166,60 @@
 - [ ] Confirm route access assumptions preserve current prototype behavior while defining future backend guard outcomes.
 - [ ] Confirm safety restriction model is documented as an independent overlay, not an auth-provider concern.
 - [ ] Confirm deferred decisions capture unresolved implementation choices for future runs.
+
+---
+
+## Run 4 Extension — Persistence Planning Foundation
+
+## Files/modules created
+- `reviews/run-4-persistence-plan.md` (database-ready schema planning contracts for core Lingr entities)
+
+## Files/modules updated
+- `reviews/run-4-notes.md` (extended with persistence planning decisions, entity boundaries, relationship assumptions, risks, and manual checklist)
+
+## Schema planning decisions
+- Defined database-ready planning contracts for:
+  - users
+  - profiles
+  - onboarding state
+  - glimps
+  - sparks
+  - conversation windows
+  - conversations
+  - messages
+  - compatibility snapshots
+  - safety events
+  - reports/moderation events
+- Standardized planned identity and timestamp conventions across entities (opaque prefixed IDs + ISO UTC timestamps).
+- Adopted soft-delete/archive-first posture for user-facing entities, with append-only preference for safety/moderation logs.
+- Captured client-safe/internal-only field boundaries and mandatory redaction assumptions for safety/moderation/compatibility internals.
+- Documented likely access-control checks and query patterns to guide backend implementation without introducing DB code.
+
+## Entity boundaries
+- **Identity/account boundary**: `users`, `profiles`, and `onboarding_state` anchor lifecycle and ownership.
+- **Discovery/intent boundary**: `glimps` and `sparks` represent authored expression and invitation intent.
+- **Messaging boundary**: `conversations`, `conversation_windows`, and `messages` form the durable communication core.
+- **Interpretation boundary**: `compatibility_snapshots` store system-generated reflective state snapshots.
+- **Trust/safety boundary**: `safety_events` + `reports_moderation_events` provide cross-cutting moderation and policy audit trails.
+
+## Relationship assumptions
+- users own profile/onboarding and author glimps/messages/sparks.
+- conversations model participant pairs and own message/window/compatibility child records.
+- safety/reporting are cross-cutting event models linked to users/content/conversations/messages as needed.
+- moderation and policy outcomes can constrain user/content visibility without mutating ownership contracts.
+
+## Risks identified
+- Migration risk if enum values and reason-code taxonomies evolve without compatibility mapping.
+- Performance risk if participant/message feed indexes are delayed during first persistence rollout.
+- Privacy risk if internal moderation/safety fields bypass redaction mappers.
+- Model-evolution risk if participant model must expand beyond pair conversations earlier than expected.
+- Operational risk if retention and purge policies are deferred too long after initial persistence launch.
+
+## Manual review checklist
+- [ ] Confirm all required entities have purpose, identifiers, fields, relationships, ownership, privacy, timestamps, and delete/archive assumptions.
+- [ ] Confirm relationship map is explicit and matches current domain boundaries.
+- [ ] Confirm internal-only fields and never-expose categories are clearly listed.
+- [ ] Confirm likely query patterns and indexing assumptions are practical for the current product flow.
+- [ ] Confirm access-control checks cover participant-only messaging, owner-only edits, and moderation-only internal queries.
+- [ ] Confirm migration notes avoid ORM/database implementation details while still guiding incremental rollout.
+- [ ] Confirm deferred decisions are explicit and do not block immediate contract codification.
