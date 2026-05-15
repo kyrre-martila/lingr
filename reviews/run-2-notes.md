@@ -65,3 +65,41 @@
 - [ ] Verify navigation highlighting in app-shell routes reflects active route.
 - [ ] Verify guard hint note still appears only when current mock session state is outside expected future state for that route.
 - [ ] Verify there is no authentication/backend dependency required to render any route.
+
+---
+
+## Run 2 Cleanup Pass — Architecture Stabilization
+
+### Cleanup decisions made
+- Extracted route-page composition into `app/route-page.js` so route metadata + guard hint logic has a single home instead of being embedded in `main.js`.
+- Extracted app route builder mapping into `app/page-builders.js` to keep `main.js` focused on app bootstrapping and top-level render orchestration.
+- Kept existing route paths and behavior unchanged (`/onboarding`, `/discovery`, `/conversations`, `/profile`).
+- Preserved existing visuals and accessibility patterns by avoiding template/CSS behavior changes in feature components.
+
+### Files reorganized
+- Added `apps/web/src/app/route-page.js`.
+- Added `apps/web/src/app/page-builders.js`.
+- Simplified `apps/web/src/main.js` imports + responsibilities to reduce architecture drift.
+
+### Dead code removed
+- Removed unused legacy mock data module `apps/web/src/components/conversations/mock-data.js` (replaced by canonical `data/mocks/conversations.js` usage already active in conversations feature/state).
+- Removed no-longer-needed route page-builder helpers from `main.js` after modularization.
+
+### Deferred architecture concerns
+- `discovery.js` and `profile-experience.js` remain relatively large and are candidates for internal subcomponent splits in a future pass.
+- Existing state modules still combine both UI preference and feature state in `state/index.js`; a future split by domain is recommended when more app routes are added.
+- Full import-path normalization by domain aliases is deferred to avoid introducing bundler/tooling churn before review.
+
+### Recommendations before Run 2 review
+- Add lightweight lint rules (unused exports/imports) to prevent reintroduction of dead modules.
+- Plan a follow-up “large-file decomposition pass” targeting Discovery and Profile Experience first.
+- Introduce a small docs file (`frontend-architecture.md`) that defines folder ownership (`app`, `components`, `state`, `data/mocks`) for contributor consistency.
+
+### Manual testing checklist
+- [ ] Visit landing `/` and verify section order/content is unchanged.
+- [ ] Visit `/onboarding` and verify onboarding renders with compact app-shell header behavior.
+- [ ] Visit `/discovery` and verify discovery pacing/session indicators render unchanged.
+- [ ] Visit `/conversations` and verify conversation list/detail switching still works.
+- [ ] Visit `/profile` and verify profile cards/sections render unchanged.
+- [ ] Use browser back/forward and verify route rendering still responds to `popstate`.
+- [ ] With `?mockSession=returning`, confirm route guard hint messaging behavior remains consistent.
