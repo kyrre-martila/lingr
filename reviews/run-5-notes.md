@@ -232,3 +232,49 @@
 - [ ] Verify permission helper throws canonical `permission.not_allowed` reason code on denied checks.
 - [ ] Verify no provider-specific assumptions exist in viewer/session contracts.
 - [ ] Verify frontend behavior remains unchanged (no UI/auth flow rewrites introduced).
+
+## Run 5 — Prompt 5: User/Profile Persistence Path
+
+### User/profile persistence added
+- Added first real backend persistence path for `users` and `profiles` via Prisma-backed service methods.
+- Added profile basic fields support in Prisma schema (`pronouns`, `ageRange`, `bio`, `layersSummary`, `locationRegion`, `avatarAssetId`) plus completeness updates.
+- Implemented a placeholder viewer fallback user context for pre-auth phases.
+
+### Endpoints/service methods created
+- `GET /v1/profile/viewer` -> current viewer profile snapshot.
+- `PATCH /v1/profile/viewer` -> update profile basics.
+- `GET /v1/profile/completeness` -> profile completeness snapshot.
+- Service layer in `apps/api/src/services/profile-service.js` keeps internal DB entities separate from client-safe response DTOs.
+
+### Validation/mapping decisions
+- Added API JSON body parser middleware with invalid JSON handling (`validation.invalid_payload`).
+- Added boundary validation for profile update payload (required `displayName`, max-length checks, nullable normalized optional fields).
+- Completeness is recomputed server-side from mapped profile basics fields to avoid trusting client values.
+
+### Redaction boundaries
+- Responses are mapped through explicit DTO mappers and do not expose internal-only fields (`authSubjectRef`, session rows, provider refs, audit fields).
+- API routes only return client-safe envelope `data` plus viewer-safe metadata.
+
+### Deferred auth/profile work
+- Real auth/session lookup and secure authenticated viewer resolution.
+- Account lifecycle mutation flows (pause/delete/restrict transitions).
+- Avatar/media storage service resolution for stable public URLs.
+- Extended profile validation schemas and richer reason codes per field.
+
+### Local testing steps
+- `node --check apps/api/src/services/profile-service.js`
+- `node --check apps/api/src/routes/profile.js`
+- `node --check apps/api/src/middleware/parse-json.js`
+- `npm run db:generate --workspace @lingr/api`
+- `npm run dev:api`
+- `curl -i http://localhost:4000/v1/profile/viewer`
+- `curl -i -X PATCH http://localhost:4000/v1/profile/viewer -H 'Content-Type: application/json' --data '{"displayName":"Ari","bio":"Hello"}'`
+- `curl -i http://localhost:4000/v1/profile/completeness`
+
+### Manual testing checklist
+- [ ] `GET /v1/profile/viewer` returns success envelope + client-safe profile snapshot.
+- [ ] `PATCH /v1/profile/viewer` rejects invalid JSON and missing/invalid `displayName`.
+- [ ] `PATCH /v1/profile/viewer` persists profile basics and returns updated snapshot.
+- [ ] `GET /v1/profile/completeness` returns completeness + boolean derived state.
+- [ ] Anonymous placeholder viewer context works before auth is fully implemented.
+- [ ] No internal-only fields are exposed in profile API responses.

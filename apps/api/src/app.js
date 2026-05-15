@@ -3,12 +3,14 @@ import { errorHandler, notFound } from './http/errors.js'
 import { withRequestContext } from './middleware/request-context.js'
 import { assertJsonRequest } from './middleware/validate-json.js'
 import { withAuthContext } from './auth/middleware.js'
+import { parseJsonBody } from './middleware/parse-json.js'
 
 export const createApp = () => async (req, res) => {
   try {
     withRequestContext(req)
     assertJsonRequest(req)
     await withAuthContext(req)
+    req.body = await parseJsonBody(req)
 
     const pathname = new URL(req.url, 'http://localhost').pathname
     const route = routes.find((entry) => entry.method === req.method && entry.path === pathname)
