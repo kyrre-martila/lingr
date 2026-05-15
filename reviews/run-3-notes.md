@@ -1,77 +1,74 @@
-# Run 3 Notes — Window Domain Architecture (First Window Pass)
+# Run 3 Notes — Emotional Compatibility Architecture (First Pass)
 
-## Window architecture decisions
-- Added a dedicated platform-neutral Window domain module under `domain/window` that models conversation availability as intentional states rather than always-open chat.
-- Formalized Window lifecycle states as canonical constants:
-  - `unavailable`
-  - `opening`
-  - `open`
-  - `paused`
-  - `quiet`
-  - `closed`
-- Formalized Window pacing rhythms as canonical constants:
-  - `gentle`
-  - `normal`
-  - `reflective`
-- Kept Window logic frontend-only, with no backend, database, auth, or realtime dependencies.
-- Preserved calm interaction framing: conversation access is based on readiness, pauses, and intentional pacing guidance.
+## Emotional Compatibility architecture decisions
+- Added a dedicated platform-neutral Emotional Compatibility domain module in `domain/compatibility` with explicit compatibility dimensions and transparent signal states.
+- Modeled compatibility as explainable reflective signals (resonant/flexible/different/unknown) rather than scoring, ranking, or percentages.
+- Kept all compatibility logic frontend-only and mock-data based.
+- Preserved Lingr tone by generating soft, human compatibility language that invites curiosity instead of prediction.
+- Designed helper signatures as adapter-ready contracts for future matching inputs (while keeping current behavior deterministic and local).
+
+## Placeholder signals introduced
+- `createCompatibilityProfile(...)`
+  - Normalizes lightweight compatibility preferences:
+    - communication preference
+    - emotional pace
+    - conversation style
+    - values alignment
+    - social energy
+    - relationship intention
+    - emotional safety preference
+- `createCompatibilitySignals({ me, other })`
+  - Produces transparent per-dimension signals (`resonant`, `flexible`, `different`, `unknown`).
+- `createConversationResonancePlaceholder(signals)`
+  - Returns conversational resonance hints.
+- `createPacingFitPlaceholder(signals)`
+  - Returns emotional pacing-fit hints.
+- `createEmotionalAlignmentHints(signals)`
+  - Returns emotional alignment safety/value hints.
+- `createReflectivePromptsFromCompatibility(signals)`
+  - Returns reflective prompt suggestions derived from compatibility patterns.
 
 ## Files/modules created or updated
-- Updated `apps/web/src/domain/window/index.js`
-  - Added reusable Window state/rhythm enums and domain helpers.
+- Updated `apps/web/src/domain/compatibility/index.js`
+  - Replaced initial minimal input contract with first structured emotional compatibility domain helpers and enums.
 - Updated `apps/web/src/domain/index.js`
-  - Re-exported Window domain APIs for cross-module use.
+  - Re-exported Emotional Compatibility domain helpers for cross-feature integration.
 - Updated `apps/web/src/data/mocks/conversations.js`
-  - Added mocked Window metadata per conversation (`windowState`, `windowRhythm`, emotional and participation placeholders).
+  - Added mocked per-conversation `compatibilityProfile` payloads.
 - Updated `apps/web/src/components/conversations/index.js`
-  - Integrated Window domain helpers into conversation detail/list rendering.
-
-## Placeholder logic introduced
-- `canWindowOpen(...)`
-  - Placeholder policy for when a conversation Window can open (Spark readiness + mutual participation + emotional readiness + no break active).
-- `isMessagingAvailableForWindow(...)`
-  - Placeholder availability gate for messaging controls based on Window state.
-- `getWindowPauseState(...)`
-  - Placeholder pause-state normalizer (paused flag + pause metadata).
-- `determineWindowRhythm(...)`
-  - Placeholder rhythm classifier (`gentle`/`normal`/`reflective`) using reply delay, emotional space need, and prompt density.
-- `getIntentionalPacingRecommendation(...)`
-  - Placeholder recommendation helper to suggest pacing and intentional breaks.
-- `getFutureWindowPacingPolicyPlaceholder(...)`
-  - Placeholder structure for future message pacing rules.
-- `getFutureEmotionalSafetyPlaceholder(...)`
-  - Placeholder structure for future emotional safety checks.
+  - Integrated compatibility signals/hints/prompts into conversation detail rendering.
 
 ## UI integrations made
-- Conversation list now includes Window state and rhythm metadata so conversation availability is transparent and paced.
-- Conversation detail now derives and displays:
-  - resolved Window state
-  - resolved rhythm
-  - messaging availability status
-  - intentional pacing recommendation
-  - future pacing policy placeholder hints
-  - emotional safety placeholder hints
-- Message input/send controls now consume Window availability/pause state and disable when messaging should rest.
-- Preserved existing conversation structure and tone; no engagement mechanics, no urgency patterns, and no realtime behavior added.
+- Conversation detail now renders compatibility-informed reflective guidance without scores:
+  - conversation resonance hint
+  - pacing fit hint
+  - emotional alignment hint
+- Delayed reflection prompt now uses compatibility-derived reflective prompts when available.
+- Kept existing conversation UI structure and visual style intact.
+- Did not add ranking, percentages, swipe-like dynamics, or winner/loser framing.
 
-## Future messaging integration notes
-- Keep Window helper signatures stable as frontend adapter boundaries for future APIs.
-- Replace placeholder pacing thresholds with product-configurable policy rules once backend support exists.
-- Evolve message input gating to consume future policy outputs (per-day cadence, minimum reply spacing, intentional cool-off windows).
-- Map Window state/rhythm enums directly to shared backend contracts in future to avoid enum drift across clients.
+## Future API/matching integration notes
+- Keep compatibility helpers as stable adapter boundaries:
+  - client can continue passing local profiles today
+  - backend can supply richer profile/signal inputs later without UI rewrite
+- Potential future integration path:
+  1. API supplies normalized compatibility attributes per person.
+  2. Domain helpers map attributes to explainable signals.
+  3. UI renders reflective hints and prompts only (no hidden scoring output).
+- If future matching needs confidence handling, expose uncertainty transparently via `unknown` signals rather than opaque scoring.
 
 ## Deferred concerns
-- No backend persistence for Window state transitions.
-- No realtime message delivery/typing/status systems.
-- No authentication or profile-based trust gating.
-- No push/notification cadence logic.
-- No automated domain tests in this pass (manual checks only).
+- No backend/database persistence or matchmaking service integration.
+- No authentication/profile verification source for compatibility attributes.
+- No policy tuning UI for compatibility input preferences.
+- No automated tests added in this pass (manual checks only).
+- No cross-route compatibility surface yet (currently integrated in conversations only).
 
 ## Manual testing checklist
-- [ ] Open `/conversations` and verify conversation list still renders.
-- [ ] Verify each conversation shows Window state + rhythm in the list.
-- [ ] Select each conversation and verify detail header shows Window status copy and pacing recommendation.
-- [ ] Verify paused conversation keeps send controls disabled.
-- [ ] Verify non-paused/opening/open conversations keep send controls enabled when messaging is available.
-- [ ] Verify no realtime indicators/online pressure/typing-status UI appears.
-- [ ] Verify overall conversation tone remains calm and non-urgent.
+- [ ] Open `/conversations` and verify the conversation list still renders and selection still works.
+- [ ] Select each conversation and confirm compatibility guidance appears as soft text (no percentages/rank labels).
+- [ ] Verify compatibility guidance wording remains reflective/human (no winner/loser dynamics).
+- [ ] Verify delayed reflection prompt still renders and now uses compatibility-derived prompt text.
+- [ ] Verify paused conversation still disables send actions.
+- [ ] Verify non-paused/open conversations still allow message input when messaging availability is true.
+- [ ] Confirm no backend/auth/network dependency is required for compatibility rendering.

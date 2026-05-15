@@ -34,5 +34,14 @@ export {
   getFutureWindowPacingPolicyPlaceholder,
   getFutureEmotionalSafetyPlaceholder
 } from './window/index.js'
-export { createEmotionalCompatibilityInput } from './compatibility/index.js'
+export {
+  COMPATIBILITY_DIMENSIONS,
+  SIGNAL_STATES,
+  createCompatibilityProfile,
+  createCompatibilitySignals,
+  createConversationResonancePlaceholder,
+  createPacingFitPlaceholder,
+  createEmotionalAlignmentHints,
+  createReflectivePromptsFromCompatibility
+} from './compatibility/index.js'
 export { createSafetyState, SAFETY_STATES } from './safety/index.js'
