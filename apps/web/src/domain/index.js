@@ -1,4 +1,14 @@
-export { canCreateGlimps, GLIMPS_LIMIT_REASON } from './glimps/index.js'
+export {
+  createGlimpsDraft,
+  validateGlimps,
+  getGlimpsExpirationState,
+  evaluateGlimpsSafetyPlaceholder,
+  GLIMPS_STATES,
+  GLIMPS_PRIVACY_LEVELS,
+  GLIMPS_EMOTIONAL_TONES,
+  GLIMPS_VALIDATION_ERROR,
+  GLIMPS_MODERATION_FLAGS
+} from './glimps/index.js'
 export { calculateLayerRevealState } from './layers/index.js'
 export { createSpark } from './spark/index.js'
 export { createDailyDiscoveryLimit } from './discovery/index.js'
