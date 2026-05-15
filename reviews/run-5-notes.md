@@ -54,3 +54,47 @@
 - [ ] Unknown route returns error envelope with route not found reason.
 - [ ] `POST /health` without `application/json` returns validation error envelope.
 - [ ] `x-request-id` is echoed through error/success metadata where applicable.
+
+---
+
+## Run 5 Extension — Web API Boundary via Mock Transport
+
+### API boundary decisions
+- Added an explicit frontend API call boundary: `UI -> service -> API client -> transport -> response envelope`.
+- Standardized response handling to async-state envelopes (`success`, `error`, `loading`) at service boundaries.
+- Added transport-level error categories aligned with Run 4 contracts (`validation`, `retryable`, etc.).
+
+### Transport architecture
+- Added `apps/web/src/api/mock-transport.js` with operation-based handlers and a stable request/response envelope.
+- Added `apps/web/src/api/client.js` for transport-agnostic client calls and envelope-to-async-state mapping.
+- Added `apps/web/src/api/envelope.js` as canonical success/failure envelope creators.
+
+### Services migrated
+- Migrated discovery service to API-client-backed transport calls.
+- Migrated conversations service to API-client-backed transport calls.
+- Added profile service and migrated profile experience component away from direct mock import.
+- Added initial domain service shims for glimps, spark, window, compatibility, and safety.
+
+### Remaining mock coupling
+- State bootstrap modules and some onboarding/glimps authoring modules still initialize from local mock helpers.
+- The data source remains mock-backed by design, but is now hidden behind the API transport boundary for migrated domains.
+
+### Deferred backend work
+- Real HTTP transport adapter.
+- Backend endpoint routing and domain handler parity per operation.
+- Runtime validation schemas for each request/response operation.
+- Auth/session enforcement and safety-policy-backed authorization.
+- Persistence repositories and database integration.
+
+### Local testing steps
+- `npm run lint --workspace apps/web`
+- `npm run test --workspace apps/web`
+- `npm run dev --workspace apps/web`
+
+### Manual testing checklist
+- [ ] Discovery section still renders cards, intro limits, and recommendations.
+- [ ] Conversations section still renders list/detail and allows conversation switching.
+- [ ] Profile experience still renders profile sections and fallback doesn’t break layout.
+- [ ] Unknown API operation maps to validation-style failure envelope.
+- [ ] Error envelope maps to UI-usable `status: "error"` shape.
+- [ ] Loading state helpers are available for incremental async adoption.

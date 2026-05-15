@@ -50,7 +50,7 @@ const createEmptyState = () => {
   state.innerHTML = `
     <h3>Take your time.</h3>
     <p>No messages yet. Start with a gentle question when you both feel ready.</p>
-    <ul>${getConversationStarters().map((prompt) => `<li>${prompt}</li>`).join('')}</ul>
+    <ul>${(getConversationStarters().status === 'success' ? getConversationStarters().data : []).map((prompt) => `<li>${prompt}</li>`).join('')}</ul>
   `
   return state
 }
@@ -77,7 +77,8 @@ export const createConversationsSection = () => {
   section.id = 'conversations'
   section.setAttribute('aria-labelledby', 'conversations-title')
 
-  const conversations = getConversationsSnapshot()
+  const conversationsResponse = getConversationsSnapshot()
+  const conversations = conversationsResponse.status === 'success' ? conversationsResponse.data : []
   const myCompatibilityProfile = createCompatibilityProfile({
     communicationPreference: 'reflective',
     emotionalPace: 'steady',
@@ -87,7 +88,7 @@ export const createConversationsSection = () => {
     relationshipIntention: 'intentional_connection',
     emotionalSafetyPreference: 'gentle_clarity'
   })
-  let activeId = conversationState.getState().activeConversationId || conversations[0].id
+  let activeId = conversationState.getState().activeConversationId || conversations[0]?.id || ''
 
   section.innerHTML = `
     <div class="container">
@@ -106,6 +107,10 @@ export const createConversationsSection = () => {
 
   const render = () => {
     const active = conversations.find((item) => item.id === activeId) || conversations[0]
+    if (!active) {
+      detailHost.innerHTML = '<article class="conversation-detail"><p>Conversation unavailable right now. Please retry.</p></article>'
+      return
+    }
     const vm = createConversationSessionViewModel({ conversation: active, sessionContext: { meCompatibilityProfile: myCompatibilityProfile } })
 
     listHost.innerHTML = ''
@@ -118,7 +123,8 @@ export const createConversationsSection = () => {
     const headerNotes = vm.recommendations.filter((r) => [RECOMMENDATION_TYPES.PACING, RECOMMENDATION_TYPES.COMPATIBILITY, RECOMMENDATION_TYPES.SAFETY].includes(r.type)).map((r) => `<p>${r.text}</p>`).join('')
     detail.innerHTML = `<header class="conversation-detail__header"><h3>${vm.header.name}</h3><p>${vm.header.statusLine}</p><p>${vm.header.windowLine}</p><p>${vm.header.messagingLine}</p>${headerNotes}<p>Future pacing policy: up to ${pacing.maxSuggestedMessagesPerDay} messages/day, with about ${pacing.minSuggestedReplyDelayHours}h between replies.</p><p>${vm.policy.emotionalSafety.shouldSuggestPause ? 'Emotional space check: suggest a pause if needed.' : 'Emotional space check: steady conversation is okay.'}</p><p>Safety state: ${vm.safety.state.replaceAll('_', ' ')}</p><p>Trust signal: ${vm.safety.trustSignal.replaceAll('_', ' ')}</p><p>${vm.safety.boundaryCheck.respectsBoundaries ? 'Boundary preferences currently look respected.' : 'A boundary preference check-in is recommended.'}</p><p>Reporting foundation: ${vm.safety.reportingHook.summary}</p></header>`
 
-    detail.append(createReflectionPrompt(vm.reflectivePrompt || getConversationStarters()[0], active.nextPromptAt))
+    const starters = getConversationStarters()
+    detail.append(createReflectionPrompt(vm.reflectivePrompt || (starters.status === 'success' ? starters.data[0] : 'Share a gentle check-in.'), active.nextPromptAt))
 
     const stream = document.createElement('div')
     stream.className = 'message-stream'

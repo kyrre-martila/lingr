@@ -1,6 +1,6 @@
-import { conversationStarters, createConversationsMockData } from '../data/mocks/conversations.js'
+import { apiClient } from '../api/client.js'
+import { toAsyncLoading } from '../api/envelope.js'
 
-const conversationsSnapshot = createConversationsMockData()
-
-export const getConversationsSnapshot = () => conversationsSnapshot
-export const getConversationStarters = () => conversationStarters
+export const getConversationsSnapshot = () => apiClient.callSync('conversations.list')
+export const getConversationStarters = () => apiClient.callSync('conversations.starters')
+export const getConversationsLoadingState = (previousData) => toAsyncLoading(previousData)

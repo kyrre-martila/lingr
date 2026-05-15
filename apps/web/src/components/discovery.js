@@ -8,7 +8,8 @@ import {
 } from '../domain/index.js'
 import { discoveryState } from '../state/index.js'
 
-const discoveryData = getDiscoverySnapshot()
+const discoveryResponse = getDiscoverySnapshot()
+const discoveryData = discoveryResponse.status === 'success' ? discoveryResponse.data : { dateLabel: '', cards: [], recommended: [] }
 
 const createLimitedIntroStatus = ({ remainingIntroductions, totalIntroductions }) => {
   const wrap = document.createElement('section')

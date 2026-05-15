@@ -1,4 +1,4 @@
-import { createProfileMockData } from '../data/mocks/profile.js'
+import { getProfileSnapshot } from '../services/profile-service.js'
 
 const createList = (items, className) => {
   const list = document.createElement('ul')
@@ -12,7 +12,11 @@ const createList = (items, className) => {
 }
 
 export const createProfileExperienceSection = () => {
-  const profileData = createProfileMockData()
+  const profileResponse = getProfileSnapshot()
+  const profileData = profileResponse.status === 'success' ? profileResponse.data : {
+    name: 'Unavailable', age: '', pronouns: '', location: '', presenceNote: '', joined: '',
+    about: 'Profile unavailable right now.', reflections: [], glimpses: [], interests: [], emotionalValues: [], connectionIntention: '', layers: []
+  }
   const section = document.createElement('section')
   section.id = 'profile-experience'
   section.className = 'section section--paper'
