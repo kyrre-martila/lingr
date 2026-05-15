@@ -63,3 +63,58 @@
 - [ ] `PATCH /v1/glimps/:glimpsId/archive` sets state to `archived` and `archivedAt`.
 - [ ] Invalid payloads (missing reflection/mood or bad enums) return validation error envelope.
 - [ ] Invalid non-prefixed IDs return `validation.invalid_id`.
+
+---
+
+## Run 6 — Prompt 2: Frontend Glimps Service Boundary Integration
+
+### Frontend service integration decisions
+- Added dedicated `apps/web/src/services/glimps-service.js` to isolate Glimps API calls from UI flow logic.
+- Integrated Glimps creation flow (`create-flow.js`) with async service call on confirmation while preserving the existing step-by-step UX and calm tone.
+- Kept image behavior unchanged (still note-only placeholder; no upload implementation).
+- Avoided exposing internal backend fields by mapping DTOs to a client-safe UI shape in the service layer.
+
+### Transport assumptions
+- Uses the existing API client/transport architecture (`api/client.js`) for backend-ready calls.
+- Extended mock transport with `glimps.create` and `glimps.viewer.list` operations for local/dev fallback when backend transport is not active.
+- Assumes envelope semantics remain `status: success|error` with shared `kind`, `reasonCode`, and `retryable` metadata.
+
+### Files changed
+- `apps/web/src/services/glimps-service.js` (new)
+- `apps/web/src/api/mock-transport.js`
+- `apps/web/src/components/glimps/create-flow.js`
+- `apps/web/test/glimps-service.test.js` (new)
+- `reviews/run-6-notes.md`
+
+### Behavior preserved
+- Existing Glimps creation steps, validation flow, and screen-reader announcement behavior are preserved.
+- Existing local draft and preview interactions remain intact.
+- No UI redesign, no new feature surfaces, and no public-feed/engagement mechanics added.
+
+### Error states handled
+- Loading state during submit (`Saving...` and controls disabled).
+- Success state with calm confirmation messaging.
+- Validation error state.
+- Permission/auth error state.
+- Retryable/domain error state with retry guidance.
+- Non-retryable fallback error state while keeping draft safe in the current session.
+
+### Deferred work
+- Real HTTP transport wiring to backend Glimps endpoints.
+- Viewer Glimps list UI rendering (service support added; UI list remains deferred until product asks for it).
+- Image upload.
+- Public feeds.
+- Likes/reactions/engagement mechanics.
+
+### Local test commands
+- `npm run test --workspace apps/web`
+- `node --test apps/web/test/contracts-conformance.test.js`
+- `node --test apps/web/test/glimps-service.test.js`
+
+### Manual testing checklist
+- [ ] Complete Glimps flow with valid reflection + mood and confirm save state appears.
+- [ ] Submit without required fields and confirm validation guidance appears.
+- [ ] Simulate auth/permission failure and confirm signed-in guidance appears.
+- [ ] Simulate retryable failure and confirm retry guidance appears.
+- [ ] Confirm after failure that draft content remains available.
+- [ ] Confirm keyboard flow and aria-live messaging still work across step transitions and submission outcomes.

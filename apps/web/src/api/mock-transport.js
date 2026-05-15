@@ -16,12 +16,54 @@ const snapshot = {
   safety: { level: 'none', scope: [] }
 }
 
+let glimpsCounter = 0
+const viewerGlimps = []
+
+const createMockGlimps = (payload = {}) => {
+  glimpsCounter += 1
+  const now = new Date().toISOString()
+  return {
+    glimpsId: `glp_mock_${glimpsCounter}`,
+    userId: 'usr_mock_viewer',
+    reflection: String(payload.reflection || '').trim(),
+    mood: String(payload.mood || '').trim(),
+    prompt: String(payload.prompt || '').trim(),
+    imageNote: String(payload.imageNote || '').trim(),
+    privacy: String(payload.privacy || 'private').trim(),
+    emotionalTone: String(payload.emotionalTone || 'soft').trim(),
+    state: 'shared',
+    createdAt: now,
+    updatedAt: now,
+    archivedAt: null
+  }
+}
+
+const glimpsCreateHandler = ({ payload }) => {
+  const reflection = String(payload?.reflection || '').trim()
+  const mood = String(payload?.mood || '').trim()
+
+  if (!reflection || !mood) {
+    return createFailure({
+      code: REASON_CODES.VALIDATION.INVALID_PAYLOAD,
+      message: 'Reflection and mood are required.',
+      kind: DOMAIN_ERROR_KIND.VALIDATION,
+      retryable: false
+    })
+  }
+
+  const created = createMockGlimps(payload)
+  viewerGlimps.unshift(created)
+  return createSuccess(created)
+}
+
 const handlers = {
   'profile.get': () => createSuccess(snapshot.profile),
   'discovery.get': () => createSuccess(snapshot.discovery),
   'conversations.list': () => createSuccess(snapshot.conversations),
   'conversations.starters': () => createSuccess(conversationStarters),
   'glimps.draft': () => createSuccess(snapshot.glimps),
+  'glimps.create': (input) => glimpsCreateHandler(input),
+  'glimps.viewer.list': () => createSuccess([...viewerGlimps]),
   'spark.list': () => createSuccess(snapshot.spark),
   'window.get': () => createSuccess(snapshot.window),
   'compatibility.get': () => createSuccess(snapshot.compatibility),

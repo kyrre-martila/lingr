@@ -10,6 +10,7 @@ import {
   evaluateGlimpsSafetyPlaceholder,
   getGlimpsExpirationState
 } from '../../domain/glimps/index.js'
+import { createGlimps } from '../../services/glimps-service.js'
 const steps = [
   { id: 'reflection', title: 'Begin with a small reflection', description: 'Write a short line about what is quietly present for you.' },
   { id: 'mood', title: 'Choose your mood', description: 'Select one mood that feels most true in this moment.' },
@@ -17,7 +18,7 @@ const steps = [
   { id: 'image', title: 'Image placeholder (optional)', description: 'No upload yet — add a simple note for the image you may include later.' },
   { id: 'privacy', title: 'Privacy and tone', description: 'Choose how this moment is held and the tone you want to keep.' },
   { id: 'preview', title: 'Preview your Glimps', description: 'Read it back and check how it feels before sharing.' },
-  { id: 'confirm', title: 'Glimps created', description: 'Your quiet moment has been prepared locally on this device.' }
+  { id: 'confirm', title: 'Glimps created', description: 'Your quiet moment has been prepared with care.' }
 ]
 const escapeHtml = (value) => String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;')
 
@@ -35,6 +36,8 @@ export const createGlimpsCreationFlow = () => {
   const errorEl = shell.querySelector('.onboarding-error')
   const backBtn = shell.querySelector('[data-back]')
   const nextBtn = shell.querySelector('[data-next]')
+
+  let submissionState = { status: 'idle', message: '' }
 
   const persist = () => {
     const data = new FormData(form)
@@ -73,7 +76,7 @@ export const createGlimpsCreationFlow = () => {
       const expiration = getGlimpsExpirationState({ glimps: state })
       return `<article class="glimps-preview" tabindex="0" aria-label="Glimps preview">${state.prompt ? `<p class="glimps-preview__prompt">${escapeHtml(state.prompt)}</p>` : ''}<p class="glimps-preview__reflection">${escapeHtml(state.reflection || '—')}</p><p class="glimps-preview__meta">Mood: ${escapeHtml(state.mood || '—')}</p><p class="glimps-preview__meta">Privacy: ${escapeHtml(state.privacy || '—')}</p><p class="glimps-preview__meta">Tone: ${escapeHtml(state.emotionalTone || '—')}</p>${state.imageNote ? `<p class="glimps-preview__meta">Image note: ${escapeHtml(state.imageNote)}</p>` : ''}<p class="glimps-preview__meta">Validation: ${validation.valid ? 'ready' : 'needs attention'}</p><p class="glimps-preview__meta">Safety placeholder: ${escapeHtml(moderation.status)}</p><p class="glimps-preview__meta">Expiration placeholder: ${escapeHtml(expiration.reason)}</p></article>`
     }
-    return `<div class="glimps-confirmation"><p class="onboarding-copy">Your Glimps is ready. Nothing has been posted or shared — this stays local in the current session.</p><p class="onboarding-helper">You can create another one whenever you are ready.</p></div>`
+    return `<div class="glimps-confirmation"><p class="onboarding-copy">${escapeHtml(submissionState.message || 'Your Glimps is ready. Nothing has been posted or shared — this stays local in the current session.')}</p><p class="onboarding-helper">You can create another one whenever you are ready.</p></div>`
   }
 
   const controller = createStepFlowController({
@@ -90,9 +93,41 @@ export const createGlimpsCreationFlow = () => {
     validateStep: validateStep,
     renderStep,
     getNextLabel: (index, total) => (index === total - 1 ? 'Create another Glimps' : index === total - 2 ? 'Confirm' : 'Continue'),
-    onComplete: ({ reset }) => {
-      glimpsState.reset(createGlimpsInitialState())
-      reset()
+    onComplete: async ({ reset, announceError, clearError }) => {
+      nextBtn.disabled = true
+      backBtn.disabled = true
+      nextBtn.textContent = 'Saving...'
+      clearError()
+
+      const result = await createGlimps({
+        reflection: state.reflection,
+        mood: state.mood,
+        prompt: state.prompt,
+        imageNote: state.imageNote,
+        privacy: state.privacy,
+        emotionalTone: state.emotionalTone,
+        state: 'shared'
+      })
+
+      nextBtn.disabled = false
+      backBtn.disabled = false
+
+      if (result.status === 'success') {
+        submissionState = { status: 'success', message: 'Your Glimps was saved gently. It is ready whenever you want to revisit it.' }
+        glimpsState.reset(createGlimpsInitialState())
+        reset()
+        return
+      }
+
+      if (result.error?.kind === 'validation') {
+        announceError('A few details need attention before this Glimps can be saved.')
+      } else if (result.error?.kind === 'permission' || result.error?.kind === 'auth') {
+        announceError('This Glimps needs a signed-in session before it can be saved.')
+      } else if (result.error?.retryable) {
+        announceError('We could not save this Glimps just now. Please try again in a moment.')
+      } else {
+        announceError('We could not save this Glimps yet. Your words are still here in this draft.')
+      }
     }
   })
 
