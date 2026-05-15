@@ -118,3 +118,11 @@
 - [ ] Simulate retryable failure and confirm retry guidance appears.
 - [ ] Confirm after failure that draft content remains available.
 - [ ] Confirm keyboard flow and aria-live messaging still work across step transitions and submission outcomes.
+
+
+## Run 6 — Prompt 4: Stabilization updates
+- Added shared Glimps constants/reason codes/id prefix in `packages/shared/src/contracts.js`.
+- Updated API Glimps service to use shared contract constants for state/privacy/tone and not-found reason code.
+- Made archive behavior explicit and idempotent for already-archived records.
+- Removed frontend/mock state drift (`shared`) and aligned create payload to backend-supported `published` state.
+- Added backend service tests for auth rejection, validation rejection, archive idempotency, and not-found reason code behavior.

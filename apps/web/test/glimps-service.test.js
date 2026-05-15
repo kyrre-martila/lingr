@@ -34,7 +34,7 @@ test('glimps DTO mapping keeps client-safe fields only', async () => {
   assert.equal(mapped._internalId, undefined)
 })
 
-test('glimps create error can express retryable failures', async () => {
+test('glimps create error preserves retryable failures', async () => {
   const transport = {
     request: async () => createFailure({ code: REASON_CODES.ROUTE.UNKNOWN_ROUTE, message: 'offline', kind: DOMAIN_ERROR_KIND.DOMAIN, retryable: true }),
     requestSync: () => createSuccess({})

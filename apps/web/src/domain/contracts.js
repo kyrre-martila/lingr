@@ -25,7 +25,6 @@ export const VISIBILITY_LEVEL = Object.freeze({ PUBLIC_DISCOVERY: 'public_discov
 
 export const SPARK_STATE = Object.freeze({ PENDING: 'pending', ACCEPTED: 'accepted', DECLINED: 'declined', EXPIRED: 'expired', REVOKED: 'revoked' })
 export const WINDOW_STATE = Object.freeze({ OPEN: 'open', SOFT_PAUSED: 'soft_paused', PAUSED: 'paused' })
-export const GLIMPS_STATE = Object.freeze({ DRAFT: 'draft', PUBLISHED: 'published', EXPIRED: 'expired', ARCHIVED: 'archived' })
 
 export const resolvePolicyOutcome = ({ authState, lifecycleState, safetyBlocked, featureAllowed, routeAllowed }) => {
   if (authState !== AUTH_SESSION_STATE.AUTHENTICATED) return { outcome: ROUTE_OUTCOME.HARD_BLOCK, reasonCode: REASON_CODES.AUTH.REQUIRES_AUTH }

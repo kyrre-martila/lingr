@@ -106,7 +106,7 @@ export const createGlimpsCreationFlow = () => {
         imageNote: state.imageNote,
         privacy: state.privacy,
         emotionalTone: state.emotionalTone,
-        state: 'shared'
+        state: 'published'
       })
 
       nextBtn.disabled = false

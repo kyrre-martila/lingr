@@ -1,6 +1,6 @@
 import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
-import { DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, REASON_CODES } from '../../../../packages/shared/src/contracts.js'
+import { DOMAIN_ERROR_KIND, GLIMPS_EMOTIONAL_TONE, GLIMPS_PRIVACY_LEVEL, GLIMPS_STATE, INTERNAL_ID_STRATEGY, REASON_CODES } from '../../../../packages/shared/src/contracts.js'
 
 const MAX_REFLECTION = 280
 const MAX_MOOD = 80
@@ -9,11 +9,11 @@ const MAX_IMAGE_NOTE = 160
 const MAX_PRIVACY = 40
 const MAX_EMOTIONAL_TONE = 40
 
-const GLIMPS_STATES = new Set(['draft', 'published', 'expired', 'archived'])
-const GLIMPS_PRIVACY = new Set(['private', 'connection_only', 'visible_for_matching'])
-const GLIMPS_EMOTIONAL_TONE = new Set(['soft', 'open', 'tender', 'grounded', 'uncertain'])
+const GLIMPS_STATES = new Set(Object.values(GLIMPS_STATE))
+const GLIMPS_PRIVACY = new Set(Object.values(GLIMPS_PRIVACY_LEVEL))
+const GLIMPS_TONES = new Set(Object.values(GLIMPS_EMOTIONAL_TONE))
 
-const toExternalGlimpsId = (internalId) => `glp_${internalId}`
+const toExternalGlimpsId = (internalId) => `${INTERNAL_ID_STRATEGY.API_GLIMPS_ID_PREFIX}${internalId}`
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
 
 const requireAuthenticatedViewer = (viewer) => {
@@ -50,15 +50,15 @@ const toClientGlimps = (row) => ({
 
 const parseInternalGlimpsId = (glimpsId) => {
   const normalized = normalize(glimpsId)
-  if (!normalized.startsWith('glp_') || normalized.length <= 4) {
+  if (!normalized.startsWith(INTERNAL_ID_STRATEGY.API_GLIMPS_ID_PREFIX) || normalized.length <= 4) {
     throw new ApiError({ message: 'Invalid glimpsId', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_ID, statusCode: 400 })
   }
-  return normalized.slice(4)
+  return normalized.slice(INTERNAL_ID_STRATEGY.API_GLIMPS_ID_PREFIX.length)
 }
 
-export const createGlimps = async ({ viewer, payload }) => {
+export const createGlimps = async ({ viewer, payload, dbClient }) => {
   const userId = requireAuthenticatedViewer(viewer)
-  const db = getDbClient()
+  const db = dbClient || await getDbClient()
   const reflection = requireLength(payload.reflection, 'reflection', MAX_REFLECTION, { required: true })
   const mood = requireLength(payload.mood, 'mood', MAX_MOOD, { required: true })
   const prompt = requireLength(payload.prompt, 'prompt', MAX_PROMPT)
@@ -67,7 +67,7 @@ export const createGlimps = async ({ viewer, payload }) => {
   const emotionalTone = requireLength(payload.emotionalTone, 'emotionalTone', MAX_EMOTIONAL_TONE, { required: true })
   const state = requireLength(payload.state, 'state', 40, { required: true })
 
-  if (!GLIMPS_STATES.has(state) || !GLIMPS_PRIVACY.has(privacy) || !GLIMPS_EMOTIONAL_TONE.has(emotionalTone)) {
+  if (!GLIMPS_STATES.has(state) || !GLIMPS_PRIVACY.has(privacy) || !GLIMPS_TONES.has(emotionalTone)) {
     throw new ApiError({ message: 'Invalid Glimps enum value', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
   }
 
@@ -75,28 +75,31 @@ export const createGlimps = async ({ viewer, payload }) => {
   return toClientGlimps(row)
 }
 
-export const listViewerGlimps = async ({ viewer }) => {
+export const listViewerGlimps = async ({ viewer, dbClient }) => {
   const userId = requireAuthenticatedViewer(viewer)
-  const db = getDbClient()
+  const db = dbClient || await getDbClient()
   const rows = await db.glimps.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } })
   return rows.map(toClientGlimps)
 }
 
-export const getViewerGlimpsById = async ({ viewer, glimpsId }) => {
+export const getViewerGlimpsById = async ({ viewer, glimpsId, dbClient }) => {
   const userId = requireAuthenticatedViewer(viewer)
-  const db = getDbClient()
+  const db = dbClient || await getDbClient()
   const id = parseInternalGlimpsId(glimpsId)
   const row = await db.glimps.findFirst({ where: { id, userId } })
-  if (!row) throw new ApiError({ message: 'Glimps not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: 'glimps.not_found', statusCode: 404 })
+  if (!row) throw new ApiError({ message: 'Glimps not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.GLIMPS.NOT_FOUND, statusCode: 404 })
   return toClientGlimps(row)
 }
 
-export const archiveViewerGlimps = async ({ viewer, glimpsId }) => {
+export const archiveViewerGlimps = async ({ viewer, glimpsId, dbClient }) => {
   const userId = requireAuthenticatedViewer(viewer)
-  const db = getDbClient()
+  const db = dbClient || await getDbClient()
   const id = parseInternalGlimpsId(glimpsId)
-  const row = await db.glimps.updateMany({ where: { id, userId }, data: { state: 'archived', archivedAt: new Date() } })
-  if (row.count === 0) throw new ApiError({ message: 'Glimps not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: 'glimps.not_found', statusCode: 404 })
-  const updated = await db.glimps.findFirst({ where: { id, userId } })
+  const row = await db.glimps.findFirst({ where: { id, userId } })
+  if (!row) throw new ApiError({ message: 'Glimps not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.GLIMPS.NOT_FOUND, statusCode: 404 })
+  if (row.state === GLIMPS_STATE.ARCHIVED) return toClientGlimps(row)
+
+  const archivedAt = new Date()
+  const updated = await db.glimps.update({ where: { id }, data: { state: GLIMPS_STATE.ARCHIVED, archivedAt } })
   return toClientGlimps(updated)
 }
