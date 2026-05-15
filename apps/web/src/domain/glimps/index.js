@@ -1,3 +1,5 @@
+import { SAFETY_EVENT_CATEGORIES, SAFETY_CHANNELS, createSafetyEvent } from '../safety/taxonomy.js'
+
 const GLIMPS_MAX_REFLECTION_LENGTH = 280
 const GLIMPS_MAX_IMAGE_NOTE_LENGTH = 160
 
@@ -113,11 +115,21 @@ export const evaluateGlimpsSafetyPlaceholder = (glimps = {}) => {
   const reflection = toTrimmedString(glimps.reflection).toLowerCase()
   const flags = []
 
-  if (reflection.includes('hurt myself')) flags.push(GLIMPS_MODERATION_FLAGS.SELF_HARM_SIGNAL)
-  if (reflection.includes('you are worthless')) flags.push(GLIMPS_MODERATION_FLAGS.HARASSMENT_SIGNAL)
+  const safetyEvents = []
+
+  if (reflection.includes('hurt myself')) {
+    flags.push(GLIMPS_MODERATION_FLAGS.SELF_HARM_SIGNAL)
+    safetyEvents.push(createSafetyEvent({ channel: SAFETY_CHANNELS.GLIMPS, category: SAFETY_EVENT_CATEGORIES.SELF_HARM_SIGNAL, signal: 'hurt_myself_phrase' }))
+  }
+
+  if (reflection.includes('you are worthless')) {
+    flags.push(GLIMPS_MODERATION_FLAGS.HARASSMENT_SIGNAL)
+    safetyEvents.push(createSafetyEvent({ channel: SAFETY_CHANNELS.GLIMPS, category: SAFETY_EVENT_CATEGORIES.HARASSMENT_SIGNAL, signal: 'harassment_phrase' }))
+  }
 
   return {
     status: flags.length ? 'needs_review' : 'clear',
-    flags: flags.length ? [GLIMPS_MODERATION_FLAGS.NEEDS_REVIEW, ...flags] : []
+    flags: flags.length ? [GLIMPS_MODERATION_FLAGS.NEEDS_REVIEW, ...flags] : [],
+    safetyEvents
   }
 }
