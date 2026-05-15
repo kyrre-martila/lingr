@@ -19,6 +19,15 @@ import {
   createEmotionalAlignmentHints,
   createReflectivePromptsFromCompatibility
 } from '../../domain/compatibility/index.js'
+import {
+  determineComfortSignals,
+  determineSafetyState,
+  createPauseRecommendation,
+  determineTrustSignals,
+  checkBoundaryPreferences,
+  suggestGentleIntervention,
+  createReportingHookPlaceholder
+} from '../../domain/safety/index.js'
 
 const createConversationList = (items, activeId) => {
   const list = document.createElement('ul')
@@ -149,13 +158,37 @@ export const createConversationsSection = () => {
     const pacingPolicy = getFutureWindowPacingPolicyPlaceholder({ rhythm: resolvedRhythm })
     const emotionalSafety = getFutureEmotionalSafetyPlaceholder({ emotionalSpaceLevel: active.emotionalSpaceLevel })
 
+    const comfortSignals = determineComfortSignals({
+      pacingMismatch: resolvedRhythm === 'reflective',
+      pauseRequested: pauseState.isPaused,
+      boundaryMentioned: active.safetyContext?.boundaryMentioned,
+      unresolvedTension: active.safetyContext?.unresolvedTension
+    })
+    const safetyState = determineSafetyState({ comfortSignals })
+    const pauseRecommendation = createPauseRecommendation({ safetyState, recentMessageCount: active.messages.length })
+    const trustSignal = determineTrustSignals({
+      mutualConsistency: active.safetyContext?.mutualConsistency,
+      consentClarity: active.safetyContext?.consentClarity,
+      repairAttempts: active.safetyContext?.repairAttempts
+    })
+    const boundaryCheck = checkBoundaryPreferences({
+      boundaryPreferences: active.boundaryPreferences,
+      conversationContext: {
+        messageIntervalHours: active.safetyContext?.messageIntervalHours,
+        isLateNight: active.safetyContext?.isLateNight,
+        includesSensitiveTopic: active.safetyContext?.includesSensitiveTopic
+      }
+    })
+    const intervention = suggestGentleIntervention({ safetyState, trustSignal, boundaryCheck })
+    const reportingHook = createReportingHookPlaceholder({ conversationId: active.id, safetyState, interventionType: intervention.type })
+
     listHost.innerHTML = ''
     listHost.append(createConversationList(conversations, active.id))
 
     detailHost.innerHTML = ''
     const detail = document.createElement('article')
     detail.className = 'conversation-detail'
-    detail.innerHTML = `<header class="conversation-detail__header"><h3>${active.name}</h3><p>${pauseState.isPaused ? 'Paused for reflection' : `Next prompt in ${active.nextPromptAt}`}</p><p>Window: ${windowState} · Rhythm: ${resolvedRhythm}</p><p>${messagingAvailable ? 'Messaging is gently available.' : 'Messaging is resting for now.'}</p><p>${pacingRecommendation.recommendation}</p><p>Future pacing policy: up to ${pacingPolicy.maxSuggestedMessagesPerDay} messages/day, with about ${pacingPolicy.minSuggestedReplyDelayHours}h between replies.</p><p>${emotionalSafety.shouldSuggestPause ? 'Emotional space check: suggest a pause if needed.' : 'Emotional space check: steady conversation is okay.'}</p><p>${resonance.note}</p><p>${pacingFit.note}</p><p>${alignmentHints[0]}</p></header>`
+    detail.innerHTML = `<header class="conversation-detail__header"><h3>${active.name}</h3><p>${pauseState.isPaused ? 'Paused for reflection' : `Next prompt in ${active.nextPromptAt}`}</p><p>Window: ${windowState} · Rhythm: ${resolvedRhythm}</p><p>${messagingAvailable ? 'Messaging is gently available.' : 'Messaging is resting for now.'}</p><p>${pacingRecommendation.recommendation}</p><p>Future pacing policy: up to ${pacingPolicy.maxSuggestedMessagesPerDay} messages/day, with about ${pacingPolicy.minSuggestedReplyDelayHours}h between replies.</p><p>${emotionalSafety.shouldSuggestPause ? 'Emotional space check: suggest a pause if needed.' : 'Emotional space check: steady conversation is okay.'}</p><p>${resonance.note}</p><p>${pacingFit.note}</p><p>${alignmentHints[0]}</p><p>Safety state: ${safetyState.replaceAll('_', ' ')}</p><p>Trust signal: ${trustSignal.replaceAll('_', ' ')}</p><p>${pauseRecommendation.note}</p><p>${intervention.note}</p><p>${boundaryCheck.respectsBoundaries ? 'Boundary preferences currently look respected.' : 'A boundary preference check-in is recommended.'}</p><p>Reporting foundation: ${reportingHook.summary}</p></header>`
 
     detail.append(createReflectionPrompt(reflectiveCompatibilityPrompts[0] || conversationStarters[0], active.nextPromptAt))
 
