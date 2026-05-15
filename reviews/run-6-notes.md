@@ -126,3 +126,26 @@
 - Made archive behavior explicit and idempotent for already-archived records.
 - Removed frontend/mock state drift (`shared`) and aligned create payload to backend-supported `published` state.
 - Added backend service tests for auth rejection, validation rejection, archive idempotency, and not-found reason code behavior.
+
+## Run 6 — Prompt 5: Spark persistence foundation
+- Added first backend Spark persistence model (`Spark`/`sparks`) with initiator/recipient IDs, status, optional source Glimps ID, soft resonance context placeholder, and lifecycle timestamps.
+- Added API Spark routes (auth required):
+  - `POST /v1/sparks` create invitation
+  - `GET /v1/sparks/viewer` list viewer Sparks
+  - `GET /v1/sparks/:sparkId` get single Spark
+  - `PATCH /v1/sparks/:sparkId/accept` accept Spark (recipient only)
+  - `PATCH /v1/sparks/:sparkId/pause` pause Spark
+  - `PATCH /v1/sparks/:sparkId/decline` decline Spark
+- Added service-level validation/permission checks:
+  - prevent self-Sparks
+  - reject duplicate active Spark relationships between the same two users (either direction)
+  - owner/participant-scoped Spark visibility and mutation
+  - invalid prefixed ID handling and shared reason code usage
+- Added placeholder expiration logic in viewer list path by expiring overdue invited Sparks (`expiresAt <= now`) before returning viewer rows.
+- Added shared Spark contract constants/reason codes/id prefix in `packages/shared/src/contracts.js` to align backend behavior with shared contracts.
+
+### Deferred work
+- No Conversation/Message persistence added.
+- No realtime Spark orchestration added.
+- No frontend Spark redesign or new gamified metrics/counters added.
+- No background scheduler/cron introduced for Spark expiration; expiration remains request-triggered placeholder logic.

@@ -24,14 +24,16 @@ export const REASON_CODES = Object.freeze({
   MODERATION: Object.freeze({ CONTENT_REVIEW: 'moderation.content_review', CONTENT_RESTRICTED: 'moderation.content_restricted' }),
   VALIDATION: Object.freeze({ INVALID_ID: 'validation.invalid_id', INVALID_TIMESTAMP: 'validation.invalid_timestamp', INVALID_PAYLOAD: 'validation.invalid_payload' }),
   PERMISSION: Object.freeze({ NOT_ALLOWED: 'permission.not_allowed', FEATURE_DISABLED: 'permission.feature_disabled' }),
-  GLIMPS: Object.freeze({ NOT_FOUND: 'glimps.not_found', INVALID_STATE_TRANSITION: 'glimps.invalid_state_transition' })
+  GLIMPS: Object.freeze({ NOT_FOUND: 'glimps.not_found', INVALID_STATE_TRANSITION: 'glimps.invalid_state_transition' }),
+  SPARK: Object.freeze({ NOT_FOUND: 'spark.not_found', INVALID_STATE_TRANSITION: 'spark.invalid_state_transition', INVALID_SELF_SPARK: 'spark.invalid_self_spark', DUPLICATE_ACTIVE_SPARK: 'spark.duplicate_active_spark' })
 })
 
 export const INTERNAL_ID_STRATEGY = Object.freeze({
   DATABASE_ID: 'prisma_cuid',
   API_USER_ID_PREFIX: 'usr_',
   API_PROFILE_ID_PREFIX: 'prf_',
-  API_GLIMPS_ID_PREFIX: 'glp_'
+  API_GLIMPS_ID_PREFIX: 'glp_',
+  API_SPARK_ID_PREFIX: 'spk_'
 })
 
 export const GLIMPS_STATE = Object.freeze({ DRAFT: 'draft', PUBLISHED: 'published', EXPIRED: 'expired', ARCHIVED: 'archived' })
@@ -51,3 +53,5 @@ const ERROR_KIND_VALUES = toSet(DOMAIN_ERROR_KIND)
 
 export const isApiSuccessEnvelope = (value) => Boolean(value && has(STATUS_VALUES, value.status) && value.status === API_RESPONSE_STATUS.SUCCESS && 'data' in value)
 export const isApiErrorEnvelope = (value) => Boolean(value && has(STATUS_VALUES, value.status) && value.status === API_RESPONSE_STATUS.ERROR && value.error && has(ERROR_KIND_VALUES, value.error.kind) && typeof value.error.reasonCode === 'string')
+
+export const SPARK_STATE = Object.freeze({ POTENTIAL: 'potential', INVITED: 'invited', ACCEPTED: 'accepted', PAUSED: 'paused', DECLINED: 'declined', EXPIRED: 'expired' })
