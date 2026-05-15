@@ -1,10 +1,10 @@
 const defaultNavItems = [
   { label: 'Philosophy', href: '#philosophy' },
   { label: 'How it Works', href: '#how-it-works' },
-  { label: 'Discovery', href: '#discovery' },
-  { label: 'Glimps', href: '#glimps' },
-  { label: 'Safety', href: '#safety' },
-  { label: 'Profiles', href: '#profile-experience' },
+  { label: 'Onboarding', href: '/onboarding' },
+  { label: 'Discovery', href: '/discovery' },
+  { label: 'Conversations', href: '/conversations' },
+  { label: 'Profile', href: '/profile' },
   { label: 'Join Lingr', href: '#cta' }
 ]
 
