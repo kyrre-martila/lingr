@@ -3,11 +3,19 @@ import { createField } from '../onboarding/form-controls.js'
 
 import { createGlimpsInitialState, glimpsMoodOptions, glimpsPromptOptions } from '../../data/mocks/glimps.js'
 import { glimpsState } from '../../state/index.js'
+import {
+  validateGlimps,
+  GLIMPS_PRIVACY_LEVELS,
+  GLIMPS_EMOTIONAL_TONES,
+  evaluateGlimpsSafetyPlaceholder,
+  getGlimpsExpirationState
+} from '../../domain/glimps/index.js'
 const steps = [
   { id: 'reflection', title: 'Begin with a small reflection', description: 'Write a short line about what is quietly present for you.' },
   { id: 'mood', title: 'Choose your mood', description: 'Select one mood that feels most true in this moment.' },
   { id: 'prompt', title: 'Add a gentle prompt (optional)', description: 'You can anchor your Glimps with a prompt, or leave it open.' },
   { id: 'image', title: 'Image placeholder (optional)', description: 'No upload yet — add a simple note for the image you may include later.' },
+  { id: 'privacy', title: 'Privacy and tone', description: 'Choose how this moment is held and the tone you want to keep.' },
   { id: 'preview', title: 'Preview your Glimps', description: 'Read it back and check how it feels before sharing.' },
   { id: 'confirm', title: 'Glimps created', description: 'Your quiet moment has been prepared locally on this device.' }
 ]
@@ -34,13 +42,22 @@ export const createGlimpsCreationFlow = () => {
       reflection: String(data.get('reflection') || state.reflection || '').trim(),
       mood: String(data.get('mood') || state.mood || '').trim(),
       prompt: String(data.get('prompt') || state.prompt || '').trim(),
-      imageNote: String(data.get('imageNote') || state.imageNote || '').trim()
+      imageNote: String(data.get('imageNote') || state.imageNote || '').trim(),
+      privacy: String(data.get('privacy') || state.privacy || '').trim(),
+      emotionalTone: String(data.get('emotionalTone') || state.emotionalTone || '').trim()
     })
   }
 
   const validateStep = (id) => {
     if (id === 'reflection' && !state.reflection) return 'Please add a short reflection before continuing.'
     if (id === 'mood' && !state.mood) return 'Please choose a mood to continue.'
+    if (id === 'privacy' && !state.privacy) return 'Please choose a privacy level.'
+
+    if (id === 'preview') {
+      const validation = validateGlimps(state)
+      if (!validation.valid) return 'Please review this Glimps before confirming.'
+    }
+
     return ''
   }
 
@@ -49,7 +66,13 @@ export const createGlimpsCreationFlow = () => {
     if (step.id === 'mood') return `<fieldset class="onboarding-field onboarding-options flow"><legend class="onboarding-label">Mood</legend><div class="onboarding-options__list">${glimpsMoodOptions.map((mood) => `<label class="onboarding-option"><input type="radio" name="mood" value="${escapeHtml(mood)}" ${state.mood === mood ? 'checked' : ''} required><span>${escapeHtml(mood)}</span></label>`).join('')}</div></fieldset>`
     if (step.id === 'prompt') return `<fieldset class="onboarding-field onboarding-options flow"><legend class="onboarding-label">Prompt (optional)</legend><div class="onboarding-options__list">${glimpsPromptOptions.map((prompt) => `<label class="onboarding-option"><input type="radio" name="prompt" value="${escapeHtml(prompt)}" ${state.prompt === prompt ? 'checked' : ''}><span>${escapeHtml(prompt)}</span></label>`).join('')}<label class="onboarding-option"><input type="radio" name="prompt" value="" ${state.prompt ? '' : 'checked'}><span>No Glimps prompt for this one</span></label></div></fieldset>`
     if (step.id === 'image') return `<div class="onboarding-field flow"><p class="onboarding-helper">Image uploads are coming soon. You can still leave yourself a placeholder note.</p><div class="glimps-image-placeholder" aria-hidden="true">Image placeholder</div></div>${createField({ id: 'imageNote', label: 'Image note (optional)', value: state.imageNote, placeholder: 'Warm window light on the kitchen table.' }).wrapper.outerHTML}`
-    if (step.id === 'preview') return `<article class="glimps-preview" tabindex="0" aria-label="Glimps preview">${state.prompt ? `<p class="glimps-preview__prompt">${escapeHtml(state.prompt)}</p>` : ''}<p class="glimps-preview__reflection">${escapeHtml(state.reflection || '—')}</p><p class="glimps-preview__meta">Mood: ${escapeHtml(state.mood || '—')}</p>${state.imageNote ? `<p class="glimps-preview__meta">Image note: ${escapeHtml(state.imageNote)}</p>` : ''}</article>`
+    if (step.id === 'privacy') return `<fieldset class="onboarding-field onboarding-options flow"><legend class="onboarding-label">Privacy level</legend><div class="onboarding-options__list"><label class="onboarding-option"><input type="radio" name="privacy" value="${GLIMPS_PRIVACY_LEVELS.PRIVATE}" ${state.privacy === GLIMPS_PRIVACY_LEVELS.PRIVATE ? 'checked' : ''} required><span>Private</span></label><label class="onboarding-option"><input type="radio" name="privacy" value="${GLIMPS_PRIVACY_LEVELS.CONNECTION_ONLY}" ${state.privacy === GLIMPS_PRIVACY_LEVELS.CONNECTION_ONLY ? 'checked' : ''} required><span>Connection only</span></label><label class="onboarding-option"><input type="radio" name="privacy" value="${GLIMPS_PRIVACY_LEVELS.VISIBLE_FOR_MATCHING}" ${state.privacy === GLIMPS_PRIVACY_LEVELS.VISIBLE_FOR_MATCHING ? 'checked' : ''} required><span>Visible for matching</span></label></div></fieldset><fieldset class="onboarding-field onboarding-options flow"><legend class="onboarding-label">Emotional tone</legend><div class="onboarding-options__list"><label class="onboarding-option"><input type="radio" name="emotionalTone" value="${GLIMPS_EMOTIONAL_TONES.SOFT}" ${state.emotionalTone === GLIMPS_EMOTIONAL_TONES.SOFT ? 'checked' : ''} required><span>Soft</span></label><label class="onboarding-option"><input type="radio" name="emotionalTone" value="${GLIMPS_EMOTIONAL_TONES.OPEN}" ${state.emotionalTone === GLIMPS_EMOTIONAL_TONES.OPEN ? 'checked' : ''} required><span>Open</span></label><label class="onboarding-option"><input type="radio" name="emotionalTone" value="${GLIMPS_EMOTIONAL_TONES.TENDER}" ${state.emotionalTone === GLIMPS_EMOTIONAL_TONES.TENDER ? 'checked' : ''} required><span>Tender</span></label><label class="onboarding-option"><input type="radio" name="emotionalTone" value="${GLIMPS_EMOTIONAL_TONES.GROUNDED}" ${state.emotionalTone === GLIMPS_EMOTIONAL_TONES.GROUNDED ? 'checked' : ''} required><span>Grounded</span></label><label class="onboarding-option"><input type="radio" name="emotionalTone" value="${GLIMPS_EMOTIONAL_TONES.UNCERTAIN}" ${state.emotionalTone === GLIMPS_EMOTIONAL_TONES.UNCERTAIN ? 'checked' : ''} required><span>Uncertain</span></label></div></fieldset>`
+    if (step.id === 'preview') {
+      const validation = validateGlimps(state)
+      const moderation = evaluateGlimpsSafetyPlaceholder(state)
+      const expiration = getGlimpsExpirationState({ glimps: state })
+      return `<article class="glimps-preview" tabindex="0" aria-label="Glimps preview">${state.prompt ? `<p class="glimps-preview__prompt">${escapeHtml(state.prompt)}</p>` : ''}<p class="glimps-preview__reflection">${escapeHtml(state.reflection || '—')}</p><p class="glimps-preview__meta">Mood: ${escapeHtml(state.mood || '—')}</p><p class="glimps-preview__meta">Privacy: ${escapeHtml(state.privacy || '—')}</p><p class="glimps-preview__meta">Tone: ${escapeHtml(state.emotionalTone || '—')}</p>${state.imageNote ? `<p class="glimps-preview__meta">Image note: ${escapeHtml(state.imageNote)}</p>` : ''}<p class="glimps-preview__meta">Validation: ${validation.valid ? 'ready' : 'needs attention'}</p><p class="glimps-preview__meta">Safety placeholder: ${escapeHtml(moderation.status)}</p><p class="glimps-preview__meta">Expiration placeholder: ${escapeHtml(expiration.reason)}</p></article>`
+    }
     return `<div class="glimps-confirmation"><p class="onboarding-copy">Your Glimps is ready. Nothing has been posted or shared — this stays local in the current session.</p><p class="onboarding-helper">You can create another one whenever you are ready.</p></div>`
   }
 

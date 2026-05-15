@@ -1,62 +1,63 @@
-# Run 3 Notes — Domain Architecture Groundwork
+# Run 3 Notes — Glimps Domain System (Structured)
 
-## Domain folders/modules created
-- `apps/web/src/domain/index.js`
-- `apps/web/src/domain/glimps/index.js`
-- `apps/web/src/domain/layers/index.js`
-- `apps/web/src/domain/spark/index.js`
-- `apps/web/src/domain/discovery/index.js`
-- `apps/web/src/domain/pulse/index.js`
-- `apps/web/src/domain/window/index.js`
-- `apps/web/src/domain/compatibility/index.js`
-- `apps/web/src/domain/safety/index.js`
+## Glimps domain decisions
+- Introduced a concrete `domain/glimps` contract to model Glimps as a reflective, lightweight moment object rather than social content.
+- Added canonical Glimps enums for:
+  - lifecycle state: `draft`, `shared`, `expired`, `archived`
+  - privacy level: `private`, `connection_only`, `visible_for_matching`
+  - emotional tone: `soft`, `open`, `tender`, `grounded`, `uncertain`
+- Added a pure draft factory (`createGlimpsDraft`) so UI/state layers consume a normalized shape.
+- Added domain validation (`validateGlimps`) to keep flow checks out of template/render concerns.
+- Kept all logic frontend-only with no backend/auth/database dependency.
 
-## Concepts modeled
-- **Glimps**: lightweight creation policy contract via `canCreateGlimps` and reason enums.
-- **Layers**: reveal-depth calculator via `calculateLayerRevealState`.
-- **Spark**: simple connection representation via `createSpark`.
-- **Pulse**: emotional tempo snapshot via `createPulse`.
-- **Window**: conversation span representation via `createConversationWindow`.
-- **Intentional discovery**: daily pacing model via `createDailyDiscoveryLimit`.
-- **Emotional compatibility**: normalized compatibility input contract via `createEmotionalCompatibilityInput`.
-- **Safety**: safety-state and flags contract via `createSafetyState` + `SAFETY_STATES`.
+## Files/modules created or updated
+- Updated `apps/web/src/domain/glimps/index.js` with full Glimps domain model, validation, expiration placeholder, and moderation placeholder helpers.
+- Updated `apps/web/src/domain/index.js` exports to expose new Glimps domain functions and constants.
+- Updated `apps/web/src/data/mocks/glimps.js` to create initial state from domain factory.
+- Updated `apps/web/src/state/glimps.js` to initialize/store Glimps validation snapshot.
+- Updated `apps/web/src/components/glimps/create-flow.js` to use domain-backed fields and checks while preserving flow structure.
 
-## Key architecture decisions
-- Added a **platform-neutral domain layer** under `src/domain` to keep product mechanics reusable outside DOM components.
-- Kept domain utilities **pure and side-effect free** where possible so web and mobile can share behavior.
-- Added a **single domain barrel export** (`domain/index.js`) to support future shared imports.
-- Integrated limited placeholder usage into web state where low-risk:
-  - `state/glimps.js` now carries a `creationPolicy` snapshot.
-  - `state/discovery.js` now derives introduction limits from domain utility output.
+## Validation rules added
+- Reflection is required and trimmed.
+- Reflection max length placeholder enforced (`280` chars).
+- Mood is required.
+- Image note max length placeholder enforced (`160` chars).
+- State value must be one of supported Glimps states.
+- Privacy value must be one of supported privacy levels.
+- Emotional tone value must be one of supported tone values.
+- Timestamp must be parseable (`createdAt`).
 
-## Intentionally placeholder logic
-- No real matching/scoring engine for compatibility or Spark progression.
-- No backend persistence, no API contracts, and no database schemas.
-- No real moderation decisions; safety stays representational only.
-- Glimps creation policy is coarse and input-driven; no user history source-of-truth.
-- Layer reveal stages are simple thresholds, not behaviorally adaptive.
+## Placeholder logic introduced
+- `getGlimpsExpirationState(...)`:
+  - computes age in hours from `createdAt`
+  - intentionally returns a placeholder expiration decision (`shouldExpire: false`) pending policy/API rules.
+- `evaluateGlimpsSafetyPlaceholder(...)`:
+  - lightweight text-signal scanning
+  - returns representational moderation flags/status only
+  - no enforcement and no reporting/escalation workflows yet.
 
-## Future backend/API integration notes
-- Replace domain utility inputs with server-provided values (daily usage counters, trust state, pairing context).
-- Keep domain function signatures stable so API adapters can map payloads to domain contracts.
-- Add server-side validation parity for Glimps policy and discovery limits.
-- Extend Spark/Window with immutable IDs and lifecycle events from backend.
-
-## Future mobile app reuse notes
-- Domain modules are UI-agnostic and can be imported by a React Native/mobile client.
-- Keep mobile state stores as thin wrappers around these domain functions.
-- Introduce shared package extraction later (e.g., `packages/domain`) once mobile repo/module structure exists.
+## Future API integration notes
+- Keep `createGlimpsDraft` and `validateGlimps` signatures stable for API adapter parity.
+- Replace local timestamp generation with backend-issued timestamps/IDs when persistence begins.
+- Replace placeholder moderation signal scanning with backend policy/moderation service contracts.
+- Replace expiration placeholder with server-configured window rules and lifecycle transitions.
+- Map domain enums directly to future API payload schema to avoid UI string drift.
 
 ## Deferred concerns
-- Domain-level schema validation (runtime guards/TypeScript/zod) deferred.
-- i18n-aware date handling and timezone-aware daily limit keys deferred.
-- Real compatibility scoring and intent-ranking algorithms deferred.
-- Safety escalation workflows and reporting UX deferred.
-- Full adoption of domain models across every component/state module deferred to avoid broad churn in Run 3.
+- No persistence or API calls.
+- No auth/identity linkage.
+- No feed/public engagement mechanics.
+- No media upload pipeline (image note remains text reference only).
+- No strict runtime schema library (e.g. zod/TS types) yet.
+- No automated tests yet for new Glimps domain helpers.
 
 ## Manual testing checklist
-- [ ] Run app and verify existing routes still render (`/`, `/onboarding`, `/discovery`, `/conversations`, `/profile`).
-- [ ] Confirm discovery intro counters still render and reflect limit status.
-- [ ] Confirm Glimps flow still loads and has no runtime errors from state initialization.
-- [ ] Confirm unknown route handling remains unchanged from Run 2 stabilization.
-- [ ] Confirm no auth/backend dependency was introduced by domain modules.
+- [ ] Open `/` and verify Glimps section still renders.
+- [ ] Complete Glimps flow with reflection + mood + privacy + tone and confirm preview renders values.
+- [ ] Leave reflection empty and verify flow blocks continuation at required step.
+- [ ] Leave mood empty and verify flow blocks continuation at required step.
+- [ ] Verify prompt remains optional.
+- [ ] Verify image note remains optional.
+- [ ] Verify preview shows placeholder metadata lines for validation/safety/expiration.
+- [ ] Confirm completion step still states local/session-only behavior.
+- [ ] Confirm no network/API dependency required for flow.
