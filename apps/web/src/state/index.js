@@ -1,4 +1,5 @@
 import { createStore } from './create-store.js'
+import { sessionState } from './session.js'
 import { createOnboardingInitialState } from '../data/mocks/onboarding.js'
 import { createGlimpsInitialState } from '../data/mocks/glimps.js'
 import { createDiscoveryMockData } from '../data/mocks/discovery.js'
@@ -12,3 +13,4 @@ export const glimpsState = createStore(createGlimpsInitialState())
 export const discoveryState = createStore({ remainingIntroductions: discoveryData.session.remainingIntroductions, totalIntroductions: discoveryData.session.totalIntroductions, hasReachedLimit: true })
 export const conversationState = createStore({ activeConversationId: conversations[0]?.id || '' })
 export const uiPreferencesState = createStore({ compactOnboardingHeader: false, discoveryRecommendationsExpanded: true })
+export { sessionState }
