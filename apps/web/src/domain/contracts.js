@@ -1,5 +1,6 @@
+export * from '../../../../packages/shared/src/contracts.js'
+
 const toSet = (obj) => new Set(Object.values(obj))
-const has = (set, value) => set.has(value)
 
 export const ID_PREFIX = Object.freeze({
   USER: 'usr_',
@@ -16,9 +17,6 @@ export const ID_PREFIX = Object.freeze({
 
 export const isIsoTimestamp = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value)
 export const isIdWithPrefix = (value, prefix) => typeof value === 'string' && value.startsWith(prefix) && value.length > prefix.length
-
-export const API_RESPONSE_STATUS = Object.freeze({ SUCCESS: 'success', ERROR: 'error' })
-export const DOMAIN_ERROR_KIND = Object.freeze({ VALIDATION: 'validation', AUTH: 'auth', PERMISSION: 'permission', ROUTE: 'route', SAFETY: 'safety', MODERATION: 'moderation', DOMAIN: 'domain' })
 
 export const AUTH_SESSION_STATE = Object.freeze({ ANONYMOUS: 'anonymous', AUTHENTICATED: 'authenticated', EXPIRED: 'expired' })
 export const ACCOUNT_LIFECYCLE_STATE = Object.freeze({ ONBOARDING: 'onboarding', ACTIVE: 'active', PAUSED: 'paused', DELETED: 'deleted', RESTRICTED: 'restricted' })
@@ -42,12 +40,6 @@ export const REASON_CODES = Object.freeze({
   PERMISSION: Object.freeze({ NOT_ALLOWED: 'permission.not_allowed', FEATURE_DISABLED: 'permission.feature_disabled' })
 })
 
-const STATUS_VALUES = toSet(API_RESPONSE_STATUS)
-const ERROR_KIND_VALUES = toSet(DOMAIN_ERROR_KIND)
-
-export const isApiSuccessEnvelope = (value) => Boolean(value && has(STATUS_VALUES, value.status) && value.status === API_RESPONSE_STATUS.SUCCESS && 'data' in value)
-export const isApiErrorEnvelope = (value) => Boolean(value && has(STATUS_VALUES, value.status) && value.status === API_RESPONSE_STATUS.ERROR && value.error && has(ERROR_KIND_VALUES, value.error.kind) && typeof value.error.reasonCode === 'string')
-
 export const POLICY_PRECEDENCE = Object.freeze([
   'auth_validity',
   'account_lifecycle',
@@ -69,3 +61,7 @@ export const RHYTHM_LEVELS = Object.freeze({ GENTLE: 'gentle', NORMAL: 'normal',
 export const READINESS_LEVELS = Object.freeze({ LOW: 'low', EMERGING: 'emerging', READY: 'ready' })
 export const INTERVENTION_URGENCY = Object.freeze({ LIGHT: 'light', MODERATE: 'moderate', HIGH: 'high' })
 export const RECOMMENDATION_TYPES = Object.freeze({ PACING: 'pacing', SAFETY: 'safety', COMPATIBILITY: 'compatibility', REFLECTION: 'reflection' })
+
+export const CONTRACT_REGISTRIES = Object.freeze({
+  reasonCodes: toSet(Object.values(REASON_CODES).flatMap((group) => Object.values(group)))
+})
