@@ -106,3 +106,63 @@
 - [ ] Confirm no real HTTP/backend/auth-provider/database/realtime implementation was introduced.
 - [ ] Confirm migration strategy preserves existing UI behavior and allows domain-by-domain backend rollout.
 - [ ] Confirm mobile reuse constraints are explicitly captured.
+
+---
+
+## Run 4 Extension — Auth Foundation Groundwork
+
+## Files/modules created
+- `reviews/run-4-auth-foundation.md` (identity/session architecture foundation for future real auth integration)
+
+## Files/modules updated
+- `reviews/run-4-notes.md` (extended with auth foundation decisions, migration assumptions, risks, and manual review checklist)
+
+## Architecture decisions made
+- Defined clear ownership boundaries between:
+  - auth (identity + claims)
+  - session (composed viewer runtime state)
+  - profile (profile data + completeness inputs)
+  - route access (policy outcomes)
+  - safety restrictions (enforcement overlays)
+- Normalized terminology across identity and account lifecycle concepts:
+  - authenticated user
+  - anonymous visitor
+  - onboarding user
+  - incomplete profile
+  - active member
+  - paused account
+  - safety-restricted account
+- Established platform-neutral session contract direction with explicit subcontracts for:
+  - session state
+  - user identity
+  - auth claims
+  - permissions
+  - visibility
+  - account lifecycle state
+  - profile completeness
+- Adopted composed-state modeling (auth state axis + account lifecycle axis) to avoid enum sprawl and keep policy logic portable.
+- Captured explicit route decision outcomes (`allow`, `soft_block`, `hard_block`) and reason-code strategy for future backend-owned guard enforcement.
+- Established safety restriction overlay model as orthogonal to authentication provider state.
+
+## Future migration assumptions
+- Prototype behavior remains unchanged in this phase; architecture contracts precede enforcement.
+- Future provider integrations (email/password, passwordless, Apple, Google, verification systems) map through adapter boundaries into the same normalized identity/session contracts.
+- Backend should own final permission and route-access policy evaluation while preserving client contract shapes.
+- UI should consume derived session/permission snapshots and avoid provider-specific logic.
+- Mobile and web should share the same auth/session vocabulary and policy contract outputs.
+
+## Risks identified
+- Contract drift risk if identity/session/permission terms are not codified in shared runtime constants/types.
+- Boundary erosion risk if profile or feature modules directly infer auth/provider logic.
+- Policy divergence risk if route access and safety restrictions evolve separately without a unified reason-code taxonomy.
+- Migration risk if provider-specific claims leak into UI-facing contracts before adapter boundaries are formalized.
+- Cross-platform inconsistency risk if mobile introduces parallel auth-state terminology.
+
+## Manual review checklist
+- [ ] Confirm no real authentication flow, provider SDK, token system, cookie/JWT session handling, or DB logic was introduced.
+- [ ] Confirm auth/session/profile/route/safety ownership boundaries are explicit and non-overlapping.
+- [ ] Confirm normalized terminology is consistent across Run 4 docs.
+- [ ] Confirm session identity, claims, permissions, visibility, account state, and completeness concepts are all represented.
+- [ ] Confirm route access assumptions preserve current prototype behavior while defining future backend guard outcomes.
+- [ ] Confirm safety restriction model is documented as an independent overlay, not an auth-provider concern.
+- [ ] Confirm deferred decisions capture unresolved implementation choices for future runs.
