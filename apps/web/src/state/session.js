@@ -1,5 +1,5 @@
 import { createStore } from './create-store.js'
-import { getRouteAccessSummary } from './route-access.js'
+import { GUARD_MODES, getRouteAccessSummary } from './route-access.js'
 
 export const SESSION_STATES = {
   ANONYMOUS: 'anonymous',
@@ -21,8 +21,8 @@ export const setMockSessionState = (nextState) => {
   sessionState.patch(createMockSession(nextState))
 }
 
-export const getRouteSessionGuardHint = (path, state = sessionState.getState().state) => {
-  const summary = getRouteAccessSummary({ path, sessionState: state })
+export const getRouteSessionGuardHint = (path, state = sessionState.getState().state, mode = GUARD_MODES.PROTOTYPE_OPEN) => {
+  const summary = getRouteAccessSummary({ path, sessionState: state, mode })
 
   return {
     path,
@@ -30,6 +30,9 @@ export const getRouteSessionGuardHint = (path, state = sessionState.getState().s
     expectedStates: summary.expectedStates,
     shouldGateInFuture: summary.shouldGateInFuture,
     access: summary.access,
-    intent: summary.intent
+    intent: summary.intent,
+    blocked: summary.blocked,
+    blockedReason: summary.blockedReason,
+    suggestedRedirectTarget: summary.suggestedRedirectTarget
   }
 }

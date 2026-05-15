@@ -1,7 +1,7 @@
-import { createDiscoveryMockData } from '../data/mocks/discovery.js'
+import { getDiscoveryMockSnapshot } from '../data/mocks/index.js'
 import { discoveryState } from '../state/index.js'
 
-const discoveryData = createDiscoveryMockData()
+const discoveryData = getDiscoveryMockSnapshot()
 
 const createLimitedIntroStatus = ({ remainingIntroductions, totalIntroductions }) => {
   const wrap = document.createElement('section')
@@ -12,11 +12,11 @@ const createLimitedIntroStatus = ({ remainingIntroductions, totalIntroductions }
   wrap.innerHTML = `
     <p class="discovery-intro-limit__label">Daily introductions</p>
     <p class="discovery-intro-limit__count"><strong>${remainingIntroductions}</strong> of ${totalIntroductions} left today</p>
-    <div class="discovery-intro-limit__track" role="progressbar" aria-valuemin="0" aria-valuemax="${totalIntroductions}" aria-valuenow="${used}" aria-label="Introductions used today">
+    <ul class="discovery-intro-limit__track" aria-label="Introductions used today">
       ${Array.from({ length: totalIntroductions })
-        .map((_, index) => `<span class="${index < used ? 'is-used' : 'is-open'}"></span>`)
+        .map((_, index) => `<li><span class="${index < used ? 'is-used' : 'is-open'}"></span></li>`)
         .join('')}
-    </div>
+    </ul>
     <p class="discovery-intro-limit__note">Intentional pacing helps each hello feel considered, not rushed.</p>
   `
   return wrap

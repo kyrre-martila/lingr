@@ -1,16 +1,16 @@
-import { createConversationsMockData, conversationStarters } from '../../data/mocks/conversations.js'
+import { conversationStarters } from '../../data/mocks/conversations.js'
+import { getConversationsMockSnapshot } from '../../data/mocks/index.js'
 import { conversationState } from '../../state/index.js'
 
 const createConversationList = (items, activeId) => {
   const list = document.createElement('ul')
   list.className = 'conversation-list'
-  list.setAttribute('role', 'listbox')
   list.setAttribute('aria-label', 'Conversations')
 
   items.forEach((conversation) => {
     const li = document.createElement('li')
     li.innerHTML = `
-      <button class="conversation-list__item ${conversation.id === activeId ? 'is-active' : ''}" type="button" role="option" aria-selected="${conversation.id === activeId}">
+      <button class="conversation-list__item ${conversation.id === activeId ? 'is-active' : ''}" type="button" aria-current="${conversation.id === activeId ? 'true' : 'false'}">
         <p class="conversation-list__name">${conversation.name}</p>
         <p class="conversation-list__meta">${conversation.mood} · ${conversation.updatedAt}</p>
         <p class="conversation-list__preview">${conversation.preview}</p>
@@ -26,7 +26,6 @@ const createConversationList = (items, activeId) => {
 const createBubble = (message) => {
   const bubble = document.createElement('article')
   bubble.className = `message-bubble ${message.sender === 'me' ? 'message-bubble--me' : 'message-bubble--them'} ${message.type === 'prompt' ? 'message-bubble--prompt' : ''}`
-  bubble.tabIndex = 0
   bubble.innerHTML = `<p>${message.text}</p><span>${message.time}</span>`
   return bubble
 }
@@ -75,7 +74,7 @@ export const createConversationsSection = () => {
   section.id = 'conversations'
   section.setAttribute('aria-labelledby', 'conversations-title')
 
-  const conversations = createConversationsMockData()
+  const conversations = getConversationsMockSnapshot()
   let activeId = conversationState.getState().activeConversationId || conversations[0].id
 
   section.innerHTML = `
