@@ -10,7 +10,16 @@ export {
   GLIMPS_MODERATION_FLAGS
 } from './glimps/index.js'
 export { calculateLayerRevealState } from './layers/index.js'
-export { createSpark } from './spark/index.js'
+export {
+  SPARK_STATUSES,
+  SPARK_DECISIONS,
+  calculateSoftResonanceSignals,
+  canStartSpark,
+  createSparkInvitation,
+  resolveSparkStatus,
+  getSparkStatusLabel,
+  shouldOpenConversationWindowLater
+} from './spark/index.js'
 export { createDailyDiscoveryLimit } from './discovery/index.js'
 export { createPulse } from './pulse/index.js'
 export { createConversationWindow } from './window/index.js'
