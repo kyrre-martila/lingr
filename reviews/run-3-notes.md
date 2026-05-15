@@ -1,62 +1,49 @@
-# Run 3 Notes — Safety and Trust Architecture (First Pass)
+# Run 3 Notes — Domain Stabilization Pass
 
-## Safety architecture decisions
-- Added a platform-neutral Safety domain module under `domain/safety` with explicit, explainable safety-state contracts.
-- Modeled safety as transparent rule-based state transitions (no scoring, no ML, no hidden logic).
-- Kept all logic frontend-only and mock-data driven.
-- Designed for calm trust cues: safety state, trust signal, pacing recommendations, boundary checks, and gentle interventions.
-- Added a reporting hook placeholder contract that can later connect to moderation/reporting services without changing current UI behavior.
+## Files changed
+- `apps/web/src/domain/contracts.js`
+- `apps/web/src/domain/safety/taxonomy.js`
+- `apps/web/src/domain/conversation-session/index.js`
+- `apps/web/src/domain/safety/index.js`
+- `apps/web/src/domain/glimps/index.js`
+- `apps/web/src/domain/index.js`
+- `apps/web/src/components/conversations/index.js`
+- `reviews/run-3-domain-boundaries.md`
+- `reviews/run-3-notes.md`
 
-## Files/modules created or updated
-- Updated `apps/web/src/domain/safety/index.js`.
-- Updated `apps/web/src/domain/index.js` (re-exports for Safety domain helpers).
-- Updated `apps/web/src/data/mocks/conversations.js` (mock safety context + boundary preference payloads).
-- Updated `apps/web/src/components/conversations/index.js` (safety/trust integrations in conversation detail).
+## Service/orchestration architecture decisions
+- Added a platform-neutral orchestration service: `createConversationSessionViewModel(...)` in `domain/conversation-session`.
+- Service accepts conversation snapshot + session context, calls Window/Compatibility/Safety helpers, and returns one normalized render contract.
+- Conversations UI now consumes service output instead of directly chaining domain helpers.
 
-## Placeholder logic introduced
-- `determineComfortSignals(...)`
-- `determineSafetyState(...)`
-- `createPauseRecommendation(...)`
-- `determineTrustSignals(...)`
-- `checkBoundaryPreferences(...)`
-- `suggestGentleIntervention(...)`
-- `createReportingHookPlaceholder(...)`
-- Expanded `createSafetyState(...)` and safety enums:
-  - safety states: `comfortable`, `uncertain`, `pause_recommended`, `check_in_recommended`, `boundary_crossed`
-  - trust states: `steady`, `growing`, `needs_care`
-  - intervention types: `gentle_check_in`, `pace_slowing`, `boundary_reflection`
+## Contracts introduced
+- Added shared contracts in `domain/contracts.js`:
+  - rhythm levels
+  - readiness levels
+  - safety severity
+  - intervention urgency
+  - recommendation types
+- Added shared safety taxonomy in `domain/safety/taxonomy.js` for cross-channel event categories and severity mapping.
 
-## UI integrations made
-- Conversation detail now shows calm, explainable Safety/Trust hints:
-  - current safety state
-  - trust signal
-  - pause recommendation
-  - gentle intervention suggestion
-  - boundary preference check status
-  - future reporting foundation note
-- Preserved existing visual structure and tone (no redesign).
-- Maintained non-punitive messaging and avoided aggressive warning copy.
+## Safety taxonomy changes
+- Conversation safety reporting placeholder now emits shared taxonomy event payloads.
+- Glimps moderation placeholder now emits shared taxonomy safety events with channel and severity fields.
+- Kept channel-specific evaluators separate while normalizing output vocabulary.
 
-## Future moderation/reporting integration notes
-- `createReportingHookPlaceholder(...)` is the stable hook for future reporting pipelines.
-- Future backend moderation can:
-  1. supply conversation safety events
-  2. map events to existing safety/trust contracts
-  3. submit report payloads via the reporting hook contract
-- This keeps domain logic explainable and portable across web/mobile clients.
+## UI coupling reduced
+- `components/conversations/index.js` no longer coordinates Window/Compatibility/Safety function chains.
+- UI renders the normalized conversation service view-model and preserves existing behavior/copy tone.
 
-## Deferred concerns
-- No backend/database integration.
-- No real authentication/session verification changes.
-- No moderation enforcement, auto-actions, or punitive mechanics.
-- No telemetry/behavior-tracking or engagement optimization patterns.
-- No ML-based safety scoring.
+## Issues intentionally deferred
+- No backend moderation/reporting pipeline integration.
+- No persistence/auth/session model expansion.
+- No visual redesign or product-scope expansion.
+- No new route/app-level features.
 
 ## Manual testing checklist
-- [ ] Open `/conversations` and verify list/detail interaction remains functional.
-- [ ] Select each conversation and confirm safety state and trust signal render in detail header.
-- [ ] Confirm paused conversation still disables message send actions.
-- [ ] Confirm boundary-check note changes based on mock conversation context.
-- [ ] Confirm intervention note remains calm and non-punitive.
-- [ ] Confirm reflective prompt still renders and conversation UI remains visually consistent.
-- [ ] Confirm no backend/auth dependency is required for safety rendering.
+- [ ] Open `/conversations`; confirm list/detail interaction works as before.
+- [ ] Select each conversation; confirm safety/trust/pacing notes still render.
+- [ ] Confirm paused conversations still disable send actions.
+- [ ] Confirm reflective prompt still renders for each conversation.
+- [ ] Confirm Glimps moderation placeholder still returns clear/needs_review status while now including normalized safety events.
+- [ ] Confirm no backend/auth dependency required.

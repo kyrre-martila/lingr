@@ -1,33 +1,9 @@
 import { conversationStarters } from '../../data/mocks/conversations.js'
 import { getConversationsMockSnapshot } from '../../data/mocks/index.js'
 import { conversationState } from '../../state/index.js'
-import {
-  WINDOW_STATES,
-  canWindowOpen,
-  determineWindowRhythm,
-  getFutureEmotionalSafetyPlaceholder,
-  getFutureWindowPacingPolicyPlaceholder,
-  getIntentionalPacingRecommendation,
-  getWindowPauseState,
-  isMessagingAvailableForWindow
-} from '../../domain/window/index.js'
-import {
-  createCompatibilityProfile,
-  createCompatibilitySignals,
-  createConversationResonancePlaceholder,
-  createPacingFitPlaceholder,
-  createEmotionalAlignmentHints,
-  createReflectivePromptsFromCompatibility
-} from '../../domain/compatibility/index.js'
-import {
-  determineComfortSignals,
-  determineSafetyState,
-  createPauseRecommendation,
-  determineTrustSignals,
-  checkBoundaryPreferences,
-  suggestGentleIntervention,
-  createReportingHookPlaceholder
-} from '../../domain/safety/index.js'
+import { createCompatibilityProfile } from '../../domain/compatibility/index.js'
+import { createConversationSessionViewModel } from '../../domain/conversation-session/index.js'
+import { RECOMMENDATION_TYPES } from '../../domain/contracts.js'
 
 const createConversationList = (items, activeId) => {
   const list = document.createElement('ul')
@@ -131,56 +107,7 @@ export const createConversationsSection = () => {
 
   const render = () => {
     const active = conversations.find((item) => item.id === activeId) || conversations[0]
-
-    const resolvedRhythm = determineWindowRhythm({
-      averageReplyDelayHours: active.paused ? 30 : 10,
-      emotionalSpaceNeed: active.emotionalSpaceLevel === 'tender' ? 'high' : 'medium',
-      promptDensityPerDay: active.paused ? 0.25 : 1
-    })
-
-    const canOpenWindow = canWindowOpen({
-      sparkStatus: active.windowState === WINDOW_STATES.OPENING || active.windowState === WINDOW_STATES.OPEN ? 'accepted' : 'invited',
-      mutualParticipationReady: active.mutualParticipationReady,
-      emotionalReadiness: active.emotionalSpaceLevel === 'steady' ? 0.7 : 0.4,
-      isIntentionalBreakActive: active.windowState === WINDOW_STATES.PAUSED
-    })
-
-    const windowState = active.windowState || (canOpenWindow ? WINDOW_STATES.OPENING : WINDOW_STATES.UNAVAILABLE)
-    const messagingAvailable = isMessagingAvailableForWindow({ state: windowState })
-    const pauseState = getWindowPauseState({ state: windowState, pauseUntil: active.nextPromptAt })
-    const pacingRecommendation = getIntentionalPacingRecommendation({ rhythm: resolvedRhythm, recentMessagesCount: active.messages.length, hoursSinceLastMessage: active.paused ? 18 : 4 })
-    const compatibilitySignals = createCompatibilitySignals({ me: myCompatibilityProfile, other: active.compatibilityProfile })
-    const resonance = createConversationResonancePlaceholder(compatibilitySignals)
-    const pacingFit = createPacingFitPlaceholder(compatibilitySignals)
-    const alignmentHints = createEmotionalAlignmentHints(compatibilitySignals)
-    const reflectiveCompatibilityPrompts = createReflectivePromptsFromCompatibility(compatibilitySignals)
-
-    const pacingPolicy = getFutureWindowPacingPolicyPlaceholder({ rhythm: resolvedRhythm })
-    const emotionalSafety = getFutureEmotionalSafetyPlaceholder({ emotionalSpaceLevel: active.emotionalSpaceLevel })
-
-    const comfortSignals = determineComfortSignals({
-      pacingMismatch: resolvedRhythm === 'reflective',
-      pauseRequested: pauseState.isPaused,
-      boundaryMentioned: active.safetyContext?.boundaryMentioned,
-      unresolvedTension: active.safetyContext?.unresolvedTension
-    })
-    const safetyState = determineSafetyState({ comfortSignals })
-    const pauseRecommendation = createPauseRecommendation({ safetyState, recentMessageCount: active.messages.length })
-    const trustSignal = determineTrustSignals({
-      mutualConsistency: active.safetyContext?.mutualConsistency,
-      consentClarity: active.safetyContext?.consentClarity,
-      repairAttempts: active.safetyContext?.repairAttempts
-    })
-    const boundaryCheck = checkBoundaryPreferences({
-      boundaryPreferences: active.boundaryPreferences,
-      conversationContext: {
-        messageIntervalHours: active.safetyContext?.messageIntervalHours,
-        isLateNight: active.safetyContext?.isLateNight,
-        includesSensitiveTopic: active.safetyContext?.includesSensitiveTopic
-      }
-    })
-    const intervention = suggestGentleIntervention({ safetyState, trustSignal, boundaryCheck })
-    const reportingHook = createReportingHookPlaceholder({ conversationId: active.id, safetyState, interventionType: intervention.type })
+    const vm = createConversationSessionViewModel({ conversation: active, sessionContext: { meCompatibilityProfile: myCompatibilityProfile } })
 
     listHost.innerHTML = ''
     listHost.append(createConversationList(conversations, active.id))
@@ -188,19 +115,18 @@ export const createConversationsSection = () => {
     detailHost.innerHTML = ''
     const detail = document.createElement('article')
     detail.className = 'conversation-detail'
-    detail.innerHTML = `<header class="conversation-detail__header"><h3>${active.name}</h3><p>${pauseState.isPaused ? 'Paused for reflection' : `Next prompt in ${active.nextPromptAt}`}</p><p>Window: ${windowState} · Rhythm: ${resolvedRhythm}</p><p>${messagingAvailable ? 'Messaging is gently available.' : 'Messaging is resting for now.'}</p><p>${pacingRecommendation.recommendation}</p><p>Future pacing policy: up to ${pacingPolicy.maxSuggestedMessagesPerDay} messages/day, with about ${pacingPolicy.minSuggestedReplyDelayHours}h between replies.</p><p>${emotionalSafety.shouldSuggestPause ? 'Emotional space check: suggest a pause if needed.' : 'Emotional space check: steady conversation is okay.'}</p><p>${resonance.note}</p><p>${pacingFit.note}</p><p>${alignmentHints[0]}</p><p>Safety state: ${safetyState.replaceAll('_', ' ')}</p><p>Trust signal: ${trustSignal.replaceAll('_', ' ')}</p><p>${pauseRecommendation.note}</p><p>${intervention.note}</p><p>${boundaryCheck.respectsBoundaries ? 'Boundary preferences currently look respected.' : 'A boundary preference check-in is recommended.'}</p><p>Reporting foundation: ${reportingHook.summary}</p></header>`
+    const pacing = vm.policy.pacing
+    const headerNotes = vm.recommendations.filter((r) => [RECOMMENDATION_TYPES.PACING, RECOMMENDATION_TYPES.COMPATIBILITY, RECOMMENDATION_TYPES.SAFETY].includes(r.type)).map((r) => `<p>${r.text}</p>`).join('')
+    detail.innerHTML = `<header class="conversation-detail__header"><h3>${vm.header.name}</h3><p>${vm.header.statusLine}</p><p>${vm.header.windowLine}</p><p>${vm.header.messagingLine}</p>${headerNotes}<p>Future pacing policy: up to ${pacing.maxSuggestedMessagesPerDay} messages/day, with about ${pacing.minSuggestedReplyDelayHours}h between replies.</p><p>${vm.policy.emotionalSafety.shouldSuggestPause ? 'Emotional space check: suggest a pause if needed.' : 'Emotional space check: steady conversation is okay.'}</p><p>Safety state: ${vm.safety.state.replaceAll('_', ' ')}</p><p>Trust signal: ${vm.safety.trustSignal.replaceAll('_', ' ')}</p><p>${vm.safety.boundaryCheck.respectsBoundaries ? 'Boundary preferences currently look respected.' : 'A boundary preference check-in is recommended.'}</p><p>Reporting foundation: ${vm.safety.reportingHook.summary}</p></header>`
 
-    detail.append(createReflectionPrompt(reflectiveCompatibilityPrompts[0] || conversationStarters[0], active.nextPromptAt))
+    detail.append(createReflectionPrompt(vm.reflectivePrompt || conversationStarters[0], active.nextPromptAt))
 
     const stream = document.createElement('div')
     stream.className = 'message-stream'
-    if (active.messages.length) {
-      active.messages.forEach((message) => stream.append(createBubble(message)))
-    } else {
-      stream.append(createEmptyState())
-    }
+    if (active.messages.length) active.messages.forEach((message) => stream.append(createBubble(message)))
+    else stream.append(createEmptyState())
 
-    detail.append(stream, createInputArea({ paused: pauseState.isPaused, messagingAvailable }))
+    detail.append(stream, createInputArea({ paused: vm.paused, messagingAvailable: vm.messagingAvailable }))
     detailHost.append(detail)
 
     listHost.querySelectorAll('.conversation-list__item').forEach((btn) => {

@@ -1,3 +1,5 @@
+import { SAFETY_EVENT_CATEGORIES, SAFETY_CHANNELS, createSafetyEvent } from './taxonomy.js'
+
 export const SAFETY_STATES = {
   COMFORTABLE: 'comfortable',
   UNCERTAIN: 'uncertain',
@@ -127,7 +129,8 @@ export const createReportingHookPlaceholder = ({ conversationId, safetyState, in
   conversationId,
   safetyState,
   interventionType,
-  reportCategory: 'not_set',
+  reportCategory: SAFETY_EVENT_CATEGORIES.BOUNDARY_SIGNAL,
+  safetyEvent: createSafetyEvent({ channel: SAFETY_CHANNELS.CONVERSATION, category: SAFETY_EVENT_CATEGORIES.BOUNDARY_SIGNAL, signal: interventionType }),
   summary: 'Placeholder only: future reporting/moderation pipeline can attach here.',
   isReadyForBackend: false
 })
