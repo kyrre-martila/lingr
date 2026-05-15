@@ -1,74 +1,62 @@
-# Run 3 Notes — Emotional Compatibility Architecture (First Pass)
+# Run 3 Notes — Safety and Trust Architecture (First Pass)
 
-## Emotional Compatibility architecture decisions
-- Added a dedicated platform-neutral Emotional Compatibility domain module in `domain/compatibility` with explicit compatibility dimensions and transparent signal states.
-- Modeled compatibility as explainable reflective signals (resonant/flexible/different/unknown) rather than scoring, ranking, or percentages.
-- Kept all compatibility logic frontend-only and mock-data based.
-- Preserved Lingr tone by generating soft, human compatibility language that invites curiosity instead of prediction.
-- Designed helper signatures as adapter-ready contracts for future matching inputs (while keeping current behavior deterministic and local).
-
-## Placeholder signals introduced
-- `createCompatibilityProfile(...)`
-  - Normalizes lightweight compatibility preferences:
-    - communication preference
-    - emotional pace
-    - conversation style
-    - values alignment
-    - social energy
-    - relationship intention
-    - emotional safety preference
-- `createCompatibilitySignals({ me, other })`
-  - Produces transparent per-dimension signals (`resonant`, `flexible`, `different`, `unknown`).
-- `createConversationResonancePlaceholder(signals)`
-  - Returns conversational resonance hints.
-- `createPacingFitPlaceholder(signals)`
-  - Returns emotional pacing-fit hints.
-- `createEmotionalAlignmentHints(signals)`
-  - Returns emotional alignment safety/value hints.
-- `createReflectivePromptsFromCompatibility(signals)`
-  - Returns reflective prompt suggestions derived from compatibility patterns.
+## Safety architecture decisions
+- Added a platform-neutral Safety domain module under `domain/safety` with explicit, explainable safety-state contracts.
+- Modeled safety as transparent rule-based state transitions (no scoring, no ML, no hidden logic).
+- Kept all logic frontend-only and mock-data driven.
+- Designed for calm trust cues: safety state, trust signal, pacing recommendations, boundary checks, and gentle interventions.
+- Added a reporting hook placeholder contract that can later connect to moderation/reporting services without changing current UI behavior.
 
 ## Files/modules created or updated
-- Updated `apps/web/src/domain/compatibility/index.js`
-  - Replaced initial minimal input contract with first structured emotional compatibility domain helpers and enums.
-- Updated `apps/web/src/domain/index.js`
-  - Re-exported Emotional Compatibility domain helpers for cross-feature integration.
-- Updated `apps/web/src/data/mocks/conversations.js`
-  - Added mocked per-conversation `compatibilityProfile` payloads.
-- Updated `apps/web/src/components/conversations/index.js`
-  - Integrated compatibility signals/hints/prompts into conversation detail rendering.
+- Updated `apps/web/src/domain/safety/index.js`.
+- Updated `apps/web/src/domain/index.js` (re-exports for Safety domain helpers).
+- Updated `apps/web/src/data/mocks/conversations.js` (mock safety context + boundary preference payloads).
+- Updated `apps/web/src/components/conversations/index.js` (safety/trust integrations in conversation detail).
+
+## Placeholder logic introduced
+- `determineComfortSignals(...)`
+- `determineSafetyState(...)`
+- `createPauseRecommendation(...)`
+- `determineTrustSignals(...)`
+- `checkBoundaryPreferences(...)`
+- `suggestGentleIntervention(...)`
+- `createReportingHookPlaceholder(...)`
+- Expanded `createSafetyState(...)` and safety enums:
+  - safety states: `comfortable`, `uncertain`, `pause_recommended`, `check_in_recommended`, `boundary_crossed`
+  - trust states: `steady`, `growing`, `needs_care`
+  - intervention types: `gentle_check_in`, `pace_slowing`, `boundary_reflection`
 
 ## UI integrations made
-- Conversation detail now renders compatibility-informed reflective guidance without scores:
-  - conversation resonance hint
-  - pacing fit hint
-  - emotional alignment hint
-- Delayed reflection prompt now uses compatibility-derived reflective prompts when available.
-- Kept existing conversation UI structure and visual style intact.
-- Did not add ranking, percentages, swipe-like dynamics, or winner/loser framing.
+- Conversation detail now shows calm, explainable Safety/Trust hints:
+  - current safety state
+  - trust signal
+  - pause recommendation
+  - gentle intervention suggestion
+  - boundary preference check status
+  - future reporting foundation note
+- Preserved existing visual structure and tone (no redesign).
+- Maintained non-punitive messaging and avoided aggressive warning copy.
 
-## Future API/matching integration notes
-- Keep compatibility helpers as stable adapter boundaries:
-  - client can continue passing local profiles today
-  - backend can supply richer profile/signal inputs later without UI rewrite
-- Potential future integration path:
-  1. API supplies normalized compatibility attributes per person.
-  2. Domain helpers map attributes to explainable signals.
-  3. UI renders reflective hints and prompts only (no hidden scoring output).
-- If future matching needs confidence handling, expose uncertainty transparently via `unknown` signals rather than opaque scoring.
+## Future moderation/reporting integration notes
+- `createReportingHookPlaceholder(...)` is the stable hook for future reporting pipelines.
+- Future backend moderation can:
+  1. supply conversation safety events
+  2. map events to existing safety/trust contracts
+  3. submit report payloads via the reporting hook contract
+- This keeps domain logic explainable and portable across web/mobile clients.
 
 ## Deferred concerns
-- No backend/database persistence or matchmaking service integration.
-- No authentication/profile verification source for compatibility attributes.
-- No policy tuning UI for compatibility input preferences.
-- No automated tests added in this pass (manual checks only).
-- No cross-route compatibility surface yet (currently integrated in conversations only).
+- No backend/database integration.
+- No real authentication/session verification changes.
+- No moderation enforcement, auto-actions, or punitive mechanics.
+- No telemetry/behavior-tracking or engagement optimization patterns.
+- No ML-based safety scoring.
 
 ## Manual testing checklist
-- [ ] Open `/conversations` and verify the conversation list still renders and selection still works.
-- [ ] Select each conversation and confirm compatibility guidance appears as soft text (no percentages/rank labels).
-- [ ] Verify compatibility guidance wording remains reflective/human (no winner/loser dynamics).
-- [ ] Verify delayed reflection prompt still renders and now uses compatibility-derived prompt text.
-- [ ] Verify paused conversation still disables send actions.
-- [ ] Verify non-paused/open conversations still allow message input when messaging availability is true.
-- [ ] Confirm no backend/auth/network dependency is required for compatibility rendering.
+- [ ] Open `/conversations` and verify list/detail interaction remains functional.
+- [ ] Select each conversation and confirm safety state and trust signal render in detail header.
+- [ ] Confirm paused conversation still disables message send actions.
+- [ ] Confirm boundary-check note changes based on mock conversation context.
+- [ ] Confirm intervention note remains calm and non-punitive.
+- [ ] Confirm reflective prompt still renders and conversation UI remains visually consistent.
+- [ ] Confirm no backend/auth dependency is required for safety rendering.

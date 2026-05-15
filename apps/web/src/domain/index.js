@@ -44,4 +44,16 @@ export {
   createEmotionalAlignmentHints,
   createReflectivePromptsFromCompatibility
 } from './compatibility/index.js'
-export { createSafetyState, SAFETY_STATES } from './safety/index.js'
+export {
+  SAFETY_STATES,
+  TRUST_SIGNAL_STATES,
+  INTERVENTION_TYPES,
+  createSafetyState,
+  determineComfortSignals,
+  determineSafetyState,
+  createPauseRecommendation,
+  determineTrustSignals,
+  checkBoundaryPreferences,
+  suggestGentleIntervention,
+  createReportingHookPlaceholder
+} from './safety/index.js'
