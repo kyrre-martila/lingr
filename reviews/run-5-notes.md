@@ -98,3 +98,67 @@
 - [ ] Unknown API operation maps to validation-style failure envelope.
 - [ ] Error envelope maps to UI-usable `status: "error"` shape.
 - [ ] Loading state helpers are available for incremental async adoption.
+
+---
+
+## Run 5 — Prompt 3: Database/ORM Foundation (No Product Persistence)
+
+### Database/ORM decision
+- Adopted **Prisma + PostgreSQL** as the minimal ORM foundation for the existing Node.js backend shell in `apps/api`.
+- Rationale: low integration surface, migration tooling, and clear future repository/service fit while keeping current API architecture unchanged.
+
+### Files/modules added
+- `apps/api/prisma/schema.prisma`
+- `apps/api/prisma/migrations/0001_init_foundation/migration.sql`
+- `apps/api/src/db/client.js`
+- `apps/api/src/db/health.js`
+- `apps/api/.env.example`
+
+### Files/modules updated
+- `apps/api/package.json` (Prisma scripts + dependencies)
+- `apps/api/src/config/env.js` (database environment config)
+- `apps/api/src/routes/health.js` (database health payload)
+- `apps/api/src/app.js` (async route handler support)
+- `apps/api/README.md` (local database setup notes)
+
+### Environment variables introduced
+- `DATABASE_URL` (PostgreSQL connection string)
+- `DB_HEALTHCHECK_ENABLED` (`true|false` toggle for DB ping from health endpoint)
+
+### Schema/migration status
+- Added minimal initial schema aligned with Run 4 persistence planning boundaries for foundational identity/session only:
+  - `users`
+  - `profiles`
+  - `sessions`
+  - shared timestamps and status enums
+- Added initial migration placeholder SQL for baseline local setup.
+
+### Local setup commands
+- `cp apps/api/.env.example apps/api/.env`
+- `npm install`
+- `npm run db:generate --workspace @lingr/api`
+- `npm run db:migrate --workspace @lingr/api`
+- `npm run dev:api`
+- `curl -i http://localhost:4000/health`
+
+### Intentionally deferred
+- Glimps persistence
+- Spark persistence
+- Conversation/message persistence
+- Safety event persistence
+- Compatibility snapshot persistence
+- Full auth implementation
+- Production seeding and non-minimal seed data
+
+### Risks / assumptions
+- Assumes PostgreSQL as first datastore for backend rollout.
+- Health check currently runs query-level connectivity only (`SELECT 1`), not migration version checks.
+- Session model is intentionally lightweight and may evolve once real auth/session lifecycle rules land.
+
+### Manual testing checklist
+- [ ] `.env` loads and API starts with Prisma dependencies installed.
+- [ ] `GET /health` returns success envelope including `database.status`.
+- [ ] With valid DB URL, `database.status` reports `up`.
+- [ ] With invalid DB URL, endpoint still returns envelope with `database.status: down` and no crash.
+- [ ] With `DB_HEALTHCHECK_ENABLED=false`, endpoint reports `database.status: skipped`.
+- [ ] No new product-domain persistence endpoints/tables were introduced beyond foundation scope.

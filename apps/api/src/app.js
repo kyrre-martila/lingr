@@ -3,7 +3,7 @@ import { errorHandler, notFound } from './http/errors.js'
 import { withRequestContext } from './middleware/request-context.js'
 import { assertJsonRequest } from './middleware/validate-json.js'
 
-export const createApp = () => (req, res) => {
+export const createApp = () => async (req, res) => {
   try {
     withRequestContext(req)
     assertJsonRequest(req)
@@ -12,7 +12,7 @@ export const createApp = () => (req, res) => {
     const route = routes.find((entry) => entry.method === req.method && entry.path === pathname)
 
     if (!route) throw notFound(pathname)
-    return route.handler(req, res)
+    return await route.handler(req, res)
   } catch (error) {
     return errorHandler(error, req, res)
   }
