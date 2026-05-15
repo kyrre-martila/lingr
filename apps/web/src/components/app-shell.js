@@ -2,16 +2,20 @@ import { createNavigation } from './navigation.js'
 import { createFooter } from './footer.js'
 import { createPageContainer } from './layout.js'
 import { APP_NAV_ITEMS } from '../routes.js'
+import { sessionState } from '../state/index.js'
+import { getVisibleNavItems } from '../state/route-access.js'
 
 export const createAppShell = ({ activePath, pageBuilder }) => {
   const fragment = document.createDocumentFragment()
+  const currentSessionState = sessionState.getState().state
+  const visibleNavItems = getVisibleNavItems({ navItems: APP_NAV_ITEMS, sessionState: currentSessionState })
 
   const header = document.createElement('header')
   header.className = 'site-header app-shell-header'
   const headerContainer = createPageContainer({ className: 'app-shell-header__inner' })
   headerContainer.append(
     createNavigation({
-      items: APP_NAV_ITEMS,
+      items: visibleNavItems,
       brandHref: '/discovery',
       brandLabel: 'Lingr app home',
       isRouteActive: (href) => href === activePath,

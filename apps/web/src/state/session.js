@@ -1,18 +1,11 @@
 import { createStore } from './create-store.js'
+import { getRouteAccessSummary } from './route-access.js'
 
 export const SESSION_STATES = {
   ANONYMOUS: 'anonymous',
   ONBOARDING: 'onboarding',
   SIGNED_IN: 'signed-in',
   INCOMPLETE_PROFILE: 'incomplete-profile'
-}
-
-const SESSION_ROUTE_EXPERIENCE = {
-  '/': [SESSION_STATES.ANONYMOUS, SESSION_STATES.ONBOARDING, SESSION_STATES.SIGNED_IN, SESSION_STATES.INCOMPLETE_PROFILE],
-  '/onboarding': [SESSION_STATES.ONBOARDING],
-  '/discovery': [SESSION_STATES.SIGNED_IN, SESSION_STATES.INCOMPLETE_PROFILE],
-  '/conversations': [SESSION_STATES.SIGNED_IN, SESSION_STATES.INCOMPLETE_PROFILE],
-  '/profile': [SESSION_STATES.SIGNED_IN, SESSION_STATES.INCOMPLETE_PROFILE]
 }
 
 const createMockSession = (sessionState = SESSION_STATES.ANONYMOUS) => ({
@@ -28,12 +21,15 @@ export const setMockSessionState = (nextState) => {
   sessionState.patch(createMockSession(nextState))
 }
 
-export const getRouteSessionExperience = (path) => SESSION_ROUTE_EXPERIENCE[path] || SESSION_ROUTE_EXPERIENCE['/']
+export const getRouteSessionGuardHint = (path, state = sessionState.getState().state) => {
+  const summary = getRouteAccessSummary({ path, sessionState: state })
 
-export const getRouteSessionGuardHint = (path, state = sessionState.getState().state) => ({
-  path,
-  state,
-  expectedStates: getRouteSessionExperience(path),
-  shouldGateInFuture: !getRouteSessionExperience(path).includes(state)
-})
-
+  return {
+    path,
+    state,
+    expectedStates: summary.expectedStates,
+    shouldGateInFuture: summary.shouldGateInFuture,
+    access: summary.access,
+    intent: summary.intent
+  }
+}
