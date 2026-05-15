@@ -223,3 +223,30 @@
 - [ ] Confirm access-control checks cover participant-only messaging, owner-only edits, and moderation-only internal queries.
 - [ ] Confirm migration notes avoid ORM/database implementation details while still guiding incremental rollout.
 - [ ] Confirm deferred decisions are explicit and do not block immediate contract codification.
+
+---
+
+## Run 4 Stabilization — Prompt 6 Contracts & Boundaries
+
+### Files/modules created
+- `apps/web/src/domain/contract-fixtures.js`
+- `apps/web/src/services/discovery-service.js`
+- `apps/web/src/services/conversations-service.js`
+- `reviews/review-run-4-fixes.md`
+
+### Files/modules updated
+- `apps/web/src/domain/contracts.js`
+- `apps/web/src/components/discovery.js`
+- `apps/web/src/components/conversations/index.js`
+- `reviews/run-4-notes.md`
+
+### Key stabilization outcomes
+- Codified executable shared contracts, enums, and lightweight validators for Run 4 architecture seams.
+- Added canonical reason-code registry shared across auth/route/safety/moderation/validation/permission outcomes.
+- Added DTO/API golden fixtures for major domains and standard success/error envelopes.
+- Introduced service boundaries for discovery and conversation mock reads; UI now consumes services instead of direct mock index snapshots.
+- Codified policy precedence order in a resolver helper to avoid cross-module drift.
+- Reinforced redaction boundary expectations (client-safe mapper boundary required before backend serialization).
+
+### Deferred
+- Remaining direct mock access in lower-risk modules intentionally deferred to avoid broad rewrites.

@@ -1,5 +1,4 @@
-import { conversationStarters } from '../../data/mocks/conversations.js'
-import { getConversationsMockSnapshot } from '../../data/mocks/index.js'
+import { getConversationStarters, getConversationsSnapshot } from '../../services/conversations-service.js'
 import { conversationState } from '../../state/index.js'
 import { createCompatibilityProfile } from '../../domain/compatibility/index.js'
 import { createConversationSessionViewModel } from '../../domain/conversation-session/index.js'
@@ -51,7 +50,7 @@ const createEmptyState = () => {
   state.innerHTML = `
     <h3>Take your time.</h3>
     <p>No messages yet. Start with a gentle question when you both feel ready.</p>
-    <ul>${conversationStarters.map((prompt) => `<li>${prompt}</li>`).join('')}</ul>
+    <ul>${getConversationStarters().map((prompt) => `<li>${prompt}</li>`).join('')}</ul>
   `
   return state
 }
@@ -78,7 +77,7 @@ export const createConversationsSection = () => {
   section.id = 'conversations'
   section.setAttribute('aria-labelledby', 'conversations-title')
 
-  const conversations = getConversationsMockSnapshot()
+  const conversations = getConversationsSnapshot()
   const myCompatibilityProfile = createCompatibilityProfile({
     communicationPreference: 'reflective',
     emotionalPace: 'steady',
@@ -119,7 +118,7 @@ export const createConversationsSection = () => {
     const headerNotes = vm.recommendations.filter((r) => [RECOMMENDATION_TYPES.PACING, RECOMMENDATION_TYPES.COMPATIBILITY, RECOMMENDATION_TYPES.SAFETY].includes(r.type)).map((r) => `<p>${r.text}</p>`).join('')
     detail.innerHTML = `<header class="conversation-detail__header"><h3>${vm.header.name}</h3><p>${vm.header.statusLine}</p><p>${vm.header.windowLine}</p><p>${vm.header.messagingLine}</p>${headerNotes}<p>Future pacing policy: up to ${pacing.maxSuggestedMessagesPerDay} messages/day, with about ${pacing.minSuggestedReplyDelayHours}h between replies.</p><p>${vm.policy.emotionalSafety.shouldSuggestPause ? 'Emotional space check: suggest a pause if needed.' : 'Emotional space check: steady conversation is okay.'}</p><p>Safety state: ${vm.safety.state.replaceAll('_', ' ')}</p><p>Trust signal: ${vm.safety.trustSignal.replaceAll('_', ' ')}</p><p>${vm.safety.boundaryCheck.respectsBoundaries ? 'Boundary preferences currently look respected.' : 'A boundary preference check-in is recommended.'}</p><p>Reporting foundation: ${vm.safety.reportingHook.summary}</p></header>`
 
-    detail.append(createReflectionPrompt(vm.reflectivePrompt || conversationStarters[0], active.nextPromptAt))
+    detail.append(createReflectionPrompt(vm.reflectivePrompt || getConversationStarters()[0], active.nextPromptAt))
 
     const stream = document.createElement('div')
     stream.className = 'message-stream'

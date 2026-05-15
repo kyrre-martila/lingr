@@ -1,4 +1,4 @@
-import { getDiscoveryMockSnapshot } from '../data/mocks/index.js'
+import { getDiscoverySnapshot } from '../services/discovery-service.js'
 import {
   canStartSpark,
   createSparkInvitation,
@@ -8,7 +8,7 @@ import {
 } from '../domain/index.js'
 import { discoveryState } from '../state/index.js'
 
-const discoveryData = getDiscoveryMockSnapshot()
+const discoveryData = getDiscoverySnapshot()
 
 const createLimitedIntroStatus = ({ remainingIntroductions, totalIntroductions }) => {
   const wrap = document.createElement('section')
