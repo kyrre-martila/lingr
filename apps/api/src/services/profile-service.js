@@ -1,8 +1,6 @@
 import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
-import { DOMAIN_ERROR_KIND, REASON_CODES, ACCOUNT_LIFECYCLE_STATE } from '../../../../packages/shared/src/contracts.js'
-
-const VIEWER_FALLBACK_USER_ID = 'placeholder-viewer-user'
+import { DOMAIN_ERROR_KIND, REASON_CODES, ACCOUNT_LIFECYCLE_STATE, INTERNAL_ID_STRATEGY } from '../../../../packages/shared/src/contracts.js'
 
 const toLifecycleState = (status) => {
   if (status === 'paused') return ACCOUNT_LIFECYCLE_STATE.PAUSED
@@ -11,11 +9,14 @@ const toLifecycleState = (status) => {
   return ACCOUNT_LIFECYCLE_STATE.ACTIVE
 }
 
+const toExternalUserId = (internalId) => `${INTERNAL_ID_STRATEGY.API_USER_ID_PREFIX}${internalId}`
+const toExternalProfileId = (internalId) => `${INTERNAL_ID_STRATEGY.API_PROFILE_ID_PREFIX}${internalId}`
+
 const toClientProfile = (user, profile) => ({
-  userId: user.id,
+  userId: toExternalUserId(user.id),
   lifecycleState: toLifecycleState(user.status),
   profile: {
-    profileId: profile.id,
+    profileId: toExternalProfileId(profile.id),
     displayName: profile.displayName,
     pronouns: profile.pronouns || null,
     ageRange: profile.ageRange || null,
@@ -34,12 +35,7 @@ const nullable = (value, max) => {
   const v = normalize(value)
   if (!v) return null
   if (v.length > max) {
-    throw new ApiError({
-      message: `Field exceeds ${max} characters`,
-      kind: DOMAIN_ERROR_KIND.VALIDATION,
-      reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD,
-      statusCode: 400
-    })
+    throw new ApiError({ message: `Field exceeds ${max} characters`, kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
   }
   return v
 }
@@ -50,13 +46,21 @@ const computeCompleteness = (profile) => {
   return Math.round((filled / fields.length) * 100)
 }
 
-export const getViewerUserId = (viewer) => viewer?.identity?.userId || VIEWER_FALLBACK_USER_ID
+export const getViewerUserId = (viewer) => viewer?.identity?.userId || null
+const requireAuthenticatedViewer = (viewer) => {
+  const userId = getViewerUserId(viewer)
+  if (!userId) throw new ApiError({ message: 'Authentication required for persistence mutations', kind: DOMAIN_ERROR_KIND.AUTH, reasonCode: REASON_CODES.AUTH.REQUIRES_AUTH, statusCode: 401 })
+  return userId
+}
 
 export const getViewerProfile = async ({ viewer }) => {
-  const db = getDbClient()
   const userId = getViewerUserId(viewer)
-  const user = await db.user.upsert({ where: { id: userId }, update: {}, create: { id: userId, status: 'active' } })
-  const profile = await db.profile.upsert({ where: { userId: user.id }, update: {}, create: { userId: user.id, displayName: 'Lingr User' } })
+  if (!userId) return null
+  const db = getDbClient()
+  const user = await db.user.findUnique({ where: { id: userId } })
+  if (!user) return null
+  const profile = await db.profile.findUnique({ where: { userId: user.id } })
+  if (!profile) return null
   return toClientProfile(user, profile)
 }
 
@@ -64,16 +68,12 @@ export const updateViewerProfileBasics = async ({ viewer, payload }) => {
   const db = getDbClient()
   const displayName = normalize(payload.displayName)
   if (!displayName || displayName.length > 80) {
-    throw new ApiError({
-      message: 'displayName is required and must be <= 80 chars',
-      kind: DOMAIN_ERROR_KIND.VALIDATION,
-      reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD,
-      statusCode: 400
-    })
+    throw new ApiError({ message: 'displayName is required and must be <= 80 chars', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
   }
 
-  const userId = getViewerUserId(viewer)
-  const user = await db.user.upsert({ where: { id: userId }, update: {}, create: { id: userId, status: 'active' } })
+  const userId = requireAuthenticatedViewer(viewer)
+  const user = await db.user.findUnique({ where: { id: userId } })
+  if (!user) throw new ApiError({ message: 'Viewer user does not exist', kind: DOMAIN_ERROR_KIND.AUTH, reasonCode: REASON_CODES.AUTH.INVALID_SESSION, statusCode: 401 })
   const profileData = {
     displayName,
     pronouns: nullable(payload.pronouns, 50),
@@ -96,6 +96,7 @@ export const updateViewerProfileBasics = async ({ viewer, payload }) => {
 
 export const getViewerProfileCompleteness = async ({ viewer }) => {
   const profileResponse = await getViewerProfile({ viewer })
+  if (!profileResponse) return null
   return {
     userId: profileResponse.userId,
     lifecycleState: profileResponse.lifecycleState,

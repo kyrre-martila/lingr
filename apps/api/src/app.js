@@ -8,14 +8,16 @@ import { parseJsonBody } from './middleware/parse-json.js'
 export const createApp = () => async (req, res) => {
   try {
     withRequestContext(req)
-    assertJsonRequest(req)
     await withAuthContext(req)
-    req.body = await parseJsonBody(req)
 
     const pathname = new URL(req.url, 'http://localhost').pathname
     const route = routes.find((entry) => entry.method === req.method && entry.path === pathname)
 
     if (!route) throw notFound(pathname)
+    if (route.requiresJson !== false) {
+      assertJsonRequest(req)
+    }
+    req.body = await parseJsonBody(req)
     return await route.handler(req, res)
   } catch (error) {
     return errorHandler(error, req, res)

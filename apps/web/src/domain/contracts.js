@@ -1,4 +1,5 @@
 export * from '../../../../packages/shared/src/contracts.js'
+import { REASON_CODES, AUTH_SESSION_STATE, ROUTE_OUTCOME, ACCOUNT_LIFECYCLE_STATE } from '../../../../packages/shared/src/contracts.js'
 
 const toSet = (obj) => new Set(Object.values(obj))
 

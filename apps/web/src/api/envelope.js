@@ -1,8 +1,8 @@
-import { API_STATUS, DOMAIN_ERROR_KIND } from '../domain/contracts.js'
+import { API_RESPONSE_STATUS, DOMAIN_ERROR_KIND, ERROR_RETRYABILITY } from '../domain/contracts.js'
 
 export const createSuccess = (data, meta = {}) => ({
   ok: true,
-  status: API_STATUS.SUCCESS,
+  status: API_RESPONSE_STATUS.SUCCESS,
   data,
   meta
 })
@@ -10,15 +10,15 @@ export const createSuccess = (data, meta = {}) => ({
 export const createFailure = ({
   code,
   message,
-  category = DOMAIN_ERROR_KIND.UNKNOWN,
-  retryable = false,
+  kind = DOMAIN_ERROR_KIND.DOMAIN,
+  retryable,
   fieldErrors,
   details,
   requestId
 }) => ({
   ok: false,
-  status: API_STATUS.ERROR,
-  error: { code, message, category, retryable, fieldErrors, details, requestId }
+  status: API_RESPONSE_STATUS.ERROR,
+  error: { reasonCode: code, message, kind, retryable: retryable ?? ERROR_RETRYABILITY[kind] ?? false, fieldErrors, details, requestId }
 })
 
 export const toAsyncSuccess = (envelope) => ({ status: 'success', data: envelope.data })

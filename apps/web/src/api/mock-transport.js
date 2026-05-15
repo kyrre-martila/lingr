@@ -35,7 +35,7 @@ export const createMockTransport = () => ({
       return createFailure({
         code: REASON_CODES.ROUTE.UNKNOWN_ROUTE,
         message: `Unknown operation: ${operation}`,
-        category: DOMAIN_ERROR_KIND.VALIDATION,
+        kind: DOMAIN_ERROR_KIND.ROUTE,
         retryable: false
       })
     }
@@ -47,7 +47,7 @@ export const createMockTransport = () => ({
       return createFailure({
         code: REASON_CODES.ROUTE.UNKNOWN_ROUTE,
         message: `Unknown operation: ${operation}`,
-        category: DOMAIN_ERROR_KIND.VALIDATION,
+        kind: DOMAIN_ERROR_KIND.ROUTE,
         retryable: false
       })
     }
@@ -58,7 +58,7 @@ export const createMockTransport = () => ({
       return createFailure({
         code: 'transport.mock_failure',
         message: error instanceof Error ? error.message : 'Mock transport failed',
-        category: DOMAIN_ERROR_KIND.RETRYABLE,
+        kind: DOMAIN_ERROR_KIND.DOMAIN,
         retryable: true
       })
     }
