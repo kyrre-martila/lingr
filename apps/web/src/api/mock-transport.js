@@ -31,7 +31,7 @@ const createMockGlimps = (payload = {}) => {
     imageNote: String(payload.imageNote || '').trim(),
     privacy: String(payload.privacy || 'private').trim(),
     emotionalTone: String(payload.emotionalTone || 'soft').trim(),
-    state: 'shared',
+    state: 'published',
     createdAt: now,
     updatedAt: now,
     archivedAt: null

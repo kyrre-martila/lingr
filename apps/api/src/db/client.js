@@ -1,9 +1,8 @@
-import { PrismaClient } from '@prisma/client'
-
 let prisma
 
-export const getDbClient = () => {
+export const getDbClient = async () => {
   if (!prisma) {
+    const { PrismaClient } = await import('@prisma/client')
     prisma = new PrismaClient()
   }
 
