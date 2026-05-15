@@ -1,4 +1,4 @@
-import { DOMAIN_ERROR_KIND } from '../../../../packages/shared/src/contracts.js'
+import { DOMAIN_ERROR_KIND, ERROR_RETRYABILITY, REASON_CODES } from '../../../../packages/shared/src/contracts.js'
 import { fail } from './envelope.js'
 
 export class ApiError extends Error {
@@ -15,20 +15,24 @@ export class ApiError extends Error {
 export const notFound = (path) => new ApiError({
   message: `Route not found: ${path}`,
   kind: DOMAIN_ERROR_KIND.ROUTE,
-  reasonCode: 'route.not_found',
+  reasonCode: REASON_CODES.ROUTE.UNKNOWN_ROUTE,
   statusCode: 404
 })
 
+export const toApiError = (error) => {
+  if (error instanceof ApiError) return error
+  return new ApiError({ message: 'Unexpected server error', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: 'domain.unexpected', statusCode: 500 })
+}
+
 export const errorHandler = (err, req, res) => {
-  const normalized = err instanceof ApiError
-    ? err
-    : new ApiError({ message: 'Unexpected server error', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: 'domain.unexpected', statusCode: 500 })
+  const normalized = toApiError(err)
 
   res.writeHead(normalized.statusCode, { 'content-type': 'application/json; charset=utf-8' })
   res.end(JSON.stringify(fail({
     kind: normalized.kind,
     reasonCode: normalized.reasonCode,
     message: normalized.message,
+    retryable: ERROR_RETRYABILITY[normalized.kind] ?? false,
     details: normalized.details,
     requestId: req.requestId
   })))

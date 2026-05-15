@@ -3,6 +3,15 @@ const has = (set, value) => set.has(value)
 
 export const API_RESPONSE_STATUS = Object.freeze({ SUCCESS: 'success', ERROR: 'error' })
 export const DOMAIN_ERROR_KIND = Object.freeze({ VALIDATION: 'validation', AUTH: 'auth', PERMISSION: 'permission', ROUTE: 'route', SAFETY: 'safety', MODERATION: 'moderation', DOMAIN: 'domain' })
+export const ERROR_RETRYABILITY = Object.freeze({
+  [DOMAIN_ERROR_KIND.VALIDATION]: false,
+  [DOMAIN_ERROR_KIND.AUTH]: false,
+  [DOMAIN_ERROR_KIND.PERMISSION]: false,
+  [DOMAIN_ERROR_KIND.ROUTE]: false,
+  [DOMAIN_ERROR_KIND.SAFETY]: false,
+  [DOMAIN_ERROR_KIND.MODERATION]: false,
+  [DOMAIN_ERROR_KIND.DOMAIN]: true
+})
 
 export const AUTH_SESSION_STATE = Object.freeze({ ANONYMOUS: 'anonymous', AUTHENTICATED: 'authenticated', EXPIRED: 'expired' })
 export const ACCOUNT_LIFECYCLE_STATE = Object.freeze({ ONBOARDING: 'onboarding', ACTIVE: 'active', PAUSED: 'paused', DELETED: 'deleted', RESTRICTED: 'restricted' })
@@ -15,6 +24,12 @@ export const REASON_CODES = Object.freeze({
   MODERATION: Object.freeze({ CONTENT_REVIEW: 'moderation.content_review', CONTENT_RESTRICTED: 'moderation.content_restricted' }),
   VALIDATION: Object.freeze({ INVALID_ID: 'validation.invalid_id', INVALID_TIMESTAMP: 'validation.invalid_timestamp', INVALID_PAYLOAD: 'validation.invalid_payload' }),
   PERMISSION: Object.freeze({ NOT_ALLOWED: 'permission.not_allowed', FEATURE_DISABLED: 'permission.feature_disabled' })
+})
+
+export const INTERNAL_ID_STRATEGY = Object.freeze({
+  DATABASE_ID: 'prisma_cuid',
+  API_USER_ID_PREFIX: 'usr_',
+  API_PROFILE_ID_PREFIX: 'prf_'
 })
 
 export const POLICY_PRECEDENCE = Object.freeze([

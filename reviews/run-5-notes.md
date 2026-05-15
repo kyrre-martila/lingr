@@ -278,3 +278,21 @@
 - [ ] `GET /v1/profile/completeness` returns completeness + boolean derived state.
 - [ ] Anonymous placeholder viewer context works before auth is fully implemented.
 - [ ] No internal-only fields are exposed in profile API responses.
+
+---
+
+## Run 5 Stabilization — Prompt 7
+
+### Scope applied
+- Stabilization-only pass focused on contract drift, identity safety, API boundary hardening, conformance checks, and ID strategy clarity.
+- No new product features, new persisted domains, full auth flows, or frontend redesign.
+
+### Key stabilization updates
+- Unified backend/web envelope error taxonomy to shared `kind` + `reasonCode` + `retryable` semantics.
+- Fixed route not-found contract drift by using shared `REASON_CODES.ROUTE.UNKNOWN_ROUTE`.
+- Added shared retryability registry (`ERROR_RETRYABILITY`) and removed non-shared retryable kind usage.
+- Removed anonymous placeholder persistence upserts; anonymous profile access is now transient.
+- Enforced authenticated viewer context for profile persistence mutations.
+- Made JSON validation route-aware (`requiresJson`) to avoid unnecessary GET coupling.
+- Added lightweight backend/web conformance tests for shared envelope and contract assumptions.
+- Documented and codified ID strategy: internal Prisma cuid IDs, API-facing prefixed IDs at mapping boundary.
