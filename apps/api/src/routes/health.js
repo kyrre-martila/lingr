@@ -1,4 +1,5 @@
 import { ok } from '../http/envelope.js'
+import { viewerMeta } from '../http/auth-safe.js'
 import { checkDatabaseHealth } from '../db/health.js'
 import { env } from '../config/env.js'
 
@@ -13,5 +14,8 @@ export const healthRoute = async (req, res) => {
     status: 'ok',
     now: new Date().toISOString(),
     database
-  }, { requestId: req.requestId })))
+  }, {
+    requestId: req.requestId,
+    ...viewerMeta(req.viewer)
+  })))
 }

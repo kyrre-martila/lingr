@@ -162,3 +162,73 @@
 - [ ] With invalid DB URL, endpoint still returns envelope with `database.status: down` and no crash.
 - [ ] With `DB_HEALTHCHECK_ENABLED=false`, endpoint reports `database.status: skipped`.
 - [ ] No new product-domain persistence endpoints/tables were introduced beyond foundation scope.
+
+---
+
+## Run 5 — Prompt 4: Authentication Foundation (Backend-Ready, Lightweight)
+
+### Auth architecture decisions
+- Added a dedicated backend auth module boundary under `apps/api/src/auth` with provider-neutral primitives only.
+- Kept auth as **context resolution + policy hooks**, not login flow implementation.
+- Reused shared contract constants for auth/session state, route outcomes, and reason codes from `packages/shared/src/contracts.js`.
+- Preserved Run 4 policy shape by keeping route outcomes as `allow | soft_block | hard_block` and reason-code-driven failures.
+
+### Files/modules added
+- `apps/api/src/auth/viewer.js`
+- `apps/api/src/auth/session-store.js`
+- `apps/api/src/auth/middleware.js`
+- `apps/api/src/auth/permissions.js`
+- `apps/api/src/auth/route-guard.js`
+- `apps/api/src/auth/route-hooks.js`
+- `apps/api/src/http/auth-safe.js`
+
+### Files/modules updated
+- `packages/shared/src/contracts.js`
+- `apps/web/src/domain/contracts.js`
+- `apps/api/src/app.js`
+- `apps/api/src/routes/index.js`
+- `apps/api/src/routes/health.js`
+
+### Viewer/session model introduced
+- `createAnonymousViewer(...)` returns a normalized anonymous viewer context.
+- `createAuthenticatedViewer(...)` defines a future-compatible authenticated viewer shape.
+- `lookupSession(...)` is a placeholder boundary for future DB/provider-backed session resolution.
+- Request pipeline now resolves `req.viewer` for every request via `withAuthContext(...)`.
+
+### Middleware/hooks introduced
+- Auth middleware placeholder: `withAuthContext` + `resolveViewerContext`.
+- Session lookup placeholder: `lookupSession` currently returns null until real auth/session persistence is connected.
+- Permission helper placeholder: `hasPermission` + `assertPermission`.
+- Route protection helper placeholder: `resolveRouteProtection`, `toRouteGuardError`, and `withRouteProtection` wrapper.
+- Auth-safe response metadata helper: `viewerMeta` to expose only normalized viewer context (`authState`, `lifecycleState`).
+
+### Deferred auth work
+- Real login/signup endpoints.
+- Password hashing + credential verification.
+- JWT/cookie/refresh-token strategy.
+- OAuth providers (Apple/Google) and provider callback flows.
+- Passwordless/email magic-link flows.
+- Email verification, account recovery/password reset.
+- Production security hardening (secure cookie flags, anti-CSRF, rotation/revocation, rate limits).
+
+### Risks / assumptions
+- Placeholder session lookup always anonymous unless replaced by real store/provider integration.
+- Permission model is string-key based and intentionally minimal; role model not yet formalized.
+- Route protection hooks exist but are currently configured to preserve existing route behavior.
+- Health endpoint can include DB-down metadata in local environments where Prisma client generation is pending.
+
+### Local testing steps
+- `node --check apps/api/src/app.js`
+- `node --check apps/api/src/auth/middleware.js`
+- `node --check apps/api/src/auth/route-guard.js`
+- `node --check apps/web/src/domain/contracts.js`
+- `node apps/api/src/server.js`
+- `curl -i http://localhost:4000/health`
+
+### Manual testing checklist
+- [ ] Verify `req.viewer` exists for all routes as anonymous context when no auth header is provided.
+- [ ] Verify `/health` response includes auth-safe viewer metadata under `meta.viewer`.
+- [ ] Verify route wrappers (`withRouteProtection`) preserve current anonymous access when configured with `requiresAuth: false`.
+- [ ] Verify permission helper throws canonical `permission.not_allowed` reason code on denied checks.
+- [ ] Verify no provider-specific assumptions exist in viewer/session contracts.
+- [ ] Verify frontend behavior remains unchanged (no UI/auth flow rewrites introduced).
