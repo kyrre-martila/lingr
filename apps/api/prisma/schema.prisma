@@ -20,6 +20,13 @@ enum SessionStatus {
   expired
 }
 
+enum GlimpsState {
+  draft
+  published
+  expired
+  archived
+}
+
 model User {
   id                 String     @id @default(cuid())
   authSubjectRef     String?    @unique
@@ -27,12 +34,33 @@ model User {
   isEmailVerified    Boolean    @default(false)
   profile            Profile?
   sessions           Session[]
+  glimpses           Glimps[]
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
   pausedAt           DateTime?
   deletedAt          DateTime?
 
   @@map("users")
+}
+
+model Glimps {
+  id            String      @id @default(cuid())
+  userId        String
+  reflection    String
+  mood          String
+  prompt        String?
+  imageNote     String?
+  privacy       String
+  emotionalTone String
+  state         GlimpsState @default(draft)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  archivedAt    DateTime?
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, state, createdAt])
+  @@map("glimpses")
 }
 
 model Profile {

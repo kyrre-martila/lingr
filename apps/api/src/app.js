@@ -11,7 +11,22 @@ export const createApp = () => async (req, res) => {
     await withAuthContext(req)
 
     const pathname = new URL(req.url, 'http://localhost').pathname
-    const route = routes.find((entry) => entry.method === req.method && entry.path === pathname)
+    const route = routes.find((entry) => {
+      if (entry.method !== req.method) return false
+      if (!entry.path.includes(':')) return entry.path === pathname
+      const routeParts = entry.path.split('/').filter(Boolean)
+      const pathParts = pathname.split('/').filter(Boolean)
+      if (routeParts.length !== pathParts.length) return false
+      const params = {}
+      for (let i = 0; i < routeParts.length; i += 1) {
+        const rp = routeParts[i]
+        const pp = pathParts[i]
+        if (rp.startsWith(':')) params[rp.slice(1)] = pp
+        else if (rp !== pp) return false
+      }
+      req.params = params
+      return true
+    })
 
     if (!route) throw notFound(pathname)
     if (route.requiresJson !== false) {
