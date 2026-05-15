@@ -53,7 +53,7 @@ const createRoutePage = (path, contentBuilder) => {
   if (guardHint.shouldGateInFuture) {
     const note = document.createElement('p')
     note.className = 'status-notice'
-    note.textContent = `Prototype note: this route currently stays open, and future auth guards will prioritize ${guardHint.expectedStates.join(' or ')} session states.`
+    note.textContent = `Prototype note: this route is ${guardHint.intent}-intent (${guardHint.access}) and currently stays open. Future auth guards will prioritize ${guardHint.expectedStates.join(' or ')} session states.`
     page.prepend(note)
   }
 
