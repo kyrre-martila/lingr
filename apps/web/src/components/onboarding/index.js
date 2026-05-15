@@ -1,18 +1,8 @@
 import { createField, createIntentionsField } from './form-controls.js'
 import { createStepFlowController } from '../step-flow.js'
 
-const intentionOptions = [
-  'Slow dating',
-  'Long-term relationship',
-  'Friendship first',
-  'Open to seeing where things go'
-]
-
-const reflectionPrompts = [
-  'What kind of connection are you hoping for?',
-  'What makes you feel emotionally safe?',
-  'What kind of conversations stay with you?'
-]
+import { createOnboardingInitialState, onboardingIntentionOptions, onboardingReflectionPrompts } from '../../data/mocks/onboarding.js'
+import { onboardingState, uiPreferencesState } from '../../state/index.js'
 
 const createSteps = (state) => [
   {
@@ -43,7 +33,7 @@ const createSteps = (state) => [
     id: 'intention',
     title: 'What kind of connection are you open to?',
     description: 'Choose the path that feels truest right now.',
-    render: () => createIntentionsField({ selected: state.relationshipIntention, options: intentionOptions })
+    render: () => createIntentionsField({ selected: state.relationshipIntention, options: onboardingIntentionOptions })
   },
   {
     id: 'reflection',
@@ -55,7 +45,7 @@ const createSteps = (state) => [
       value: state.reflection,
       multiline: true,
       required: true,
-      helper: reflectionPrompts.map((prompt) => `• ${prompt}`).join(' '),
+      helper: onboardingReflectionPrompts.map((prompt) => `• ${prompt}`).join(' '),
       placeholder: 'I am hoping for conversations that feel calm and genuine.'
     })
   },
@@ -84,13 +74,7 @@ const requiredFieldsByStep = {
 }
 
 export const createOnboardingSection = ({ compactHeader = false } = {}) => {
-  const state = {
-    name: '',
-    age: '',
-    location: '',
-    relationshipIntention: '',
-    reflection: ''
-  }
+  const state = onboardingState.patch(createOnboardingInitialState())
 
   const section = document.createElement('section')
   section.className = 'section section--paper'
@@ -126,7 +110,8 @@ export const createOnboardingSection = ({ compactHeader = false } = {}) => {
   const nextBtn = section.querySelector('[data-next]')
   const errorEl = section.querySelector('.onboarding-error')
 
-  if (compactHeader) {
+  const prefs = uiPreferencesState.getState()
+  if (compactHeader || prefs.compactOnboardingHeader) {
     eyebrow?.remove()
     title.classList.add('sr-only')
     subtitle.classList.add('sr-only')
@@ -134,11 +119,13 @@ export const createOnboardingSection = ({ compactHeader = false } = {}) => {
 
   const persistFromInputs = () => {
     const data = new FormData(form)
-    state.name = String(data.get('name') || state.name || '').trim()
-    state.age = String(data.get('age') || state.age || '').trim()
-    state.location = String(data.get('location') || state.location || '').trim()
-    state.relationshipIntention = String(data.get('relationshipIntention') || state.relationshipIntention || '').trim()
-    state.reflection = String(data.get('reflection') || state.reflection || '').trim()
+    onboardingState.patch({
+      name: String(data.get('name') || state.name || '').trim(),
+      age: String(data.get('age') || state.age || '').trim(),
+      location: String(data.get('location') || state.location || '').trim(),
+      relationshipIntention: String(data.get('relationshipIntention') || state.relationshipIntention || '').trim(),
+      reflection: String(data.get('reflection') || state.reflection || '').trim()
+    })
   }
 
   const validateStep = (stepId) => {

@@ -1,4 +1,5 @@
-import { conversations, conversationStarters } from './mock-data.js'
+import { createConversationsMockData, conversationStarters } from '../../data/mocks/conversations.js'
+import { conversationState } from '../../state/index.js'
 
 const createConversationList = (items, activeId) => {
   const list = document.createElement('ul')
@@ -74,7 +75,8 @@ export const createConversationsSection = () => {
   section.id = 'conversations'
   section.setAttribute('aria-labelledby', 'conversations-title')
 
-  let activeId = conversations[0].id
+  const conversations = createConversationsMockData()
+  let activeId = conversationState.getState().activeConversationId || conversations[0].id
 
   section.innerHTML = `
     <div class="container">
@@ -118,6 +120,7 @@ export const createConversationsSection = () => {
     listHost.querySelectorAll('.conversation-list__item').forEach((btn) => {
       btn.addEventListener('click', () => {
         activeId = btn.dataset.id
+        conversationState.patch({ activeConversationId: activeId })
         render()
       })
     })
