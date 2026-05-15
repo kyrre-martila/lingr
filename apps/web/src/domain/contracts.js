@@ -18,11 +18,6 @@ export const ID_PREFIX = Object.freeze({
 export const isIsoTimestamp = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value)
 export const isIdWithPrefix = (value, prefix) => typeof value === 'string' && value.startsWith(prefix) && value.length > prefix.length
 
-export const AUTH_SESSION_STATE = Object.freeze({ ANONYMOUS: 'anonymous', AUTHENTICATED: 'authenticated', EXPIRED: 'expired' })
-export const ACCOUNT_LIFECYCLE_STATE = Object.freeze({ ONBOARDING: 'onboarding', ACTIVE: 'active', PAUSED: 'paused', DELETED: 'deleted', RESTRICTED: 'restricted' })
-
-export const ROUTE_OUTCOME = Object.freeze({ ALLOW: 'allow', SOFT_BLOCK: 'soft_block', HARD_BLOCK: 'hard_block' })
-
 export const SAFETY_SEVERITY = Object.freeze({ LOW: 'low', MEDIUM: 'medium', HIGH: 'high' })
 export const MODERATION_STATE = Object.freeze({ CLEAR: 'clear', NEEDS_REVIEW: 'needs_review', RESTRICTED: 'restricted' })
 export const VISIBILITY_LEVEL = Object.freeze({ PUBLIC_DISCOVERY: 'public_discovery', MATCHED_ONLY: 'matched_only', PRIVATE: 'private', DISCOVERABLE: 'discoverable', LIMITED: 'limited', HIDDEN: 'hidden' })
@@ -30,23 +25,6 @@ export const VISIBILITY_LEVEL = Object.freeze({ PUBLIC_DISCOVERY: 'public_discov
 export const SPARK_STATE = Object.freeze({ PENDING: 'pending', ACCEPTED: 'accepted', DECLINED: 'declined', EXPIRED: 'expired', REVOKED: 'revoked' })
 export const WINDOW_STATE = Object.freeze({ OPEN: 'open', SOFT_PAUSED: 'soft_paused', PAUSED: 'paused' })
 export const GLIMPS_STATE = Object.freeze({ DRAFT: 'draft', PUBLISHED: 'published', EXPIRED: 'expired', ARCHIVED: 'archived' })
-
-export const REASON_CODES = Object.freeze({
-  AUTH: Object.freeze({ REQUIRES_AUTH: 'auth.requires_auth', SESSION_EXPIRED: 'auth.session_expired', INVALID_SESSION: 'auth.invalid_session' }),
-  ROUTE: Object.freeze({ UNKNOWN_ROUTE: 'route.unknown_route', REQUIRES_ONBOARDING: 'route.requires_onboarding', REQUIRES_APP_SESSION: 'route.requires_app_session' }),
-  SAFETY: Object.freeze({ PAUSED_FOR_SAFETY: 'safety.paused_for_safety', RESTRICTED_ACCOUNT: 'safety.restricted_account' }),
-  MODERATION: Object.freeze({ CONTENT_REVIEW: 'moderation.content_review', CONTENT_RESTRICTED: 'moderation.content_restricted' }),
-  VALIDATION: Object.freeze({ INVALID_ID: 'validation.invalid_id', INVALID_TIMESTAMP: 'validation.invalid_timestamp', INVALID_PAYLOAD: 'validation.invalid_payload' }),
-  PERMISSION: Object.freeze({ NOT_ALLOWED: 'permission.not_allowed', FEATURE_DISABLED: 'permission.feature_disabled' })
-})
-
-export const POLICY_PRECEDENCE = Object.freeze([
-  'auth_validity',
-  'account_lifecycle',
-  'safety_overlay',
-  'feature_permissions',
-  'route_outcome'
-])
 
 export const resolvePolicyOutcome = ({ authState, lifecycleState, safetyBlocked, featureAllowed, routeAllowed }) => {
   if (authState !== AUTH_SESSION_STATE.AUTHENTICATED) return { outcome: ROUTE_OUTCOME.HARD_BLOCK, reasonCode: REASON_CODES.AUTH.REQUIRES_AUTH }
