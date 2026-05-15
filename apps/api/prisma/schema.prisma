@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  paused
+  deleted
+  restricted
+}
+
+enum SessionStatus {
+  active
+  revoked
+  expired
+}
+
+model User {
+  id                 String     @id @default(cuid())
+  authSubjectRef     String?    @unique
+  status             UserStatus @default(active)
+  isEmailVerified    Boolean    @default(false)
+  profile            Profile?
+  sessions           Session[]
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  pausedAt           DateTime?
+  deletedAt          DateTime?
+
+  @@map("users")
+}
+
+model Profile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  displayName         String
+  profileCompleteness Int      @default(0)
+  visibility          String   @default("discoverable")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Session {
+  id          String        @id @default(cuid())
+  userId      String
+  status      SessionStatus @default(active)
+  expiresAt   DateTime?
+  lastSeenAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("sessions")
+}
