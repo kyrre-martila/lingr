@@ -2,6 +2,7 @@ import { healthRoute } from './health.js'
 import { withRouteProtection } from '../auth/route-hooks.js'
 import { getViewerProfileRoute, updateViewerProfileBasicsRoute, getViewerProfileCompletenessRoute } from './profile.js'
 import { archiveViewerGlimpsRoute, createGlimpsRoute, getViewerGlimpsByIdRoute, listViewerGlimpsRoute } from './glimps.js'
+import { acceptSparkRoute, createSparkInvitationRoute, declineSparkRoute, getViewerSparkByIdRoute, listViewerSparksRoute, pauseSparkRoute } from './spark.js'
 
 export const routes = Object.freeze([
   { method: 'GET', path: '/health', requiresJson: false, handler: withRouteProtection(healthRoute, { requiresAuth: false, allowOnboarding: true }) },
@@ -12,5 +13,12 @@ export const routes = Object.freeze([
   { method: 'POST', path: '/v1/glimps', requiresJson: true, handler: withRouteProtection(createGlimpsRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'GET', path: '/v1/glimps/viewer', requiresJson: false, handler: withRouteProtection(listViewerGlimpsRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'GET', path: '/v1/glimps/:glimpsId', requiresJson: false, handler: withRouteProtection(getViewerGlimpsByIdRoute, { requiresAuth: true, allowOnboarding: true }) },
-  { method: 'PATCH', path: '/v1/glimps/:glimpsId/archive', requiresJson: false, handler: withRouteProtection(archiveViewerGlimpsRoute, { requiresAuth: true, allowOnboarding: true }) }
+  { method: 'PATCH', path: '/v1/glimps/:glimpsId/archive', requiresJson: false, handler: withRouteProtection(archiveViewerGlimpsRoute, { requiresAuth: true, allowOnboarding: true }) },
+
+  { method: 'POST', path: '/v1/sparks', requiresJson: true, handler: withRouteProtection(createSparkInvitationRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'GET', path: '/v1/sparks/viewer', requiresJson: false, handler: withRouteProtection(listViewerSparksRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'GET', path: '/v1/sparks/:sparkId', requiresJson: false, handler: withRouteProtection(getViewerSparkByIdRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'PATCH', path: '/v1/sparks/:sparkId/accept', requiresJson: false, handler: withRouteProtection(acceptSparkRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'PATCH', path: '/v1/sparks/:sparkId/pause', requiresJson: false, handler: withRouteProtection(pauseSparkRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'PATCH', path: '/v1/sparks/:sparkId/decline', requiresJson: false, handler: withRouteProtection(declineSparkRoute, { requiresAuth: true, allowOnboarding: true }) },
 ])

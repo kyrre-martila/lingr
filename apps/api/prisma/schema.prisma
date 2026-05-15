@@ -27,6 +27,15 @@ enum GlimpsState {
   archived
 }
 
+enum SparkState {
+  potential
+  invited
+  accepted
+  paused
+  declined
+  expired
+}
+
 model User {
   id                 String     @id @default(cuid())
   authSubjectRef     String?    @unique
@@ -35,6 +44,8 @@ model User {
   profile            Profile?
   sessions           Session[]
   glimpses           Glimps[]
+  initiatedSparks    Spark[]   @relation("SparkInitiator")
+  receivedSparks     Spark[]   @relation("SparkRecipient")
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
   pausedAt           DateTime?
@@ -96,4 +107,28 @@ model Session {
 
   @@index([userId, status])
   @@map("sessions")
+}
+
+
+model Spark {
+  id                   String     @id @default(cuid())
+  initiatorUserId      String
+  recipientUserId      String
+  status               SparkState @default(invited)
+  sourceGlimpsId       String?
+  softResonanceContext String?
+  expiresAt            DateTime?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  respondedAt          DateTime?
+  pausedAt             DateTime?
+  declinedAt           DateTime?
+  expiredAt            DateTime?
+
+  initiator            User       @relation("SparkInitiator", fields: [initiatorUserId], references: [id], onDelete: Cascade)
+  recipient            User       @relation("SparkRecipient", fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@index([initiatorUserId, recipientUserId, status])
+  @@index([recipientUserId, status, createdAt])
+  @@map("sparks")
 }
