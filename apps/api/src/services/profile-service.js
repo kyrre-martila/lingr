@@ -1,0 +1,106 @@
+import { getDbClient } from '../db/client.js'
+import { ApiError } from '../http/errors.js'
+import { DOMAIN_ERROR_KIND, REASON_CODES, ACCOUNT_LIFECYCLE_STATE } from '../../../../packages/shared/src/contracts.js'
+
+const VIEWER_FALLBACK_USER_ID = 'placeholder-viewer-user'
+
+const toLifecycleState = (status) => {
+  if (status === 'paused') return ACCOUNT_LIFECYCLE_STATE.PAUSED
+  if (status === 'deleted') return ACCOUNT_LIFECYCLE_STATE.DELETED
+  if (status === 'restricted') return ACCOUNT_LIFECYCLE_STATE.RESTRICTED
+  return ACCOUNT_LIFECYCLE_STATE.ACTIVE
+}
+
+const toClientProfile = (user, profile) => ({
+  userId: user.id,
+  lifecycleState: toLifecycleState(user.status),
+  profile: {
+    profileId: profile.id,
+    displayName: profile.displayName,
+    pronouns: profile.pronouns || null,
+    ageRange: profile.ageRange || null,
+    bio: profile.bio || null,
+    layersSummary: profile.layersSummary || null,
+    locationRegion: profile.locationRegion || null,
+    avatarUrl: profile.avatarAssetId ? `/assets/${profile.avatarAssetId}` : null,
+    profileCompleteness: profile.profileCompleteness,
+    visibility: profile.visibility,
+    updatedAt: profile.updatedAt.toISOString()
+  }
+})
+
+const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
+const nullable = (value, max) => {
+  const v = normalize(value)
+  if (!v) return null
+  if (v.length > max) {
+    throw new ApiError({
+      message: `Field exceeds ${max} characters`,
+      kind: DOMAIN_ERROR_KIND.VALIDATION,
+      reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD,
+      statusCode: 400
+    })
+  }
+  return v
+}
+
+const computeCompleteness = (profile) => {
+  const fields = [profile.displayName, profile.bio, profile.pronouns, profile.ageRange, profile.layersSummary, profile.locationRegion, profile.avatarAssetId]
+  const filled = fields.filter(Boolean).length
+  return Math.round((filled / fields.length) * 100)
+}
+
+export const getViewerUserId = (viewer) => viewer?.identity?.userId || VIEWER_FALLBACK_USER_ID
+
+export const getViewerProfile = async ({ viewer }) => {
+  const db = getDbClient()
+  const userId = getViewerUserId(viewer)
+  const user = await db.user.upsert({ where: { id: userId }, update: {}, create: { id: userId, status: 'active' } })
+  const profile = await db.profile.upsert({ where: { userId: user.id }, update: {}, create: { userId: user.id, displayName: 'Lingr User' } })
+  return toClientProfile(user, profile)
+}
+
+export const updateViewerProfileBasics = async ({ viewer, payload }) => {
+  const db = getDbClient()
+  const displayName = normalize(payload.displayName)
+  if (!displayName || displayName.length > 80) {
+    throw new ApiError({
+      message: 'displayName is required and must be <= 80 chars',
+      kind: DOMAIN_ERROR_KIND.VALIDATION,
+      reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD,
+      statusCode: 400
+    })
+  }
+
+  const userId = getViewerUserId(viewer)
+  const user = await db.user.upsert({ where: { id: userId }, update: {}, create: { id: userId, status: 'active' } })
+  const profileData = {
+    displayName,
+    pronouns: nullable(payload.pronouns, 50),
+    ageRange: nullable(payload.ageRange, 20),
+    bio: nullable(payload.bio, 300),
+    layersSummary: nullable(payload.layersSummary, 300),
+    locationRegion: nullable(payload.locationRegion, 120),
+    avatarAssetId: nullable(payload.avatarAssetId, 120)
+  }
+  const profileCompleteness = computeCompleteness(profileData)
+
+  const profile = await db.profile.upsert({
+    where: { userId: user.id },
+    update: { ...profileData, profileCompleteness },
+    create: { userId: user.id, ...profileData, visibility: 'discoverable', profileCompleteness }
+  })
+
+  return toClientProfile(user, profile)
+}
+
+export const getViewerProfileCompleteness = async ({ viewer }) => {
+  const profileResponse = await getViewerProfile({ viewer })
+  return {
+    userId: profileResponse.userId,
+    lifecycleState: profileResponse.lifecycleState,
+    profileCompleteness: profileResponse.profile.profileCompleteness,
+    isComplete: profileResponse.profile.profileCompleteness >= 80,
+    updatedAt: profileResponse.profile.updatedAt
+  }
+}

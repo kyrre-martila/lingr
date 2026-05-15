@@ -39,6 +39,12 @@ model Profile {
   id                  String   @id @default(cuid())
   userId              String   @unique
   displayName         String
+  pronouns            String?
+  ageRange            String?
+  bio                 String?
+  layersSummary       String?
+  locationRegion      String?
+  avatarAssetId       String?
   profileCompleteness Int      @default(0)
   visibility          String   @default("discoverable")
   createdAt           DateTime @default(now())
