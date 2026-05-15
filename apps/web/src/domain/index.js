@@ -22,6 +22,17 @@ export {
 } from './spark/index.js'
 export { createDailyDiscoveryLimit } from './discovery/index.js'
 export { createPulse } from './pulse/index.js'
-export { createConversationWindow } from './window/index.js'
+export {
+  createConversationWindow,
+  WINDOW_STATES,
+  WINDOW_RHYTHMS,
+  canWindowOpen,
+  isMessagingAvailableForWindow,
+  getWindowPauseState,
+  determineWindowRhythm,
+  getIntentionalPacingRecommendation,
+  getFutureWindowPacingPolicyPlaceholder,
+  getFutureEmotionalSafetyPlaceholder
+} from './window/index.js'
 export { createEmotionalCompatibilityInput } from './compatibility/index.js'
 export { createSafetyState, SAFETY_STATES } from './safety/index.js'

@@ -1,6 +1,16 @@
 import { conversationStarters } from '../../data/mocks/conversations.js'
 import { getConversationsMockSnapshot } from '../../data/mocks/index.js'
 import { conversationState } from '../../state/index.js'
+import {
+  WINDOW_STATES,
+  canWindowOpen,
+  determineWindowRhythm,
+  getFutureEmotionalSafetyPlaceholder,
+  getFutureWindowPacingPolicyPlaceholder,
+  getIntentionalPacingRecommendation,
+  getWindowPauseState,
+  isMessagingAvailableForWindow
+} from '../../domain/window/index.js'
 
 const createConversationList = (items, activeId) => {
   const list = document.createElement('ul')
@@ -13,6 +23,7 @@ const createConversationList = (items, activeId) => {
       <button class="conversation-list__item ${conversation.id === activeId ? 'is-active' : ''}" type="button" aria-current="${conversation.id === activeId ? 'true' : 'false'}">
         <p class="conversation-list__name">${conversation.name}</p>
         <p class="conversation-list__meta">${conversation.mood} · ${conversation.updatedAt}</p>
+        <p class="conversation-list__meta">Window: ${conversation.windowState} · Rhythm: ${conversation.windowRhythm}</p>
         <p class="conversation-list__preview">${conversation.preview}</p>
       </button>
     `
@@ -52,15 +63,15 @@ const createEmptyState = () => {
   return state
 }
 
-const createInputArea = (paused) => {
+const createInputArea = ({ paused, messagingAvailable }) => {
   const form = document.createElement('form')
   form.className = 'conversation-input'
   form.innerHTML = `
     <label for="message-input" class="sr-only">Write a message</label>
-    <textarea id="message-input" class="onboarding-input" rows="3" placeholder="Share a thoughtful response..." ${paused ? 'disabled' : ''}></textarea>
+    <textarea id="message-input" class="onboarding-input" rows="3" placeholder="Share a thoughtful response..." ${!messagingAvailable || paused ? 'disabled' : ''}></textarea>
     <div class="conversation-input__actions">
       <button class="button button--ghost" type="button">Pause & Reflect</button>
-      <button class="button" type="submit" ${paused ? 'disabled' : ''}>Send gently</button>
+      <button class="button" type="submit" ${!messagingAvailable || paused ? 'disabled' : ''}>Send gently</button>
     </div>
   `
 
@@ -95,13 +106,33 @@ export const createConversationsSection = () => {
   const render = () => {
     const active = conversations.find((item) => item.id === activeId) || conversations[0]
 
+    const resolvedRhythm = determineWindowRhythm({
+      averageReplyDelayHours: active.paused ? 30 : 10,
+      emotionalSpaceNeed: active.emotionalSpaceLevel === 'tender' ? 'high' : 'medium',
+      promptDensityPerDay: active.paused ? 0.25 : 1
+    })
+
+    const canOpenWindow = canWindowOpen({
+      sparkStatus: active.windowState === WINDOW_STATES.OPENING || active.windowState === WINDOW_STATES.OPEN ? 'accepted' : 'invited',
+      mutualParticipationReady: active.mutualParticipationReady,
+      emotionalReadiness: active.emotionalSpaceLevel === 'steady' ? 0.7 : 0.4,
+      isIntentionalBreakActive: active.windowState === WINDOW_STATES.PAUSED
+    })
+
+    const windowState = active.windowState || (canOpenWindow ? WINDOW_STATES.OPENING : WINDOW_STATES.UNAVAILABLE)
+    const messagingAvailable = isMessagingAvailableForWindow({ state: windowState })
+    const pauseState = getWindowPauseState({ state: windowState, pauseUntil: active.nextPromptAt })
+    const pacingRecommendation = getIntentionalPacingRecommendation({ rhythm: resolvedRhythm, recentMessagesCount: active.messages.length, hoursSinceLastMessage: active.paused ? 18 : 4 })
+    const pacingPolicy = getFutureWindowPacingPolicyPlaceholder({ rhythm: resolvedRhythm })
+    const emotionalSafety = getFutureEmotionalSafetyPlaceholder({ emotionalSpaceLevel: active.emotionalSpaceLevel })
+
     listHost.innerHTML = ''
     listHost.append(createConversationList(conversations, active.id))
 
     detailHost.innerHTML = ''
     const detail = document.createElement('article')
     detail.className = 'conversation-detail'
-    detail.innerHTML = `<header class="conversation-detail__header"><h3>${active.name}</h3><p>${active.paused ? 'Paused for reflection' : `Next prompt in ${active.nextPromptAt}`}</p></header>`
+    detail.innerHTML = `<header class="conversation-detail__header"><h3>${active.name}</h3><p>${pauseState.isPaused ? 'Paused for reflection' : `Next prompt in ${active.nextPromptAt}`}</p><p>Window: ${windowState} · Rhythm: ${resolvedRhythm}</p><p>${messagingAvailable ? 'Messaging is gently available.' : 'Messaging is resting for now.'}</p><p>${pacingRecommendation.recommendation}</p><p>Future pacing policy: up to ${pacingPolicy.maxSuggestedMessagesPerDay} messages/day, with about ${pacingPolicy.minSuggestedReplyDelayHours}h between replies.</p><p>${emotionalSafety.shouldSuggestPause ? 'Emotional space check: suggest a pause if needed.' : 'Emotional space check: steady conversation is okay.'}</p></header>`
 
     detail.append(createReflectionPrompt(conversationStarters[0], active.nextPromptAt))
 
@@ -113,7 +144,7 @@ export const createConversationsSection = () => {
       stream.append(createEmptyState())
     }
 
-    detail.append(stream, createInputArea(active.paused))
+    detail.append(stream, createInputArea({ paused: pauseState.isPaused, messagingAvailable }))
     detailHost.append(detail)
 
     listHost.querySelectorAll('.conversation-list__item').forEach((btn) => {
