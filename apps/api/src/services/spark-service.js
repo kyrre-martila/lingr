@@ -1,11 +1,19 @@
 import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
-import { DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, REASON_CODES, SPARK_STATE } from '../../../../packages/shared/src/contracts.js'
+import { DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, REASON_CODES, SPARK_ACTION, SPARK_ACTIVE_STATES, SPARK_STATE, SPARK_TERMINAL_STATES, SPARK_TRANSITIONS } from '../../../../packages/shared/src/contracts.js'
 
-const SPARK_STATES = new Set(Object.values(SPARK_STATE))
-const ACTIVE_STATES = new Set([SPARK_STATE.INVITED, SPARK_STATE.ACCEPTED, SPARK_STATE.PAUSED])
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
 const toExternalSparkId = (id) => `${INTERNAL_ID_STRATEGY.API_SPARK_ID_PREFIX}${id}`
+const stripPrefixId = (value, prefix, fieldName) => {
+  const normalized = normalize(value)
+  if (!normalized || !normalized.startsWith(prefix) || normalized.length <= prefix.length) {
+    throw new ApiError({ message: `Invalid ${fieldName}`, kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_ID, statusCode: 400 })
+  }
+  return normalized.slice(prefix.length)
+}
+const parseInternalSparkId = (sparkId) => stripPrefixId(sparkId, INTERNAL_ID_STRATEGY.API_SPARK_ID_PREFIX, 'sparkId')
+const parseInternalUserId = (userId) => stripPrefixId(userId, INTERNAL_ID_STRATEGY.API_USER_ID_PREFIX, 'recipientUserId')
+const parseInternalGlimpsId = (glimpsId) => stripPrefixId(glimpsId, INTERNAL_ID_STRATEGY.API_GLIMPS_ID_PREFIX, 'sourceGlimpsId')
 
 const requireAuthenticatedViewer = (viewer) => {
   const userId = viewer?.identity?.userId || null
@@ -13,51 +21,60 @@ const requireAuthenticatedViewer = (viewer) => {
   return userId
 }
 
-const parseInternalSparkId = (sparkId) => {
-  const normalized = normalize(sparkId)
-  if (!normalized.startsWith(INTERNAL_ID_STRATEGY.API_SPARK_ID_PREFIX) || normalized.length <= INTERNAL_ID_STRATEGY.API_SPARK_ID_PREFIX.length) {
-    throw new ApiError({ message: 'Invalid sparkId', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_ID, statusCode: 400 })
-  }
-  return normalized.slice(INTERNAL_ID_STRATEGY.API_SPARK_ID_PREFIX.length)
+const assertActionPermission = ({ action, row, actorUserId }) => {
+  const isInitiator = row.initiatorUserId === actorUserId
+  const isRecipient = row.recipientUserId === actorUserId
+  const allow = action === SPARK_ACTION.ACCEPT
+    ? isRecipient
+    : action === SPARK_ACTION.PAUSE || action === SPARK_ACTION.DECLINE || action === SPARK_ACTION.READ
+      ? (isInitiator || isRecipient)
+      : false
+  if (!allow) throw new ApiError({ message: `Actor cannot ${action} this Spark`, kind: DOMAIN_ERROR_KIND.PERMISSION, reasonCode: REASON_CODES.PERMISSION.NOT_ALLOWED, statusCode: 403 })
 }
 
-const toClientSpark = (row) => ({
-  sparkId: toExternalSparkId(row.id),
-  initiatorUserId: `${INTERNAL_ID_STRATEGY.API_USER_ID_PREFIX}${row.initiatorUserId}`,
-  recipientUserId: `${INTERNAL_ID_STRATEGY.API_USER_ID_PREFIX}${row.recipientUserId}`,
-  status: row.status,
-  sourceGlimpsId: row.sourceGlimpsId ? `${INTERNAL_ID_STRATEGY.API_GLIMPS_ID_PREFIX}${row.sourceGlimpsId}` : null,
-  softResonanceContext: row.softResonanceContext || null,
-  createdAt: row.createdAt.toISOString(),
-  updatedAt: row.updatedAt.toISOString(),
-  respondedAt: row.respondedAt ? row.respondedAt.toISOString() : null,
-  pausedAt: row.pausedAt ? row.pausedAt.toISOString() : null,
-  declinedAt: row.declinedAt ? row.declinedAt.toISOString() : null,
-  expiredAt: row.expiredAt ? row.expiredAt.toISOString() : null
-})
+const assertTransitionAllowed = (currentStatus, nextStatus) => {
+  if (SPARK_TERMINAL_STATES.includes(currentStatus)) {
+    throw new ApiError({ message: 'Spark is in terminal state', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.INVALID_STATE_TRANSITION, statusCode: 409 })
+  }
+  const allowed = SPARK_TRANSITIONS[currentStatus] || []
+  if (!allowed.includes(nextStatus)) {
+    throw new ApiError({ message: 'Invalid Spark state transition', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.INVALID_STATE_TRANSITION, statusCode: 409 })
+  }
+}
+
+const toClientSpark = (row) => ({ sparkId: toExternalSparkId(row.id), initiatorUserId: `${INTERNAL_ID_STRATEGY.API_USER_ID_PREFIX}${row.initiatorUserId}`, recipientUserId: `${INTERNAL_ID_STRATEGY.API_USER_ID_PREFIX}${row.recipientUserId}`, status: row.status, sourceGlimpsId: row.sourceGlimpsId ? `${INTERNAL_ID_STRATEGY.API_GLIMPS_ID_PREFIX}${row.sourceGlimpsId}` : null, softResonanceContext: row.softResonanceContext || null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), respondedAt: row.respondedAt ? row.respondedAt.toISOString() : null, pausedAt: row.pausedAt ? row.pausedAt.toISOString() : null, declinedAt: row.declinedAt ? row.declinedAt.toISOString() : null, expiredAt: row.expiredAt ? row.expiredAt.toISOString() : null })
+
+const canonicalPairFor = (leftUserId, rightUserId) => (leftUserId < rightUserId ? [leftUserId, rightUserId] : [rightUserId, leftUserId])
 
 export const createSparkInvitation = async ({ viewer, payload, dbClient }) => {
   const initiatorUserId = requireAuthenticatedViewer(viewer)
   const db = dbClient || await getDbClient()
-  const recipientUserId = normalize(payload.recipientUserId)
-  if (!recipientUserId) throw new ApiError({ message: 'recipientUserId is required', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
+  if (!payload?.recipientUserId) throw new ApiError({ message: 'recipientUserId is required', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
+  const recipientUserId = parseInternalUserId(payload.recipientUserId)
   if (recipientUserId === initiatorUserId) throw new ApiError({ message: 'Cannot create Spark with self', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.SPARK.INVALID_SELF_SPARK, statusCode: 400 })
 
-  const existing = await db.spark.findFirst({
-    where: {
-      OR: [
-        { initiatorUserId, recipientUserId },
-        { initiatorUserId: recipientUserId, recipientUserId: initiatorUserId }
-      ],
-      status: { in: Array.from(ACTIVE_STATES) }
-    }
-  })
-  if (existing) throw new ApiError({ message: 'Active Spark already exists between users', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.DUPLICATE_ACTIVE_SPARK, statusCode: 409 })
+  const recipient = await db.user.findUnique({ where: { id: recipientUserId }, select: { id: true } })
+  if (!recipient) throw new ApiError({ message: 'Recipient not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.INVALID_RECIPIENT_REFERENCE, statusCode: 404 })
 
-  const sourceGlimpsId = normalize(payload.sourceGlimpsId) || null
+  const sourceGlimpsId = payload?.sourceGlimpsId ? parseInternalGlimpsId(payload.sourceGlimpsId) : null
+  if (sourceGlimpsId) {
+    const source = await db.glimps.findUnique({ where: { id: sourceGlimpsId }, select: { id: true, userId: true, privacy: true } })
+    if (!source) throw new ApiError({ message: 'Source Glimps not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.INVALID_SOURCE_GLIMPS_REFERENCE, statusCode: 404 })
+    const recipientCanUse = source.userId === recipientUserId && source.privacy !== 'private'
+    if (!(source.userId === initiatorUserId || recipientCanUse)) {
+      throw new ApiError({ message: 'Source Glimps is not visible to actor pair', kind: DOMAIN_ERROR_KIND.PERMISSION, reasonCode: REASON_CODES.SPARK.INVALID_SOURCE_GLIMPS_REFERENCE, statusCode: 403 })
+    }
+  }
+
+  const [pairMinUserId, pairMaxUserId] = canonicalPairFor(initiatorUserId, recipientUserId)
   const softResonanceContext = normalize(payload.softResonanceContext) || null
-  const row = await db.spark.create({ data: { initiatorUserId, recipientUserId, status: SPARK_STATE.INVITED, sourceGlimpsId, softResonanceContext } })
-  return toClientSpark(row)
+  try {
+    const row = await db.spark.create({ data: { initiatorUserId, recipientUserId, pairMinUserId, pairMaxUserId, status: SPARK_STATE.INVITED, sourceGlimpsId, softResonanceContext } })
+    return toClientSpark(row)
+  } catch (error) {
+    if (error?.code === 'P2002') throw new ApiError({ message: 'Active Spark already exists between users', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.DUPLICATE_ACTIVE_SPARK, statusCode: 409 })
+    throw error
+  }
 }
 
 export const listViewerSparks = async ({ viewer, dbClient }) => {
@@ -75,18 +92,19 @@ export const getViewerSparkById = async ({ viewer, sparkId, dbClient }) => {
   const id = parseInternalSparkId(sparkId)
   const row = await db.spark.findFirst({ where: { id, OR: [{ initiatorUserId: userId }, { recipientUserId: userId }] } })
   if (!row) throw new ApiError({ message: 'Spark not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.NOT_FOUND, statusCode: 404 })
+  assertActionPermission({ action: SPARK_ACTION.READ, row, actorUserId: userId })
   return toClientSpark(row)
 }
 
-const updateSparkStatus = async ({ viewer, sparkId, nextStatus, allowRecipientOnly = false, dbClient }) => {
+const updateSparkStatus = async ({ viewer, sparkId, nextStatus, action, dbClient }) => {
   const userId = requireAuthenticatedViewer(viewer)
   const db = dbClient || await getDbClient()
   const id = parseInternalSparkId(sparkId)
   const row = await db.spark.findFirst({ where: { id, OR: [{ initiatorUserId: userId }, { recipientUserId: userId }] } })
   if (!row) throw new ApiError({ message: 'Spark not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.NOT_FOUND, statusCode: 404 })
-  if (allowRecipientOnly && row.recipientUserId !== userId) throw new ApiError({ message: 'Only recipient can accept Spark', kind: DOMAIN_ERROR_KIND.PERMISSION, reasonCode: REASON_CODES.PERMISSION.NOT_ALLOWED, statusCode: 403 })
-  if (!SPARK_STATES.has(row.status) || [SPARK_STATE.DECLINED, SPARK_STATE.EXPIRED].includes(row.status)) throw new ApiError({ message: 'Invalid Spark state transition', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.INVALID_STATE_TRANSITION, statusCode: 409 })
+  assertActionPermission({ action, row, actorUserId: userId })
   if (row.status === nextStatus) return toClientSpark(row)
+  assertTransitionAllowed(row.status, nextStatus)
 
   const now = new Date()
   const data = { status: nextStatus, updatedAt: now }
@@ -97,6 +115,6 @@ const updateSparkStatus = async ({ viewer, sparkId, nextStatus, allowRecipientOn
   return toClientSpark(updated)
 }
 
-export const acceptSpark = (args) => updateSparkStatus({ ...args, nextStatus: SPARK_STATE.ACCEPTED, allowRecipientOnly: true })
-export const pauseSpark = (args) => updateSparkStatus({ ...args, nextStatus: SPARK_STATE.PAUSED })
-export const declineSpark = (args) => updateSparkStatus({ ...args, nextStatus: SPARK_STATE.DECLINED })
+export const acceptSpark = (args) => updateSparkStatus({ ...args, nextStatus: SPARK_STATE.ACCEPTED, action: SPARK_ACTION.ACCEPT })
+export const pauseSpark = (args) => updateSparkStatus({ ...args, nextStatus: SPARK_STATE.PAUSED, action: SPARK_ACTION.PAUSE })
+export const declineSpark = (args) => updateSparkStatus({ ...args, nextStatus: SPARK_STATE.DECLINED, action: SPARK_ACTION.DECLINE })

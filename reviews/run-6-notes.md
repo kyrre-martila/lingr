@@ -149,3 +149,12 @@
 - No realtime Spark orchestration added.
 - No frontend Spark redesign or new gamified metrics/counters added.
 - No background scheduler/cron introduced for Spark expiration; expiration remains request-triggered placeholder logic.
+
+
+## Run 6 — Prompt 7: Spark stabilization
+- Codified Spark transition matrix and terminal-state enforcement in shared contracts + service transition guard.
+- Codified Spark actor permissions for create/accept/pause/decline/read with explicit service checks and permission reason codes.
+- Added canonical pair identity (`pairMinUserId`,`pairMaxUserId`) and DB-level partial unique index for active Spark duplicate prevention across both directions.
+- Normalized create payload IDs at boundary (`recipientUserId` requires `usr_`, `sourceGlimpsId` requires `glp_`).
+- Added recipient/source reference pre-validation with canonical Spark reason-code mapping.
+- Expanded Spark service tests for transition policy, permission denials, duplicate conflicts, id normalization, and invalid references.
