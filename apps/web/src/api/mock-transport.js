@@ -17,6 +17,7 @@ const snapshot = {
 }
 
 let glimpsCounter = 0
+let messageCounter = 1000
 const viewerGlimps = []
 
 const createMockGlimps = (payload = {}) => {
@@ -36,6 +37,69 @@ const createMockGlimps = (payload = {}) => {
     updatedAt: now,
     archivedAt: null
   }
+}
+
+const toConversationDto = (conversation) => ({
+  conversationId: `cnv_${conversation.id}`,
+  sparkId: 'spk_mock_1',
+  state: conversation.paused ? 'paused' : 'active',
+  participantIds: ['usr_mock_viewer', `usr_mock_${conversation.id}`],
+  profile: { name: conversation.name, mood: conversation.mood, preview: conversation.preview }
+})
+
+const toMessageDto = (conversation, message) => ({
+  messageId: `msg_${message.id}`,
+  conversationId: `cnv_${conversation.id}`,
+  senderUserId: message.sender === 'me' ? 'usr_mock_viewer' : `usr_mock_${conversation.id}`,
+  type: 'text',
+  visibility: 'conversation',
+  deliveryState: 'sent',
+  content: { text: message.text },
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString()
+})
+
+const findConversationByDtoId = (conversationId) => snapshot.conversations.find((item) => `cnv_${item.id}` === conversationId)
+
+const conversationViewerListHandler = () => createSuccess(snapshot.conversations.map(toConversationDto))
+
+const conversationMessagesListHandler = ({ payload }) => {
+  const conversation = findConversationByDtoId(String(payload?.conversationId || ''))
+  if (!conversation) {
+    return createFailure({ code: REASON_CODES.CONVERSATION.NOT_FOUND, message: 'Conversation not found.', kind: DOMAIN_ERROR_KIND.PERMISSION, retryable: false })
+  }
+
+  if (conversation.id === 'c3') {
+    return createFailure({ code: REASON_CODES.PERMISSION.NOT_ALLOWED, message: 'Conversation is temporarily unavailable.', kind: DOMAIN_ERROR_KIND.PERMISSION, retryable: false })
+  }
+
+  return createSuccess({ items: conversation.messages.map((message) => toMessageDto(conversation, message)), page: { nextCursor: null } })
+}
+
+const conversationSendMessageHandler = ({ payload }) => {
+  const conversation = findConversationByDtoId(String(payload?.conversationId || ''))
+  if (!conversation) {
+    return createFailure({ code: REASON_CODES.CONVERSATION.NOT_FOUND, message: 'Conversation not found.', kind: DOMAIN_ERROR_KIND.PERMISSION, retryable: false })
+  }
+
+  if (conversation.paused) {
+    return createFailure({ code: REASON_CODES.PERMISSION.NOT_ALLOWED, message: 'Conversation is paused.', kind: DOMAIN_ERROR_KIND.PERMISSION, retryable: false })
+  }
+
+  const text = String(payload?.text || '').trim()
+  if (!text) {
+    return createFailure({ code: REASON_CODES.VALIDATION.INVALID_PAYLOAD, message: 'Message text is required.', kind: DOMAIN_ERROR_KIND.VALIDATION, retryable: false, fieldErrors: [{ field: 'text', reason: 'required' }] })
+  }
+
+  if (text.toLowerCase().includes('[retryable-error]')) {
+    return createFailure({ code: 'transport.mock_retryable', message: 'Temporary send issue.', kind: DOMAIN_ERROR_KIND.DOMAIN, retryable: true })
+  }
+
+  messageCounter += 1
+  const created = { id: `m${messageCounter}`, sender: 'me', text, time: 'now' }
+  conversation.messages.push(created)
+  conversation.preview = text
+  return createSuccess(toMessageDto(conversation, created))
 }
 
 const glimpsCreateHandler = ({ payload }) => {
@@ -60,6 +124,9 @@ const handlers = {
   'profile.get': () => createSuccess(snapshot.profile),
   'discovery.get': () => createSuccess(snapshot.discovery),
   'conversations.list': () => createSuccess(snapshot.conversations),
+  'conversations.viewer.list': () => conversationViewerListHandler(),
+  'conversations.messages.list': (input) => conversationMessagesListHandler(input),
+  'conversations.messages.send': (input) => conversationSendMessageHandler(input),
   'conversations.starters': () => createSuccess(conversationStarters),
   'glimps.draft': () => createSuccess(snapshot.glimps),
   'glimps.create': (input) => glimpsCreateHandler(input),
@@ -83,7 +150,7 @@ export const createMockTransport = () => ({
     }
     return handler()
   },
-  request: async ({ operation }) => {
+  request: async ({ operation, payload }) => {
     const handler = handlers[operation]
     if (!handler) {
       return createFailure({
@@ -95,7 +162,7 @@ export const createMockTransport = () => ({
     }
 
     try {
-      return handler()
+      return handler({ payload })
     } catch (error) {
       return createFailure({
         code: 'transport.mock_failure',

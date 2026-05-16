@@ -210,3 +210,61 @@
 - [ ] Verify focusing the message field closes menu.
 - [ ] Verify disabled composer states still disable interactions.
 - [ ] Verify no app/media selection triggers external integration or network behavior.
+
+## Run 7 — Frontend conversation service-boundary integration
+
+### Frontend integration decisions
+- Rewired web conversation UI to load viewer conversations asynchronously through a service/API function (`listViewerConversations`) instead of directly relying on UI-owned mock arrays.
+- Rewired message timeline loading to the service/API boundary (`listConversationMessages`) with explicit loading, success, permission error, and retryable error rendering paths.
+- Rewired text send action to service/API boundary (`sendConversationMessage`) with validation and permission-aware feedback.
+- Preserved calm chat presentation: no typing indicators, no online state, no read receipts, no last seen, no per-message timestamps.
+- Kept mobile-first and accessible controls in place: semantic buttons, labels, and quiet error messaging.
+
+### Service/API boundary changes
+- Added frontend conversation service methods:
+  - `listViewerConversations()`
+  - `listConversationMessages({ conversationId })`
+  - `sendConversationMessage({ conversationId, text })`
+- Expanded mock transport operation support for boundary-aligned operations:
+  - `conversations.viewer.list`
+  - `conversations.messages.list`
+  - `conversations.messages.send`
+- Kept component transport-agnostic by consuming only service functions and async envelope results.
+
+### Files changed
+- `apps/web/src/services/conversations-service.js`
+- `apps/web/src/api/mock-transport.js`
+- `apps/web/src/components/conversations/index.js`
+- `reviews/run-7-notes.md`
+
+### Error states handled
+- Loading states:
+  - viewer conversations list load
+  - message timeline load
+- Success states:
+  - conversations render
+  - timeline render
+  - send success appends bubble
+- Validation error state:
+  - empty/invalid text message returns gentle inline validation message
+- Permission error state:
+  - unavailable/paused conversation returns clear non-retry guidance
+- Retryable error state:
+  - retryable timeline failures expose a Retry action
+  - retryable send failures return non-urgent retry guidance
+
+### Remaining mock coupling
+- Transport still defaults to in-memory mock transport in web app (`createMockTransport`) until live HTTP transport wiring is introduced.
+- Mock transport currently simulates DTO-like conversation/message responses and selected failure modes for integration completeness.
+- Conversation header metadata still uses mock profile fields for display warmth.
+
+### Manual testing checklist
+- [ ] Open conversations section and confirm initial loading placeholders appear before data.
+- [ ] Confirm conversation list loads via service and selecting another conversation re-fetches timeline.
+- [ ] Confirm timeline loads through service and displays message bubbles without timestamps.
+- [ ] Confirm no typing indicator, online status, read receipts, or last seen are displayed.
+- [ ] Submit empty message and verify validation error copy is shown.
+- [ ] Open paused conversation and verify send is disabled/blocked as permission behavior.
+- [ ] Trigger retryable send mock by sending text containing `[retryable-error]` and verify gentle retry guidance.
+- [ ] Trigger timeline permission case (mock conversation `c3`) and verify unavailable messaging state.
+- [ ] Verify calm Lingr styling remains and mobile-first layout is unchanged.
