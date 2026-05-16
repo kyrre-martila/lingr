@@ -358,3 +358,29 @@
 - [ ] Verify `senderUserId: null` for `layer_unlock` does not break timeline rendering.
 - [ ] Verify non-`layer_unlock` messages (`text`, `playing_now`) render unchanged.
 - [ ] Verify no new timestamps/read receipts/presence/typing indicators were introduced.
+
+## Run 7 Stabilization update (Prompt 9)
+
+### Plus-menu contract alignment
+- Updated `+` behavior to exact spec hierarchy.
+- Root now contains only `Apps` and `Playing now`.
+- Submenus now match documented item sets exactly.
+- Leaf nodes remain skeleton-only (no integrations).
+
+### API and service boundary hardening
+- Tightened `app_invite` validation to canonical enum app IDs only.
+- Added deterministic race handling for duplicate conversation create collisions (`P2002`) by resolving to the existing conversation.
+- Added timeline cursor ownership guard to prevent cross-conversation cursor misuse.
+
+### Accessibility hardening
+- Menu sheet now uses dialog semantics and trigger relationship attributes.
+- Escape closes and returns focus to trigger.
+- Back/Close flow for nested navigation is keyboard-accessible.
+
+### Conversation lifecycle clarification
+- Stabilization remains lightweight: `active | paused | closed` is preserved as the current state vocabulary; no full transition engine introduced in this run.
+
+### Stabilization tests added
+- Added tests for app invite enum validation.
+- Added tests for cursor conversation-scope validation.
+- Added tests for duplicate conversation create conflict mapping.

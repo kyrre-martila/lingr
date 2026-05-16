@@ -25,6 +25,11 @@ test('send validates playing_now payload', async () => {
   await assert.rejects(sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u1' }), conversationId: 'cnv_c1', payload: { type: 'playing_now', content: { mediaType: 'podcast', title: 'x' } }, dbClient: db }), (e) => e.reasonCode === REASON_CODES.MESSAGE.INVALID_PAYLOAD_BY_TYPE)
 })
 
+test('send validates app_invite appId enum', async () => {
+  const db = { conversation: { findFirst: async () => ({ id: 'c1' }) } }
+  await assert.rejects(sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u1' }), conversationId: 'cnv_c1', payload: { type: 'app_invite', content: { appId: 'any-string' } }, dbClient: db }), (e) => e.reasonCode === REASON_CODES.MESSAGE.INVALID_PAYLOAD_BY_TYPE)
+})
+
 test('send persists participant message as dto', async () => {
   const db = {
     conversation: { findFirst: async () => ({ id: 'c1' }) },
@@ -45,6 +50,14 @@ test('list messages returns pagination-ready structure', async () => {
   assert.equal(result.page.limit, 30)
 })
 
+test('list messages rejects cursor from another conversation', async () => {
+  const db = {
+    conversation: { findFirst: async () => ({ id: 'c1' }) },
+    message: { findFirst: async () => null }
+  }
+  await assert.rejects(listConversationMessages({ viewer: createAuthenticatedViewer({ userId: 'u1' }), conversationId: 'cnv_c1', cursor: 'msg_other', dbClient: db }), (e) => e.reasonCode === REASON_CODES.VALIDATION.INVALID_ID)
+})
+
 test('create conversation maps accepted spark participants', async () => {
   const db = {
     spark: { findFirst: async () => ({ id: 's1', status: SPARK_STATE.ACCEPTED, initiatorUserId: 'u1', recipientUserId: 'u2' }) },
@@ -56,4 +69,16 @@ test('create conversation maps accepted spark participants', async () => {
   const result = await createConversationFromSpark({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { sparkId: 'spk_s1' }, dbClient: db })
   assert.equal(result.conversationId, 'cnv_c1')
   assert.equal(result.participantIds.length, 2)
+})
+
+test('create conversation maps unique conflict to existing conversation deterministically', async () => {
+  const db = {
+    spark: { findFirst: async () => ({ id: 's1', status: SPARK_STATE.ACCEPTED, initiatorUserId: 'u1', recipientUserId: 'u2' }) },
+    conversation: {
+      findUnique: async ({ where }) => where.sparkId === 's1' ? ({ id: 'c1', sparkId: 's1', state: 'active', participants: [{ userId: 'u1' }, { userId: 'u2' }], createdAt: now, updatedAt: now }) : null,
+      create: async () => { const err = new Error('duplicate'); err.code = 'P2002'; throw err }
+    }
+  }
+  const result = await createConversationFromSpark({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { sparkId: 'spk_s1' }, dbClient: db })
+  assert.equal(result.conversationId, 'cnv_c1')
 })

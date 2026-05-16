@@ -1,6 +1,6 @@
 import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
-import { CONVERSATION_PARTICIPANT_ROLE, CONVERSATION_STATE, DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, MESSAGE_DELIVERY_STATE, MESSAGE_TYPE, MESSAGE_VISIBILITY, PLAYING_NOW_MEDIA_TYPE, REASON_CODES, SPARK_STATE, isSupportedMessageType } from '../../../../packages/shared/src/contracts.js'
+import { APP_INVITE_APP_ID, CONVERSATION_PARTICIPANT_ROLE, CONVERSATION_STATE, DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, MESSAGE_DELIVERY_STATE, MESSAGE_TYPE, MESSAGE_VISIBILITY, PLAYING_NOW_MEDIA_TYPE, REASON_CODES, SPARK_STATE, isSupportedMessageType } from '../../../../packages/shared/src/contracts.js'
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
 const toExternalConversationId = (id) => `${INTERNAL_ID_STRATEGY.API_CONVERSATION_ID_PREFIX}${id}`
@@ -38,7 +38,7 @@ const assertMessagePayload = (type, content) => {
     return
   }
   if (type === MESSAGE_TYPE.APP_INVITE) {
-    if (!content || typeof content.appId !== 'string' || !content.appId.trim()) throw new ApiError({ message: 'Invalid app invite payload', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.MESSAGE.INVALID_PAYLOAD_BY_TYPE, statusCode: 400 })
+    if (!content || !Object.values(APP_INVITE_APP_ID).includes(content.appId)) throw new ApiError({ message: 'Invalid app invite payload', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.MESSAGE.INVALID_PAYLOAD_BY_TYPE, statusCode: 400 })
   }
 }
 
@@ -66,8 +66,16 @@ export const createConversationFromSpark = async ({ viewer, payload, dbClient })
   if (!spark) throw new ApiError({ message: 'Invalid Spark for conversation', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.INVALID_SPARK_REFERENCE, statusCode: 404 })
   const existing = await db.conversation.findUnique({ where: { sparkId }, include: includeConversation })
   if (existing) return toConversationDto(existing)
-  const created = await db.conversation.create({ data: { sparkId, state: spark.status === SPARK_STATE.PAUSED ? CONVERSATION_STATE.PAUSED : CONVERSATION_STATE.ACTIVE, participants: { create: [{ userId: spark.initiatorUserId, role: CONVERSATION_PARTICIPANT_ROLE.MEMBER }, { userId: spark.recipientUserId, role: CONVERSATION_PARTICIPANT_ROLE.MEMBER }] } }, include: includeConversation })
-  return toConversationDto(created)
+  try {
+    const created = await db.conversation.create({ data: { sparkId, state: spark.status === SPARK_STATE.PAUSED ? CONVERSATION_STATE.PAUSED : CONVERSATION_STATE.ACTIVE, participants: { create: [{ userId: spark.initiatorUserId, role: CONVERSATION_PARTICIPANT_ROLE.MEMBER }, { userId: spark.recipientUserId, role: CONVERSATION_PARTICIPANT_ROLE.MEMBER }] } }, include: includeConversation })
+    return toConversationDto(created)
+  } catch (error) {
+    if (error?.code === 'P2002') {
+      const raced = await db.conversation.findUnique({ where: { sparkId }, include: includeConversation })
+      if (raced) return toConversationDto(raced)
+    }
+    throw error
+  }
 }
 
 export const listConversationMessages = async ({ viewer, conversationId, cursor, limit = 30, dbClient }) => {
@@ -78,6 +86,10 @@ export const listConversationMessages = async ({ viewer, conversationId, cursor,
   if (!convo) throw new ApiError({ message: 'Conversation not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
   const take = Math.min(Math.max(Number(limit) || 30, 1), 50)
   const cursorId = cursor ? stripPrefixId(cursor, INTERNAL_ID_STRATEGY.API_MESSAGE_ID_PREFIX, 'cursor') : null
+  if (cursorId) {
+    const cursorRow = await db.message.findFirst({ where: { id: cursorId, conversationId: id }, select: { id: true } })
+    if (!cursorRow) throw new ApiError({ message: 'Invalid cursor for conversation', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_ID, statusCode: 400 })
+  }
   const rows = await db.message.findMany({ where: { conversationId: id }, orderBy: { createdAt: 'desc' }, take, ...(cursorId ? { skip: 1, cursor: { id: cursorId } } : {}) })
   const nextCursor = rows.length === take ? toExternalMessageId(rows[rows.length - 1].id) : null
   return { items: rows.map(toMessageDto), page: { limit: take, nextCursor } }
