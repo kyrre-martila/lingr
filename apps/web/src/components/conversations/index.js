@@ -1,5 +1,11 @@
-import { getConversationStarters, listConversationMessages, listViewerConversations, sendConversationMessage, sendConversationPayloadMessage } from '../../services/conversations-service.js'
+import { getConversationStarters, listConversationMessages, listViewerConversations, sendConversationMessage } from '../../services/conversations-service.js'
 import { DOMAIN_ERROR_KIND, PLAYING_NOW_MEDIA_TYPE } from '../../domain/contracts.js'
+
+const PLUS_MENU = Object.freeze({
+  root: { title: 'Calm menu', items: [{ id: 'apps', label: 'Apps', description: 'Match Cards, Guess Me, Snuggle', next: 'apps' }, { id: 'playing_now', label: 'Playing now', description: 'Share a song, movie, or series', next: 'playing_now' }] },
+  apps: { title: 'Apps', items: [{ id: 'match_cards', label: 'Match Cards' }, { id: 'guess_me', label: 'Guess Me' }, { id: 'snuggle', label: 'Snuggle' }] },
+  playing_now: { title: 'Playing now', items: [{ id: 'song', label: 'Song' }, { id: 'movie', label: 'Movie' }, { id: 'tv_series', label: 'TV Series' }] }
+})
 
 const createConversationList = (items, activeId, onSelect) => {
   const list = document.createElement('ul')
@@ -87,54 +93,46 @@ const createErrorBlock = (error, onRetry) => {
   return wrapper
 }
 
-const createPlayingNowComposer = ({ canCompose, onSubmit, onClose, error }) => {
-  const form = document.createElement('form')
+const createPlusMenuSheet = ({ canCompose, menuKey, onNavigate, onLeafSelect, onClose, triggerId }) => {
+  const form = document.createElement('div')
   form.className = 'composer-sheet'
+  form.setAttribute('role', 'dialog')
+  form.setAttribute('aria-modal', 'false')
+  form.setAttribute('aria-labelledby', 'composer-sheet-title')
+  form.setAttribute('tabindex', '-1')
+  form.dataset.menuKey = menuKey
+  const menu = PLUS_MENU[menuKey]
+  const isRoot = menuKey === 'root'
   form.innerHTML = `
     <div class="composer-sheet__handle" aria-hidden="true"></div>
     <div class="composer-sheet__header">
-      <p class="composer-sheet__title">Share Playing now</p>
-      <button class="composer-sheet__back" type="button">Close</button>
+      <p class="composer-sheet__title" id="composer-sheet-title">${menu.title}</p>
+      <button class="composer-sheet__back" type="button">${isRoot ? 'Close' : 'Back'}</button>
     </div>
-    <label class="onboarding-label" for="playing-media-type">Type</label>
-    <select id="playing-media-type" class="onboarding-input" ${canCompose ? '' : 'disabled'}>
-      <option value="song">Song</option>
-      <option value="movie">Movie</option>
-      <option value="tv_series">TV Series</option>
-    </select>
-    <label class="onboarding-label" for="playing-title">Title</label>
-    <input id="playing-title" class="onboarding-input" type="text" maxlength="120" placeholder="What are you into right now?" ${canCompose ? '' : 'disabled'} />
-    <label class="onboarding-label" for="playing-creator">Artist / creator (optional)</label>
-    <input id="playing-creator" class="onboarding-input" type="text" maxlength="120" placeholder="Artist, director, or creator" ${canCompose ? '' : 'disabled'} />
-    <label class="onboarding-label" for="playing-poster">Cover / poster URL (optional)</label>
-    <input id="playing-poster" class="onboarding-input" type="url" maxlength="300" placeholder="Leave blank to use a placeholder" ${canCompose ? '' : 'disabled'} />
-    <label class="onboarding-label" for="playing-context">Context (optional)</label>
-    <textarea id="playing-context" class="onboarding-input" rows="2" maxlength="160" placeholder="Short note, like your mood or why it fits today" ${canCompose ? '' : 'disabled'}></textarea>
-    ${error ? `<p class="onboarding-form__error" role="status">${error}</p>` : ''}
-    <button class="button" type="submit" ${canCompose ? '' : 'disabled'}>Share card</button>
+    <ul class="composer-sheet__list" role="menu" aria-describedby="${triggerId}">
+      ${menu.items.map((item) => `<li><button class="composer-sheet__item" type="button" data-item-id="${item.id}" ${canCompose ? '' : 'disabled'}>${item.label}${item.description ? `<small>${item.description}</small>` : ''}</button></li>`).join('')}
+    </ul>
   `
-  form.querySelector('.composer-sheet__back')?.addEventListener('click', onClose)
-  form.addEventListener('submit', (event) => {
-    event.preventDefault()
-    onSubmit({
-      mediaType: String(form.querySelector('#playing-media-type')?.value || ''),
-      title: String(form.querySelector('#playing-title')?.value || ''),
-      creator: String(form.querySelector('#playing-creator')?.value || ''),
-      posterUrl: String(form.querySelector('#playing-poster')?.value || ''),
-      context: String(form.querySelector('#playing-context')?.value || '')
+  form.querySelector('.composer-sheet__back')?.addEventListener('click', () => (isRoot ? onClose() : onNavigate('root')))
+  form.querySelectorAll('[data-item-id]').forEach((itemButton) => {
+    itemButton.addEventListener('click', () => {
+      const id = itemButton.getAttribute('data-item-id')
+      const next = menu.items.find((item) => item.id === id)?.next
+      if (next) onNavigate(next)
+      else onLeafSelect(id)
     })
   })
   return form
 }
 
-const createInputArea = ({ canCompose, onSubmit, onSubmitPlayingNow, error, playingNowError }) => {
+const createInputArea = ({ canCompose, onSubmit, error }) => {
   const form = document.createElement('form')
   form.className = 'conversation-input'
 
   form.innerHTML = `
     <label for="message-input" class="sr-only">Write a message</label>
     <div class="composer-shell">
-      <button class="composer-shell__plus" type="button" aria-label="Open calm menu" aria-expanded="false" ${canCompose ? '' : 'disabled'}>+</button>
+      <button id="composer-plus-trigger" class="composer-shell__plus" type="button" aria-label="Open calm menu" aria-haspopup="dialog" aria-controls="composer-plus-sheet" aria-expanded="false" ${canCompose ? '' : 'disabled'}>+</button>
       <textarea id="message-input" class="onboarding-input composer-shell__field" rows="1" placeholder="Write a message..." ${canCompose ? '' : 'disabled'}></textarea>
       <button class="composer-shell__send" type="submit" aria-label="Send message" ${canCompose ? '' : 'disabled'}>Send</button>
     </div>
@@ -147,30 +145,52 @@ const createInputArea = ({ canCompose, onSubmit, onSubmitPlayingNow, error, play
     onSubmit(text)
   })
   const plusButton = form.querySelector('.composer-shell__plus')
-  let playingNowOpen = false
-  const renderPlayingNowComposer = () => {
-    const existing = form.querySelector('[data-playing-now-composer]')
+  let menuOpen = false
+  let menuKey = 'root'
+  const renderMenu = () => {
+    const existing = form.querySelector('[data-plus-menu]')
     if (existing) existing.remove()
-    if (!playingNowOpen) {
+    if (!menuOpen) {
       plusButton?.setAttribute('aria-expanded', 'false')
       return
     }
     plusButton?.setAttribute('aria-expanded', 'true')
     const host = document.createElement('div')
-    host.setAttribute('data-playing-now-composer', 'true')
-    host.append(createPlayingNowComposer({
+    host.id = 'composer-plus-sheet'
+    host.setAttribute('data-plus-menu', 'true')
+    host.append(createPlusMenuSheet({
       canCompose,
-      error: playingNowError,
-      onClose: () => { playingNowOpen = false; renderPlayingNowComposer() },
-      onSubmit: (payload) => onSubmitPlayingNow(payload)
+      menuKey,
+      triggerId: 'composer-plus-trigger',
+      onNavigate: (nextKey) => { menuKey = nextKey; renderMenu() },
+      onLeafSelect: () => {},
+      onClose: () => { menuOpen = false; menuKey = 'root'; renderMenu(); plusButton?.focus() }
     }))
     form.append(host)
+    host.querySelector('.composer-sheet')?.focus()
   }
   plusButton?.addEventListener('click', () => {
-    playingNowOpen = !playingNowOpen
-    renderPlayingNowComposer()
+    menuOpen = !menuOpen
+    menuKey = 'root'
+    renderMenu()
   })
-  renderPlayingNowComposer()
+  form.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && menuOpen) {
+      event.preventDefault()
+      menuOpen = false
+      menuKey = 'root'
+      renderMenu()
+      plusButton?.focus()
+    }
+  })
+  form.querySelector('#message-input')?.addEventListener('focus', () => {
+    if (menuOpen) {
+      menuOpen = false
+      menuKey = 'root'
+      renderMenu()
+    }
+  })
+  renderMenu()
 
   return form
 }
@@ -192,7 +212,7 @@ export const createConversationsSection = () => {
   const listHost = section.querySelector('[data-list]')
   const detailHost = section.querySelector('[data-detail]')
 
-  const state = { loading: true, conversations: [], activeId: '', messagesStatus: 'idle', messages: [], messagesError: null, submitError: '', playingNowError: '' }
+  const state = { loading: true, conversations: [], activeId: '', messagesStatus: 'idle', messages: [], messagesError: null, submitError: '' }
 
   const render = () => {
     if (state.loading) {
@@ -230,10 +250,8 @@ export const createConversationsSection = () => {
     detail.append(createInputArea({
       canCompose: active.state === 'active',
       error: state.submitError,
-      playingNowError: state.playingNowError,
       onSubmit: async (text) => {
         state.submitError = ''
-        state.playingNowError = ''
         const response = await sendConversationMessage({ conversationId: active.conversationId, text })
         if (response.status === 'error') {
           state.submitError = response.error.kind === DOMAIN_ERROR_KIND.VALIDATION
@@ -241,26 +259,6 @@ export const createConversationsSection = () => {
             : response.error.kind === DOMAIN_ERROR_KIND.PERMISSION
               ? 'You cannot send messages in this conversation right now.'
               : 'Message could not be sent. Retry in a moment.'
-          render()
-          return
-        }
-        state.messages.push(response.data)
-        render()
-      },
-      onSubmitPlayingNow: async (content) => {
-        state.submitError = ''
-        state.playingNowError = ''
-        const response = await sendConversationPayloadMessage({
-          conversationId: active.conversationId,
-          type: 'playing_now',
-          content
-        })
-        if (response.status === 'error') {
-          state.playingNowError = response.error.kind === DOMAIN_ERROR_KIND.VALIDATION
-            ? 'Please choose a type and add a title before sharing.'
-            : response.error.kind === DOMAIN_ERROR_KIND.PERMISSION
-              ? 'You cannot share Playing now in this conversation right now.'
-              : 'Playing now could not be shared. Retry in a moment.'
           render()
           return
         }
