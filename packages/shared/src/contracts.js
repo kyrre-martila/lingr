@@ -67,3 +67,89 @@ export const SPARK_TRANSITIONS = Object.freeze({
   [SPARK_STATE.EXPIRED]: Object.freeze([])
 })
 
+
+export const CONVERSATION_STATE = Object.freeze({ ACTIVE: 'active', PAUSED: 'paused', CLOSED: 'closed' })
+export const CONVERSATION_PARTICIPANT_ROLE = Object.freeze({ MEMBER: 'member', SYSTEM: 'system' })
+
+export const MESSAGE_TYPE = Object.freeze({
+  TEXT: 'text',
+  SYSTEM: 'system',
+  LAYER_UNLOCK: 'layer_unlock',
+  PLAYING_NOW: 'playing_now',
+  APP_INVITE: 'app_invite'
+})
+
+export const MESSAGE_VISIBILITY = Object.freeze({ CONVERSATION: 'conversation', SOFT_BANNER: 'soft_banner' })
+export const MESSAGE_DELIVERY_STATE = Object.freeze({ QUEUED: 'queued', SENT: 'sent', FAILED: 'failed' })
+
+export const PLAYING_NOW_MEDIA_TYPE = Object.freeze({ SONG: 'song', MOVIE: 'movie', TV_SERIES: 'tv_series' })
+
+export const APP_INVITE_APP_ID = Object.freeze({ MATCH_CARDS: 'match_cards', GUESS_ME: 'guess_me', SNUGGLE: 'snuggle' })
+
+export const MESSAGE_PAYLOAD_KIND = Object.freeze({
+  TEXT: 'text_payload',
+  SYSTEM: 'system_payload',
+  LAYER_UNLOCK: 'layer_unlock_payload',
+  PLAYING_NOW: 'playing_now_payload',
+  APP_INVITE: 'app_invite_payload'
+})
+
+export const PLAYING_NOW_DTO_SHAPE = Object.freeze({
+  mediaType: 'song | movie | tv_series',
+  title: 'string',
+  creator: 'string? (artist, band, director, creator)',
+  posterUrl: 'string? (cover/poster placeholder URL)',
+  context: 'string? (short optional note)'
+})
+
+export const LAYER_UNLOCK_DTO_SHAPE = Object.freeze({
+  title: 'string',
+  subtitle: 'string? (soft encouragement text)',
+  ctaLabel: 'string? (optional banner CTA)',
+  ctaRoute: 'string? (optional in-app route)'
+})
+
+export const MESSAGE_DTO_FIELDS = Object.freeze({
+  messageId: 'msg_* string',
+  conversationId: 'cnv_* string',
+  senderUserId: 'usr_* string | null for system',
+  type: 'text | system | layer_unlock | playing_now | app_invite',
+  visibility: 'conversation | soft_banner',
+  deliveryState: 'queued | sent | failed',
+  content: 'canonical payload object based on message type',
+  metadata: 'object? (optional client-safe metadata)',
+  createdAt: 'ISO-8601 string',
+  updatedAt: 'ISO-8601 string'
+})
+
+export const CONVERSATION_DTO_FIELDS = Object.freeze({
+  conversationId: 'cnv_* string',
+  sparkId: 'spk_* string',
+  state: 'active | paused | closed',
+  participantIds: 'usr_* string[]',
+  createdAt: 'ISO-8601 string',
+  updatedAt: 'ISO-8601 string'
+})
+
+export const CONVERSATION_PARTICIPANT_DTO_FIELDS = Object.freeze({
+  conversationId: 'cnv_* string',
+  userId: 'usr_* string',
+  role: 'member | system',
+  joinedAt: 'ISO-8601 string'
+})
+
+export const CLIENT_SAFE_MESSAGE_METADATA = Object.freeze({
+  source: 'string? (system origin hint)',
+  correlationId: 'string? (optional client tracing)',
+  locale: 'string?'
+})
+
+const MESSAGE_TYPE_VALUES = toSet(MESSAGE_TYPE)
+const MESSAGE_VISIBILITY_VALUES = toSet(MESSAGE_VISIBILITY)
+const MESSAGE_DELIVERY_STATE_VALUES = toSet(MESSAGE_DELIVERY_STATE)
+const PLAYING_NOW_MEDIA_TYPE_VALUES = toSet(PLAYING_NOW_MEDIA_TYPE)
+
+export const isSupportedMessageType = (value) => has(MESSAGE_TYPE_VALUES, value)
+export const isSupportedMessageVisibility = (value) => has(MESSAGE_VISIBILITY_VALUES, value)
+export const isSupportedMessageDeliveryState = (value) => has(MESSAGE_DELIVERY_STATE_VALUES, value)
+export const isSupportedPlayingNowMediaType = (value) => has(PLAYING_NOW_MEDIA_TYPE_VALUES, value)

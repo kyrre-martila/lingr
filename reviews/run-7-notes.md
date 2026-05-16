@@ -48,3 +48,50 @@
 - [ ] Confirm message type vocabulary is consistent across docs.
 - [ ] Confirm Window positioning is later-stage in every file.
 - [ ] Confirm no file suggests implementing features in this run.
+
+## Contracts introduced (this update)
+- Added shared conversation contracts in `packages/shared/src/contracts.js`:
+  - conversation states: `active | paused | closed`
+  - conversation participant role: `member | system`
+  - conversation DTO field expectations for client-safe API responses.
+- Added shared message contracts:
+  - message type vocabulary: `text | system | layer_unlock | playing_now | app_invite`
+  - message visibility: `conversation | soft_banner`
+  - minimal delivery states: `queued | sent | failed`
+- Added typed payload guidance constants:
+  - playing now media types: `song | movie | tv_series`
+  - app invite app IDs: `match_cards | guess_me | snuggle`
+  - canonical DTO shape docs for playing now and layer unlock payloads.
+- Added lightweight runtime guards for message type, visibility, delivery state, and playing now media type.
+
+## DTO decisions
+- Message DTO is designed to be transport-agnostic and mobile-reusable.
+- Message DTO includes `content` as typed payload + optional `metadata` for client-safe hints.
+- Conversation DTO includes linked `sparkId` and participant IDs for stable future backend integration.
+- Kept IDs prefix-oriented (`cnv_*`, `msg_*`, `usr_*`, `spk_*`) in field expectations only; no persistence coupling introduced.
+
+## Message payload decisions
+- `playing_now` payload supports media type, title, optional creator, optional cover/poster placeholder URL, and optional short context.
+- `layer_unlock` payload supports subtle banner content (`title`, optional `subtitle`, optional CTA label/route).
+- `system` and `text` remain intentionally small and readable.
+
+## Intentionally excluded features
+- No typing indicators contracts.
+- No online presence contracts.
+- No read receipts / seen states contracts.
+- No urgency mechanics or pressure loops.
+
+## Deferred concerns
+- No database schemas or migrations for conversation/message persistence yet.
+- No websocket/realtime delivery semantics yet.
+- No API endpoint implementation yet.
+- No frontend rendering redesign in this run.
+- No notification/ranking pressure mechanics.
+
+## Manual testing checklist
+- [ ] Verify all supported message types serialize with canonical payload keys.
+- [ ] Verify `isSupportedMessageType` accepts only the five approved types.
+- [ ] Verify playing now payload accepts only `song | movie | tv_series` media type values.
+- [ ] Verify layer unlock payload shape can represent subtle banner text + optional CTA.
+- [ ] Verify no contract introduces typing/presence/read-receipt fields.
+- [ ] Verify DTO field expectations are consistent between `contracts.js` and `data-model.md`.
