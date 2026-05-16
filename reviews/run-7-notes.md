@@ -319,3 +319,42 @@
 - [ ] Verify paused/unavailable conversation blocks Playing now sharing with permission copy.
 - [ ] Verify regular text sending still works unchanged.
 - [ ] Verify no likes, reactions, counters, timestamps, typing indicators, or read receipts appear.
+
+## Run 7 — `layer_unlock` subtle timeline system message
+
+### Layer unlock implementation decisions
+- Implemented frontend rendering for message type `layer_unlock` in the conversation timeline as a dedicated calm system banner, without changing broader chat layout.
+- Render path reuses the existing message stream and message service boundary response shape (`type`, `content`, `visibility`, `senderUserId`) rather than introducing a new transport path.
+- Banner is non-blocking and informational only; it does not trigger progression logic, gating, or any urgency/reward loops.
+
+### Message payload decisions
+- Consumed shared Run 7 payload keys for `layer_unlock`:
+  - `title` (required display line)
+  - `subtitle` (optional supporting line)
+  - `ctaLabel` (optional soft right-side hint)
+- Did not expose internal layer depth/index/state fields in UI payload rendering.
+- In mock transport DTO mapping, `layer_unlock` rows are emitted as:
+  - `senderUserId: null`
+  - `visibility: soft_banner`
+  to align with shared message contract intent for subtle system rows.
+
+### UI rendering decisions
+- Added `layer_unlock` branch in bubble renderer that outputs a centered, warm, low-contrast card in the timeline.
+- Visual treatment uses soft background, subtle border, compact spacing, and restrained typography to match Lingr’s calm palette.
+- Added decorative icon with `aria-hidden="true"`; text remains semantic paragraph content.
+- CTA label is rendered as quiet text only (no urgent button behavior) to preserve low-pressure tone.
+- Mobile-first preserved via existing message stream flow and max-width constraints; no desktop-only dependency introduced.
+
+### Deferred Layers logic
+- No progression engine or unlock condition rules were implemented.
+- No backend unlock trigger orchestration was added.
+- No route navigation for `ctaRoute` was introduced in this run.
+- No gamified language, milestones, or reward mechanics were added.
+
+### Manual testing checklist
+- [ ] Verify timeline renders `layer_unlock` rows when API/mock message type is `layer_unlock`.
+- [ ] Verify `layer_unlock` card displays `title` and optional `subtitle`/`ctaLabel` only when present.
+- [ ] Verify `layer_unlock` rows remain subtle and centered across narrow/mobile widths.
+- [ ] Verify `senderUserId: null` for `layer_unlock` does not break timeline rendering.
+- [ ] Verify non-`layer_unlock` messages (`text`, `playing_now`) render unchanged.
+- [ ] Verify no new timestamps/read receipts/presence/typing indicators were introduced.
