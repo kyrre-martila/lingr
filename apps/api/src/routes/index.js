@@ -3,6 +3,7 @@ import { withRouteProtection } from '../auth/route-hooks.js'
 import { getViewerProfileRoute, updateViewerProfileBasicsRoute, getViewerProfileCompletenessRoute } from './profile.js'
 import { archiveViewerGlimpsRoute, createGlimpsRoute, getViewerGlimpsByIdRoute, listViewerGlimpsRoute } from './glimps.js'
 import { acceptSparkRoute, createSparkInvitationRoute, declineSparkRoute, getViewerSparkByIdRoute, listViewerSparksRoute, pauseSparkRoute } from './spark.js'
+import { createConversationFromSparkRoute, getViewerConversationByIdRoute, listConversationMessagesRoute, listViewerConversationsRoute, sendConversationMessageRoute } from './conversation.js'
 
 export const routes = Object.freeze([
   { method: 'GET', path: '/health', requiresJson: false, handler: withRouteProtection(healthRoute, { requiresAuth: false, allowOnboarding: true }) },
@@ -21,4 +22,10 @@ export const routes = Object.freeze([
   { method: 'PATCH', path: '/v1/sparks/:sparkId/accept', requiresJson: false, handler: withRouteProtection(acceptSparkRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'PATCH', path: '/v1/sparks/:sparkId/pause', requiresJson: false, handler: withRouteProtection(pauseSparkRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'PATCH', path: '/v1/sparks/:sparkId/decline', requiresJson: false, handler: withRouteProtection(declineSparkRoute, { requiresAuth: true, allowOnboarding: true }) },
+
+  { method: 'GET', path: '/v1/conversations/viewer', requiresJson: false, handler: withRouteProtection(listViewerConversationsRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'GET', path: '/v1/conversations/:conversationId', requiresJson: false, handler: withRouteProtection(getViewerConversationByIdRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'POST', path: '/v1/conversations', requiresJson: true, handler: withRouteProtection(createConversationFromSparkRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'GET', path: '/v1/conversations/:conversationId/messages', requiresJson: false, handler: withRouteProtection(listConversationMessagesRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'POST', path: '/v1/conversations/:conversationId/messages', requiresJson: true, handler: withRouteProtection(sendConversationMessageRoute, { requiresAuth: true, allowOnboarding: true }) },
 ])

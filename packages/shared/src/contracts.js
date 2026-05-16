@@ -25,7 +25,9 @@ export const REASON_CODES = Object.freeze({
   VALIDATION: Object.freeze({ INVALID_ID: 'validation.invalid_id', INVALID_TIMESTAMP: 'validation.invalid_timestamp', INVALID_PAYLOAD: 'validation.invalid_payload' }),
   PERMISSION: Object.freeze({ NOT_ALLOWED: 'permission.not_allowed', FEATURE_DISABLED: 'permission.feature_disabled' }),
   GLIMPS: Object.freeze({ NOT_FOUND: 'glimps.not_found', INVALID_STATE_TRANSITION: 'glimps.invalid_state_transition' }),
-  SPARK: Object.freeze({ NOT_FOUND: 'spark.not_found', INVALID_STATE_TRANSITION: 'spark.invalid_state_transition', INVALID_SELF_SPARK: 'spark.invalid_self_spark', DUPLICATE_ACTIVE_SPARK: 'spark.duplicate_active_spark', INVALID_RECIPIENT_REFERENCE: 'spark.invalid_recipient_reference', INVALID_SOURCE_GLIMPS_REFERENCE: 'spark.invalid_source_glimps_reference' })
+  SPARK: Object.freeze({ NOT_FOUND: 'spark.not_found', INVALID_STATE_TRANSITION: 'spark.invalid_state_transition', INVALID_SELF_SPARK: 'spark.invalid_self_spark', DUPLICATE_ACTIVE_SPARK: 'spark.duplicate_active_spark', INVALID_RECIPIENT_REFERENCE: 'spark.invalid_recipient_reference', INVALID_SOURCE_GLIMPS_REFERENCE: 'spark.invalid_source_glimps_reference' }),
+  CONVERSATION: Object.freeze({ NOT_FOUND: 'conversation.not_found', INVALID_SPARK_REFERENCE: 'conversation.invalid_spark_reference' }),
+  MESSAGE: Object.freeze({ INVALID_TYPE: 'message.invalid_type', INVALID_PAYLOAD_BY_TYPE: 'message.invalid_payload_by_type' })
 })
 
 export const INTERNAL_ID_STRATEGY = Object.freeze({
@@ -33,7 +35,9 @@ export const INTERNAL_ID_STRATEGY = Object.freeze({
   API_USER_ID_PREFIX: 'usr_',
   API_PROFILE_ID_PREFIX: 'prf_',
   API_GLIMPS_ID_PREFIX: 'glp_',
-  API_SPARK_ID_PREFIX: 'spk_'
+  API_SPARK_ID_PREFIX: 'spk_',
+  API_CONVERSATION_ID_PREFIX: 'cnv_',
+  API_MESSAGE_ID_PREFIX: 'msg_'
 })
 
 export const GLIMPS_STATE = Object.freeze({ DRAFT: 'draft', PUBLISHED: 'published', EXPIRED: 'expired', ARCHIVED: 'archived' })

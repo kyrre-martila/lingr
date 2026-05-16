@@ -36,6 +36,37 @@ enum SparkState {
   expired
 }
 
+enum ConversationState {
+  active
+  paused
+  closed
+}
+
+enum ConversationParticipantRole {
+  member
+  system
+}
+
+enum MessageType {
+  text
+  system
+  layer_unlock
+  playing_now
+  app_invite
+}
+
+enum MessageVisibility {
+  conversation
+  soft_banner
+}
+
+enum MessageDeliveryState {
+  queued
+  sent
+  failed
+}
+
+
 model User {
   id                 String     @id @default(cuid())
   authSubjectRef     String?    @unique
@@ -46,6 +77,8 @@ model User {
   glimpses           Glimps[]
   initiatedSparks    Spark[]   @relation("SparkInitiator")
   receivedSparks     Spark[]   @relation("SparkRecipient")
+  conversationParticipants ConversationParticipant[]
+  sentMessages       Message[]
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
   pausedAt           DateTime?
@@ -129,9 +162,59 @@ model Spark {
 
   initiator            User       @relation("SparkInitiator", fields: [initiatorUserId], references: [id], onDelete: Cascade)
   recipient            User       @relation("SparkRecipient", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  conversation         Conversation?
 
   @@index([initiatorUserId, recipientUserId, status])
   @@index([pairMinUserId, pairMaxUserId, status])
   @@index([recipientUserId, status, createdAt])
   @@map("sparks")
+}
+
+model Conversation {
+  id              String                    @id @default(cuid())
+  sparkId         String                    @unique
+  state           ConversationState         @default(active)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  spark           Spark                     @relation(fields: [sparkId], references: [id], onDelete: Cascade)
+  participants    ConversationParticipant[]
+  messages        Message[]
+
+  @@index([state, updatedAt])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id              String                      @id @default(cuid())
+  conversationId  String
+  userId          String
+  role            ConversationParticipantRole @default(member)
+  joinedAt        DateTime                    @default(now())
+
+  conversation    Conversation                @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user            User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, joinedAt])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id              String                @id @default(cuid())
+  conversationId  String
+  senderUserId    String?
+  type            MessageType
+  visibility      MessageVisibility     @default(conversation)
+  deliveryState   MessageDeliveryState  @default(sent)
+  content         Json
+  metadata        Json?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  conversation    Conversation          @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender          User?                 @relation(fields: [senderUserId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@map("messages")
 }

@@ -95,3 +95,69 @@
 - [ ] Verify layer unlock payload shape can represent subtle banner text + optional CTA.
 - [ ] Verify no contract introduces typing/presence/read-receipt fields.
 - [ ] Verify DTO field expectations are consistent between `contracts.js` and `data-model.md`.
+
+## Run 7 — Persistence foundation implemented
+
+### Persistence decisions
+- Added first persisted calm-chat entities: `conversations`, `conversation_participants`, and `messages`.
+- Kept persistence intentionally transport-agnostic and DTO-first to preserve mobile reuse and avoid internal-row leakage.
+- Bound each conversation to exactly one Spark (`sparkId` unique) as the relationship gate.
+
+### Schema/migration decisions
+- Added Prisma enums for conversation state/roles and message type/visibility/delivery state.
+- Added new Prisma models for Conversation, ConversationParticipant, and Message.
+- Added migration `0005_conversation_message_persistence` to create tables, enums, indexes, unique constraints, and FKs.
+
+### Endpoints/services created
+- Added conversation service with viewer-scoped methods:
+  - list viewer conversations
+  - get viewer conversation by id
+  - create conversation from eligible Spark
+- Added message methods:
+  - list conversation timeline with pagination-ready `items + page.nextCursor`
+  - send message
+- Added routes:
+  - `GET /v1/conversations/viewer`
+  - `GET /v1/conversations/:conversationId`
+  - `POST /v1/conversations`
+  - `GET /v1/conversations/:conversationId/messages`
+  - `POST /v1/conversations/:conversationId/messages`
+
+### DTO mapping decisions
+- Added strict DTO mappers for conversations and messages.
+- IDs are API-prefixed (`cnv_`, `msg_`, `usr_`, `spk_`) at the boundary.
+- Internal DB entities are never returned directly.
+
+### Validation decisions
+- Conversation creation requires an authenticated participant of a valid Spark in `accepted|paused`.
+- Message send/list requires conversation participation.
+- Message type validation uses shared contract support list.
+- Invalid message type returns canonical `message.invalid_type`.
+- Type-specific payload validation returns `message.invalid_payload_by_type`.
+- `playing_now` payload persists `song|movie|tv_series` with minimal required fields.
+
+### Auth assumptions
+- Anonymous users cannot create/list/read conversations or messages.
+- All conversation/message access is viewer-scoped participant access.
+- Service-level auth checks remain layered with route guards.
+
+### Deferred work
+- No realtime delivery.
+- No notifications.
+- No typing indicators / online status / read receipts.
+- No conversation lifecycle transition matrix beyond Spark-linked create-time state seed.
+- No external media integrations.
+
+### Local test commands
+- `pnpm --filter @lingr/api test`
+- `pnpm --filter @lingr/api prisma migrate dev`
+
+### Manual testing checklist
+- [ ] Create conversation from accepted Spark as participant succeeds.
+- [ ] Create conversation from non-participant or invalid Spark fails with canonical reason.
+- [ ] Anonymous calls to conversation/message endpoints fail with auth reason.
+- [ ] Only participants can list conversation timeline and send messages.
+- [ ] Sending unsupported `type` returns `message.invalid_type`.
+- [ ] Sending invalid payload per type returns `message.invalid_payload_by_type`.
+- [ ] `playing_now` persists and returns valid `song|movie|tv_series` payloads.
+- [ ] Timeline response shape includes `items` and `page.nextCursor`.
