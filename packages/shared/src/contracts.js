@@ -25,7 +25,7 @@ export const REASON_CODES = Object.freeze({
   VALIDATION: Object.freeze({ INVALID_ID: 'validation.invalid_id', INVALID_TIMESTAMP: 'validation.invalid_timestamp', INVALID_PAYLOAD: 'validation.invalid_payload' }),
   PERMISSION: Object.freeze({ NOT_ALLOWED: 'permission.not_allowed', FEATURE_DISABLED: 'permission.feature_disabled' }),
   GLIMPS: Object.freeze({ NOT_FOUND: 'glimps.not_found', INVALID_STATE_TRANSITION: 'glimps.invalid_state_transition' }),
-  SPARK: Object.freeze({ NOT_FOUND: 'spark.not_found', INVALID_STATE_TRANSITION: 'spark.invalid_state_transition', INVALID_SELF_SPARK: 'spark.invalid_self_spark', DUPLICATE_ACTIVE_SPARK: 'spark.duplicate_active_spark' })
+  SPARK: Object.freeze({ NOT_FOUND: 'spark.not_found', INVALID_STATE_TRANSITION: 'spark.invalid_state_transition', INVALID_SELF_SPARK: 'spark.invalid_self_spark', DUPLICATE_ACTIVE_SPARK: 'spark.duplicate_active_spark', INVALID_RECIPIENT_REFERENCE: 'spark.invalid_recipient_reference', INVALID_SOURCE_GLIMPS_REFERENCE: 'spark.invalid_source_glimps_reference' })
 })
 
 export const INTERNAL_ID_STRATEGY = Object.freeze({
@@ -55,3 +55,15 @@ export const isApiSuccessEnvelope = (value) => Boolean(value && has(STATUS_VALUE
 export const isApiErrorEnvelope = (value) => Boolean(value && has(STATUS_VALUES, value.status) && value.status === API_RESPONSE_STATUS.ERROR && value.error && has(ERROR_KIND_VALUES, value.error.kind) && typeof value.error.reasonCode === 'string')
 
 export const SPARK_STATE = Object.freeze({ POTENTIAL: 'potential', INVITED: 'invited', ACCEPTED: 'accepted', PAUSED: 'paused', DECLINED: 'declined', EXPIRED: 'expired' })
+export const SPARK_ACTION = Object.freeze({ CREATE: 'create', ACCEPT: 'accept', PAUSE: 'pause', DECLINE: 'decline', EXPIRE: 'expire', READ: 'read' })
+export const SPARK_TERMINAL_STATES = Object.freeze([SPARK_STATE.DECLINED, SPARK_STATE.EXPIRED])
+export const SPARK_ACTIVE_STATES = Object.freeze([SPARK_STATE.INVITED, SPARK_STATE.ACCEPTED, SPARK_STATE.PAUSED])
+export const SPARK_TRANSITIONS = Object.freeze({
+  [SPARK_STATE.POTENTIAL]: Object.freeze([SPARK_STATE.INVITED]),
+  [SPARK_STATE.INVITED]: Object.freeze([SPARK_STATE.ACCEPTED, SPARK_STATE.PAUSED, SPARK_STATE.DECLINED, SPARK_STATE.EXPIRED]),
+  [SPARK_STATE.PAUSED]: Object.freeze([SPARK_STATE.ACCEPTED, SPARK_STATE.DECLINED]),
+  [SPARK_STATE.ACCEPTED]: Object.freeze([SPARK_STATE.PAUSED]),
+  [SPARK_STATE.DECLINED]: Object.freeze([]),
+  [SPARK_STATE.EXPIRED]: Object.freeze([])
+})
+

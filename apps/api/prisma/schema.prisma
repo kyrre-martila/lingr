@@ -114,6 +114,8 @@ model Spark {
   id                   String     @id @default(cuid())
   initiatorUserId      String
   recipientUserId      String
+  pairMinUserId        String
+  pairMaxUserId        String
   status               SparkState @default(invited)
   sourceGlimpsId       String?
   softResonanceContext String?
@@ -129,6 +131,7 @@ model Spark {
   recipient            User       @relation("SparkRecipient", fields: [recipientUserId], references: [id], onDelete: Cascade)
 
   @@index([initiatorUserId, recipientUserId, status])
+  @@index([pairMinUserId, pairMaxUserId, status])
   @@index([recipientUserId, status, createdAt])
   @@map("sparks")
 }
