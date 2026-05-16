@@ -170,6 +170,13 @@ p { margin: 0 0 var(--space-3); }
 .message-bubble--prompt { border-style: dashed; background: #fff8ef; }
 .message-bubble p, .message-bubble span { margin: 0; }
 .message-bubble span { display: block; margin-top: 0.35rem; font-size: 0.8rem; color: var(--muted); }
+.playing-now-card { background: #fff8f2; border-color: #d9bca8; }
+.playing-now-card__lead { font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; color: #7a5b4a; }
+.playing-now-card__title { font-weight: 700; font-size: 1.02rem; }
+.playing-now-card__creator,
+.playing-now-card__context,
+.playing-now-card__poster { color: var(--muted); margin-top: 0.25rem !important; }
+.playing-now-card__poster { font-size: 0.85rem; }
 .conversation-empty { border: 1px dashed #1c2b2525; border-radius: 0.9rem; padding: var(--space-4); background: #fff; }
 .conversation-empty h3 { margin-bottom: var(--space-2); }
 .conversation-empty ul { margin: var(--space-3) 0 0; padding-left: 1.1rem; color: var(--muted); display: grid; gap: var(--space-1); }
@@ -247,6 +254,7 @@ p { margin: 0 0 var(--space-3); }
   border-color: #d9bca8;
   outline: none;
 }
+.onboarding-form__error { margin: 0; color: #8f3a2a; font-size: 0.92rem; }
 
 @media (min-width: 56rem) {
   .conversation-shell { grid-template-columns: minmax(15rem, 20rem) 1fr; }

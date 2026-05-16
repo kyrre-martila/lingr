@@ -3,7 +3,7 @@ import { createDiscoveryMockData } from '../data/mocks/discovery.js'
 import { createProfileMockData } from '../data/mocks/profile.js'
 import { createGlimpsInitialState } from '../data/mocks/glimps.js'
 import { createFailure, createSuccess } from './envelope.js'
-import { DOMAIN_ERROR_KIND, REASON_CODES } from '../domain/contracts.js'
+import { DOMAIN_ERROR_KIND, MESSAGE_TYPE, PLAYING_NOW_MEDIA_TYPE, REASON_CODES, isSupportedPlayingNowMediaType } from '../domain/contracts.js'
 
 const snapshot = {
   profile: createProfileMockData(),
@@ -51,10 +51,10 @@ const toMessageDto = (conversation, message) => ({
   messageId: `msg_${message.id}`,
   conversationId: `cnv_${conversation.id}`,
   senderUserId: message.sender === 'me' ? 'usr_mock_viewer' : `usr_mock_${conversation.id}`,
-  type: 'text',
+  type: message.type || MESSAGE_TYPE.TEXT,
   visibility: 'conversation',
   deliveryState: 'sent',
-  content: { text: message.text },
+  content: message.content || { text: message.text },
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 })
@@ -86,19 +86,55 @@ const conversationSendMessageHandler = ({ payload }) => {
     return createFailure({ code: REASON_CODES.PERMISSION.NOT_ALLOWED, message: 'Conversation is paused.', kind: DOMAIN_ERROR_KIND.PERMISSION, retryable: false })
   }
 
-  const text = String(payload?.text || '').trim()
-  if (!text) {
-    return createFailure({ code: REASON_CODES.VALIDATION.INVALID_PAYLOAD, message: 'Message text is required.', kind: DOMAIN_ERROR_KIND.VALIDATION, retryable: false, fieldErrors: [{ field: 'text', reason: 'required' }] })
+  const requestedType = typeof payload?.type === 'string' ? payload.type : MESSAGE_TYPE.TEXT
+  if (![MESSAGE_TYPE.TEXT, MESSAGE_TYPE.PLAYING_NOW].includes(requestedType)) {
+    return createFailure({ code: REASON_CODES.MESSAGE.INVALID_TYPE, message: 'Message type is not supported by mock transport.', kind: DOMAIN_ERROR_KIND.VALIDATION, retryable: false })
   }
 
-  if (text.toLowerCase().includes('[retryable-error]')) {
-    return createFailure({ code: 'transport.mock_retryable', message: 'Temporary send issue.', kind: DOMAIN_ERROR_KIND.DOMAIN, retryable: true })
+  if (requestedType === MESSAGE_TYPE.TEXT) {
+    const text = String(payload?.text || '').trim()
+    if (!text) {
+      return createFailure({ code: REASON_CODES.VALIDATION.INVALID_PAYLOAD, message: 'Message text is required.', kind: DOMAIN_ERROR_KIND.VALIDATION, retryable: false, fieldErrors: [{ field: 'text', reason: 'required' }] })
+    }
+
+    if (text.toLowerCase().includes('[retryable-error]')) {
+      return createFailure({ code: 'transport.mock_retryable', message: 'Temporary send issue.', kind: DOMAIN_ERROR_KIND.DOMAIN, retryable: true })
+    }
+
+    messageCounter += 1
+    const created = { id: `m${messageCounter}`, sender: 'me', text, type: MESSAGE_TYPE.TEXT, content: { text }, time: 'now' }
+    conversation.messages.push(created)
+    conversation.preview = text
+    return createSuccess(toMessageDto(conversation, created))
+  }
+
+  const mediaType = String(payload?.content?.mediaType || '').trim()
+  const title = String(payload?.content?.title || '').trim()
+  const creator = String(payload?.content?.creator || '').trim()
+  const posterUrl = String(payload?.content?.posterUrl || '').trim()
+  const context = String(payload?.content?.context || '').trim()
+
+  if (!isSupportedPlayingNowMediaType(mediaType) || !title) {
+    return createFailure({ code: REASON_CODES.MESSAGE.INVALID_PAYLOAD_BY_TYPE, message: 'Playing now requires valid mediaType and title.', kind: DOMAIN_ERROR_KIND.VALIDATION, retryable: false })
   }
 
   messageCounter += 1
-  const created = { id: `m${messageCounter}`, sender: 'me', text, time: 'now' }
+  const created = {
+    id: `m${messageCounter}`,
+    sender: 'me',
+    type: MESSAGE_TYPE.PLAYING_NOW,
+    content: {
+      mediaType,
+      title,
+      creator: creator || undefined,
+      posterUrl: posterUrl || `placeholder://${mediaType}/${encodeURIComponent(title.toLowerCase())}`,
+      context: context || undefined
+    },
+    text: `Playing now: ${title}`,
+    time: 'now'
+  }
   conversation.messages.push(created)
-  conversation.preview = text
+  conversation.preview = `${title}${mediaType === PLAYING_NOW_MEDIA_TYPE.SONG ? ' 🎵' : mediaType === PLAYING_NOW_MEDIA_TYPE.MOVIE ? ' 🎬' : ' 📺'}`
   return createSuccess(toMessageDto(conversation, created))
 }
 
