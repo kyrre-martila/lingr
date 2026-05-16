@@ -23,6 +23,7 @@ const toConversationDto = (row) => ({ conversationId: toExternalConversationId(r
 const toMessageDto = (row) => ({ messageId: toExternalMessageId(row.id), conversationId: toExternalConversationId(row.conversationId), senderUserId: row.senderUserId ? toExternalUserId(row.senderUserId) : null, type: row.type, visibility: row.visibility, deliveryState: row.deliveryState, content: row.content, metadata: row.metadata ?? null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })
 
 const includeConversation = { participants: { select: { userId: true, role: true, joinedAt: true } } }
+const SYSTEM_ORIGIN_MESSAGE_TYPES = new Set([MESSAGE_TYPE.SYSTEM, MESSAGE_TYPE.LAYER_UNLOCK])
 
 const assertMessagePayload = (type, content) => {
   if (type === MESSAGE_TYPE.TEXT || type === MESSAGE_TYPE.SYSTEM) {
@@ -90,7 +91,7 @@ export const listConversationMessages = async ({ viewer, conversationId, cursor,
     const cursorRow = await db.message.findFirst({ where: { id: cursorId, conversationId: id }, select: { id: true } })
     if (!cursorRow) throw new ApiError({ message: 'Invalid cursor for conversation', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_ID, statusCode: 400 })
   }
-  const rows = await db.message.findMany({ where: { conversationId: id }, orderBy: { createdAt: 'desc' }, take, ...(cursorId ? { skip: 1, cursor: { id: cursorId } } : {}) })
+  const rows = await db.message.findMany({ where: { conversationId: id }, orderBy: { createdAt: 'asc' }, take, ...(cursorId ? { skip: 1, cursor: { id: cursorId } } : {}) })
   const nextCursor = rows.length === take ? toExternalMessageId(rows[rows.length - 1].id) : null
   return { items: rows.map(toMessageDto), page: { limit: take, nextCursor } }
 }
@@ -103,6 +104,7 @@ export const sendConversationMessage = async ({ viewer, conversationId, payload,
   if (!convo) throw new ApiError({ message: 'Conversation not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
   const type = normalize(payload?.type)
   if (!isSupportedMessageType(type)) throw new ApiError({ message: 'Invalid message type', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.MESSAGE.INVALID_TYPE, statusCode: 400 })
+  if (SYSTEM_ORIGIN_MESSAGE_TYPES.has(type)) throw new ApiError({ message: 'System message types are service-origin only', kind: DOMAIN_ERROR_KIND.PERMISSION, reasonCode: REASON_CODES.PERMISSION.NOT_ALLOWED, statusCode: 403 })
   assertMessagePayload(type, payload?.content)
   const row = await db.message.create({ data: { conversationId: id, senderUserId: userId, type, visibility: MESSAGE_VISIBILITY.CONVERSATION, deliveryState: MESSAGE_DELIVERY_STATE.SENT, content: payload.content, metadata: payload.metadata || null } })
   return toMessageDto(row)
