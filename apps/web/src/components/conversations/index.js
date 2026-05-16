@@ -37,13 +37,15 @@ const createBubble = (message) => {
     const title = String(message.content?.title || 'You unlocked a new layer').trim()
     const subtitle = String(message.content?.subtitle || '').trim()
     const ctaLabel = String(message.content?.ctaLabel || '').trim()
+    const ctaRoute = String(message.content?.ctaRoute || '').trim()
     card.innerHTML = `
       <div class="layer-unlock-banner__icon" aria-hidden="true">✧</div>
       <div class="layer-unlock-banner__copy">
         <p class="layer-unlock-banner__title">${title}</p>
         ${subtitle ? `<p class="layer-unlock-banner__subtitle">${subtitle}</p>` : ''}
       </div>
-      ${ctaLabel ? `<p class="layer-unlock-banner__cta">${ctaLabel}</p>` : ''}
+      ${ctaLabel && ctaRoute ? `<a class="layer-unlock-banner__cta" href="${ctaRoute}">${ctaLabel}</a>` : ''}
+      ${ctaLabel && !ctaRoute ? `<p class="layer-unlock-banner__cta">${ctaLabel}</p>` : ''}
     `
     return card
   }
@@ -59,7 +61,7 @@ const createBubble = (message) => {
       <p class="playing-now-card__title">${message.content?.title || 'Unknown title'}</p>
       ${message.content?.creator ? `<p class="playing-now-card__creator">${message.content.creator}</p>` : ''}
       ${message.content?.context ? `<p class="playing-now-card__context">${message.content.context}</p>` : ''}
-      ${message.content?.posterUrl ? `<p class="playing-now-card__poster">Cover: ${message.content.posterUrl.startsWith('placeholder://') ? 'Placeholder artwork' : message.content.posterUrl}</p>` : ''}
+      ${message.content?.posterUrl ? `<p class="playing-now-card__poster">Cover: ${message.content.posterUrl}</p>` : ''}
     `
     return card
   }

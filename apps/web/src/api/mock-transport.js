@@ -49,13 +49,13 @@ const toConversationDto = (conversation) => ({
 
 const toMessageDto = (conversation, message) => {
   const type = message.type || MESSAGE_TYPE.TEXT
-  const isLayerUnlock = type === MESSAGE_TYPE.LAYER_UNLOCK
+  const isSystemOrigin = [MESSAGE_TYPE.SYSTEM, MESSAGE_TYPE.LAYER_UNLOCK].includes(type)
   return {
     messageId: `msg_${message.id}`,
     conversationId: `cnv_${conversation.id}`,
-    senderUserId: isLayerUnlock ? null : (message.sender === 'me' ? 'usr_mock_viewer' : `usr_mock_${conversation.id}`),
+    senderUserId: isSystemOrigin ? null : (message.sender === 'me' ? 'usr_mock_viewer' : `usr_mock_${conversation.id}`),
     type,
-    visibility: isLayerUnlock ? 'soft_banner' : 'conversation',
+    visibility: type === MESSAGE_TYPE.LAYER_UNLOCK ? 'soft_banner' : 'conversation',
     deliveryState: 'sent',
     content: message.content || { text: message.text },
     createdAt: new Date().toISOString(),
@@ -106,7 +106,7 @@ const conversationSendMessageHandler = ({ payload }) => {
     }
 
     messageCounter += 1
-    const created = { id: `m${messageCounter}`, sender: 'me', text, type: MESSAGE_TYPE.TEXT, content: { text }, time: 'now' }
+    const created = { id: `m${messageCounter}`, sender: 'me', text, type: MESSAGE_TYPE.TEXT, content: { text } }
     conversation.messages.push(created)
     conversation.preview = text
     return createSuccess(toMessageDto(conversation, created))
@@ -131,11 +131,10 @@ const conversationSendMessageHandler = ({ payload }) => {
       mediaType,
       title,
       creator: creator || undefined,
-      posterUrl: posterUrl || `placeholder://${mediaType}/${encodeURIComponent(title.toLowerCase())}`,
+      posterUrl: posterUrl || null,
       context: context || undefined
     },
-    text: `Playing now: ${title}`,
-    time: 'now'
+    text: `Playing now: ${title}`
   }
   conversation.messages.push(created)
   conversation.preview = `${title}${mediaType === PLAYING_NOW_MEDIA_TYPE.SONG ? ' 🎵' : mediaType === PLAYING_NOW_MEDIA_TYPE.MOVIE ? ' 🎬' : ' 📺'}`

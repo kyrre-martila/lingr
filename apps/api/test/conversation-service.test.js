@@ -30,6 +30,11 @@ test('send validates app_invite appId enum', async () => {
   await assert.rejects(sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u1' }), conversationId: 'cnv_c1', payload: { type: 'app_invite', content: { appId: 'any-string' } }, dbClient: db }), (e) => e.reasonCode === REASON_CODES.MESSAGE.INVALID_PAYLOAD_BY_TYPE)
 })
 
+test('send rejects system-originated message types for viewer sends', async () => {
+  const db = { conversation: { findFirst: async () => ({ id: 'c1' }) } }
+  await assert.rejects(sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u1' }), conversationId: 'cnv_c1', payload: { type: 'system', content: { text: 'hi' } }, dbClient: db }), (e) => e.reasonCode === REASON_CODES.PERMISSION.NOT_ALLOWED)
+})
+
 test('send persists participant message as dto', async () => {
   const db = {
     conversation: { findFirst: async () => ({ id: 'c1' }) },
@@ -41,13 +46,15 @@ test('send persists participant message as dto', async () => {
 })
 
 test('list messages returns pagination-ready structure', async () => {
+  let query
   const db = {
     conversation: { findFirst: async () => ({ id: 'c1' }) },
-    message: { findMany: async () => ([{ id: 'm2', conversationId: 'c1', senderUserId: 'u1', type: 'text', visibility: 'conversation', deliveryState: 'sent', content: { text: 'hey' }, metadata: null, createdAt: now, updatedAt: now }]) }
+    message: { findMany: async (args) => { query = args; return [{ id: 'm2', conversationId: 'c1', senderUserId: 'u1', type: 'text', visibility: 'conversation', deliveryState: 'sent', content: { text: 'hey' }, metadata: null, createdAt: now, updatedAt: now }] } }
   }
   const result = await listConversationMessages({ viewer: createAuthenticatedViewer({ userId: 'u1' }), conversationId: 'cnv_c1', dbClient: db })
   assert.equal(Array.isArray(result.items), true)
   assert.equal(result.page.limit, 30)
+  assert.deepEqual(query.orderBy, { createdAt: 'asc' })
 })
 
 test('list messages rejects cursor from another conversation', async () => {
