@@ -268,3 +268,54 @@
 - [ ] Trigger retryable send mock by sending text containing `[retryable-error]` and verify gentle retry guidance.
 - [ ] Trigger timeline permission case (mock conversation `c3`) and verify unavailable messaging state.
 - [ ] Verify calm Lingr styling remains and mobile-first layout is unchanged.
+
+## Run 7 — Playing now calm chat card message type
+
+### Playing now implementation decisions
+- Implemented Playing now as a message-card type rendered in the existing timeline stream without redesigning layout structure.
+- Kept transport swappable by sending through the existing `conversations.messages.send` operation via service boundary (`sendConversationPayloadMessage`).
+- Kept entry flow manual-input only: plus button opens a lightweight inline composer with no external search or provider integration.
+
+### Message payload decisions
+- Uses shared `playing_now` type and shared media values: `song | movie | tv_series`.
+- Payload shape sent through service boundary:
+  - `mediaType` (required)
+  - `title` (required)
+  - `creator` (optional)
+  - `posterUrl` (optional)
+  - `context` (optional)
+- If poster URL is omitted in mock mode, a placeholder URI is generated so card rendering can still show an artwork hint.
+
+### UI rendering decisions
+- Playing now renders as a warm, calm card variant in timeline:
+  - subtle “Playing now · {media type}” lead text
+  - title-forward display
+  - optional creator/context/poster hint rows
+- Card remains conversational (single message in stream) and does not write to profile or preference surfaces.
+- Preserved mobile-first behavior by reusing existing composer stack and message stream structure.
+
+### Validation and error handling
+- Manual composer validates at transport boundary:
+  - requires valid `mediaType`
+  - requires non-empty `title`
+- Validation errors map to gentle inline copy in composer.
+- Permission and retryable/general failures map to existing calm error messaging behavior.
+- Text-message flow validation remains unchanged.
+
+### Deferred external integrations
+- No Spotify integration.
+- No Apple Music integration.
+- No TMDB integration.
+- No IMDb integration.
+- No artwork/provider lookup integration.
+- No search API integration (manual input / placeholder behavior only).
+
+### Manual testing checklist
+- [ ] Open a conversation and use `+` to open the Playing now composer.
+- [ ] Share a Song card with title only and verify it appears as a timeline card.
+- [ ] Share a Movie card with creator and context and verify optional fields render.
+- [ ] Share a TV Series card without poster URL and verify placeholder hint behavior.
+- [ ] Submit Playing now without title and verify validation error copy is shown.
+- [ ] Verify paused/unavailable conversation blocks Playing now sharing with permission copy.
+- [ ] Verify regular text sending still works unchanged.
+- [ ] Verify no likes, reactions, counters, timestamps, typing indicators, or read receipts appear.
