@@ -9,7 +9,7 @@
 
 ## Roadmap updates
 - Roadmap now reflects a realistic sequence to beta launch:
-  - Run 8: Auth & onboarding completion.
+  - Run 8: MVP Auth & Onboarding (email/password-first).
   - Run 9: Discovery MVP.
   - Run 10: Layers & Window v1.
   - Run 11: Chat Apps MVP.
@@ -47,3 +47,12 @@
 - Preserved current message vocabulary and chat direction assumptions from Run 7 documentation.
 - Ensured roadmap additions are practical and do not invent unrelated product lines.
 - Ensured Window and chat-app positioning are consistent with documented Run 7 direction.
+
+
+## Auth strategy simplification update
+- Replaced Run 8 third-party-provider assumptions with a Lingr-native MVP auth plan.
+- Removed Apple Sign In / Google Sign In / magic-link-fallback assumptions from MVP scope.
+- Run 8 now focuses on email/password auth, password reset, email verification, onboarding gating, profile completion, session hardening, and account safety basics.
+- Added explicit clarification that MVP auth prioritizes simplicity, reliability, and fast product validation.
+- Added a new post-MVP auth note documenting deferred additions: Apple Sign In, Google Sign In, passwordless login, and account linking.
+

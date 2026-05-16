@@ -54,21 +54,26 @@ These are known stabilization gaps to resolve as part of upcoming runs:
 
 ## MVP Roadmap
 
-## Run 8 — Auth & onboarding completion
-Goal: make account creation and first-session entry complete, reliable, and calm.
+## Run 8 — MVP Auth & Onboarding
+Goal: deliver simple, reliable Lingr-native authentication for fast MVP validation.
 
 Planned scope:
-- Apple Sign In.
-- Google Sign In.
-- Magic link fallback.
+- Email/password authentication.
+- Password reset flow.
+- Email verification.
 - Onboarding gating.
 - Profile completion flow.
-- Push notification foundation.
+- Session hardening.
+- Account safety basics.
+
+Clarification:
+- MVP auth prioritizes simplicity, reliability, and fast product validation.
+- Third-party login providers are intentionally deferred until post-MVP.
 
 Exit criteria:
-- A new user can reliably create/login to an account with at least one primary provider and fallback path.
+- New users can reliably register, verify, sign in, reset password, and return to active sessions.
 - Incomplete onboarding cannot silently bypass required profile steps.
-- Notification foundation exists without introducing urgency mechanics.
+- Session handling and account protections meet MVP safety/reliability baseline.
 
 ## Run 9 — Discovery MVP
 Goal: ship intentional, limited discovery that supports quality over volume.
@@ -240,6 +245,14 @@ Apps should be:
 - never manipulative
 
 ---
+
+
+## Post-MVP auth additions (deferred)
+Potential future authentication additions after MVP stabilization:
+- Apple Sign In.
+- Google Sign In.
+- Passwordless login.
+- Account linking.
 
 ## Intentionally deferred until post-MVP or post-stabilization
 To keep execution realistic, the following stay deferred unless required for MVP safety/reliability:
