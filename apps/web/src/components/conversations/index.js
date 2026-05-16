@@ -25,6 +25,23 @@ const createConversationList = (items, activeId, onSelect) => {
 }
 
 const createBubble = (message) => {
+  if (message.type === 'layer_unlock') {
+    const card = document.createElement('article')
+    card.className = 'message-system-banner layer-unlock-banner'
+    const title = String(message.content?.title || 'You unlocked a new layer').trim()
+    const subtitle = String(message.content?.subtitle || '').trim()
+    const ctaLabel = String(message.content?.ctaLabel || '').trim()
+    card.innerHTML = `
+      <div class="layer-unlock-banner__icon" aria-hidden="true">✧</div>
+      <div class="layer-unlock-banner__copy">
+        <p class="layer-unlock-banner__title">${title}</p>
+        ${subtitle ? `<p class="layer-unlock-banner__subtitle">${subtitle}</p>` : ''}
+      </div>
+      ${ctaLabel ? `<p class="layer-unlock-banner__cta">${ctaLabel}</p>` : ''}
+    `
+    return card
+  }
+
   if (message.type === 'playing_now') {
     const card = document.createElement('article')
     const isMe = message.senderUserId === 'usr_mock_viewer'

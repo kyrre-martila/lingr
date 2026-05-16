@@ -177,6 +177,23 @@ p { margin: 0 0 var(--space-3); }
 .playing-now-card__context,
 .playing-now-card__poster { color: var(--muted); margin-top: 0.25rem !important; }
 .playing-now-card__poster { font-size: 0.85rem; }
+.message-system-banner {
+  width: min(100%, 40rem);
+  justify-self: center;
+  border: 1px solid #e5d4c6;
+  border-radius: 0.95rem;
+  background: #fbf2eb;
+  padding: 0.7rem 0.85rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+.layer-unlock-banner__icon { color: #c88765; font-size: 1.05rem; line-height: 1; }
+.layer-unlock-banner__copy p { margin: 0; }
+.layer-unlock-banner__title { font-weight: 600; color: #513a2e; }
+.layer-unlock-banner__subtitle { margin-top: 0.08rem !important; color: #7a6658; font-size: 0.92rem; }
+.layer-unlock-banner__cta { margin: 0; color: #7a6658; font-size: 0.9rem; white-space: nowrap; }
 .conversation-empty { border: 1px dashed #1c2b2525; border-radius: 0.9rem; padding: var(--space-4); background: #fff; }
 .conversation-empty h3 { margin-bottom: var(--space-2); }
 .conversation-empty ul { margin: var(--space-3) 0 0; padding-left: 1.1rem; color: var(--muted); display: grid; gap: var(--space-1); }

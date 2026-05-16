@@ -47,17 +47,21 @@ const toConversationDto = (conversation) => ({
   profile: { name: conversation.name, mood: conversation.mood, preview: conversation.preview }
 })
 
-const toMessageDto = (conversation, message) => ({
-  messageId: `msg_${message.id}`,
-  conversationId: `cnv_${conversation.id}`,
-  senderUserId: message.sender === 'me' ? 'usr_mock_viewer' : `usr_mock_${conversation.id}`,
-  type: message.type || MESSAGE_TYPE.TEXT,
-  visibility: 'conversation',
-  deliveryState: 'sent',
-  content: message.content || { text: message.text },
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString()
-})
+const toMessageDto = (conversation, message) => {
+  const type = message.type || MESSAGE_TYPE.TEXT
+  const isLayerUnlock = type === MESSAGE_TYPE.LAYER_UNLOCK
+  return {
+    messageId: `msg_${message.id}`,
+    conversationId: `cnv_${conversation.id}`,
+    senderUserId: isLayerUnlock ? null : (message.sender === 'me' ? 'usr_mock_viewer' : `usr_mock_${conversation.id}`),
+    type,
+    visibility: isLayerUnlock ? 'soft_banner' : 'conversation',
+    deliveryState: 'sent',
+    content: message.content || { text: message.text },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+}
 
 const findConversationByDtoId = (conversationId) => snapshot.conversations.find((item) => `cnv_${item.id}` === conversationId)
 
