@@ -161,3 +161,52 @@
 - [ ] Sending invalid payload per type returns `message.invalid_payload_by_type`.
 - [ ] `playing_now` persists and returns valid `song|movie|tv_series` payloads.
 - [ ] Timeline response shape includes `items` and `page.nextCursor`.
+
+## Run 7 — Calm chat input + plus-menu skeleton implemented
+
+### UI components added
+- Added a new calm composer row in web chat UI with:
+  - left-aligned `+` button,
+  - central message field,
+  - right-aligned send button.
+- Added a reusable in-composer bottom-sheet-style menu container (`composer-sheet`) rendered from structured menu data.
+- Added first-level menu items:
+  - Apps
+  - Playing now
+- Added second-level menu structures:
+  - Apps → Match Cards, Guess Me, Snuggle
+  - Playing now → Song, Movie, TV Series
+
+### Interaction decisions
+- `+` toggles the calm menu open/closed without sending or mutating chat payloads.
+- Menu hierarchy is data-driven (`menuData`) to keep future app wiring simple and non-invasive.
+- Selecting a first-level item with children navigates to a submenu in place.
+- Submenu includes an explicit Back action to return to root menu.
+- Selecting leaf menu items is currently no-op by design (skeleton only, no external integration).
+- Focusing the message field closes the menu to reduce visual pressure and keep composing flow simple.
+
+### Accessibility notes
+- `+` uses `aria-haspopup="dialog"`, `aria-controls`, and `aria-expanded` to expose menu state.
+- Menu container uses `role="dialog"` with a calm-label for assistive tech.
+- Keyboard support:
+  - Enter/Space on buttons works via native button semantics.
+  - Escape closes the menu and returns focus to the `+` trigger.
+- Input and actions respect existing disabled state when messaging is unavailable/paused.
+- Focus-visible and contrast-conscious styles were added for menu actions and composer controls.
+
+### Deferred app functionality
+- No app launch, share posting, backend calls, or external integrations were added.
+- No payload dispatch for app/media picks yet.
+- No change to message stream semantics for app cards in this run.
+- Typing indicators, online status, read receipts, and per-message timestamps remain out of scope for this implementation.
+
+### Manual testing checklist
+- [ ] Verify composer shows `+`, message field, and send button in calm aligned layout.
+- [ ] Verify `+` opens first-level menu with exactly: Apps, Playing now.
+- [ ] Verify Apps opens submenu with exactly: Match Cards, Guess Me, Snuggle.
+- [ ] Verify Playing now opens submenu with exactly: Song, Movie, TV Series.
+- [ ] Verify Back returns from submenu to root menu.
+- [ ] Verify Escape closes menu and refocuses `+`.
+- [ ] Verify focusing the message field closes menu.
+- [ ] Verify disabled composer states still disable interactions.
+- [ ] Verify no app/media selection triggers external integration or network behavior.

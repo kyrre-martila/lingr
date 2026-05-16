@@ -58,14 +58,110 @@ const createEmptyState = () => {
 const createInputArea = ({ paused, messagingAvailable }) => {
   const form = document.createElement('form')
   form.className = 'conversation-input'
+  const canCompose = messagingAvailable && !paused
+  let menuLevel = 'root'
+
   form.innerHTML = `
     <label for="message-input" class="sr-only">Write a message</label>
-    <textarea id="message-input" class="onboarding-input" rows="3" placeholder="Share a thoughtful response..." ${!messagingAvailable || paused ? 'disabled' : ''}></textarea>
+    <div class="composer-shell">
+      <button class="composer-shell__plus" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="composer-sheet" aria-label="Open calm menu" ${canCompose ? '' : 'disabled'}>+</button>
+      <textarea id="message-input" class="onboarding-input composer-shell__field" rows="1" placeholder="Write a message..." ${canCompose ? '' : 'disabled'}></textarea>
+      <button class="composer-shell__send" type="submit" aria-label="Send message" ${canCompose ? '' : 'disabled'}>Send</button>
+    </div>
+    <div id="composer-sheet" class="composer-sheet" role="dialog" aria-label="Calm menu" hidden></div>
     <div class="conversation-input__actions">
       <button class="button button--ghost" type="button">Pause & Reflect</button>
-      <button class="button" type="submit" ${!messagingAvailable || paused ? 'disabled' : ''}>Send gently</button>
     </div>
   `
+
+  const plusButton = form.querySelector('.composer-shell__plus')
+  const menuSheet = form.querySelector('.composer-sheet')
+  const messageInput = form.querySelector('#message-input')
+
+  const menuData = {
+    root: {
+      title: 'Share gently',
+      items: [
+        { id: 'apps', label: 'Apps', subtitle: 'Match Cards, Guess Me, Snuggle', next: 'apps' },
+        { id: 'playing_now', label: 'Playing now', subtitle: 'Song, Movie, TV Series', next: 'playing_now' }
+      ]
+    },
+    apps: {
+      title: 'Apps',
+      items: [
+        { id: 'match_cards', label: 'Match Cards' },
+        { id: 'guess_me', label: 'Guess Me' },
+        { id: 'snuggle', label: 'Snuggle' }
+      ]
+    },
+    playing_now: {
+      title: 'Playing now',
+      items: [
+        { id: 'song', label: 'Song' },
+        { id: 'movie', label: 'Movie' },
+        { id: 'tv_series', label: 'TV Series' }
+      ]
+    }
+  }
+
+  const renderMenu = () => {
+    const view = menuData[menuLevel]
+    const canGoBack = menuLevel !== 'root'
+    menuSheet.innerHTML = `
+      <div class="composer-sheet__handle" aria-hidden="true"></div>
+      <div class="composer-sheet__header">
+        <p class="composer-sheet__title">${view.title}</p>
+        ${canGoBack ? '<button type="button" class="composer-sheet__back">Back</button>' : ''}
+      </div>
+      <ul class="composer-sheet__list" aria-label="${view.title} menu options">
+        ${view.items.map((item) => `<li><button class="composer-sheet__item" type="button" data-id="${item.id}" ${item.next ? `data-next="${item.next}"` : ''}><span>${item.label}</span>${item.subtitle ? `<small>${item.subtitle}</small>` : ''}</button></li>`).join('')}
+      </ul>
+    `
+
+    const backButton = menuSheet.querySelector('.composer-sheet__back')
+    if (backButton) backButton.addEventListener('click', () => {
+      menuLevel = 'root'
+      renderMenu()
+    })
+
+    menuSheet.querySelectorAll('.composer-sheet__item').forEach((itemButton) => {
+      itemButton.addEventListener('click', () => {
+        const nextLevel = itemButton.dataset.next
+        if (nextLevel) {
+          menuLevel = nextLevel
+          renderMenu()
+        }
+      })
+    })
+  }
+
+  const closeMenu = () => {
+    menuSheet.hidden = true
+    plusButton?.setAttribute('aria-expanded', 'false')
+  }
+
+  const openMenu = () => {
+    menuLevel = 'root'
+    renderMenu()
+    menuSheet.hidden = false
+    plusButton?.setAttribute('aria-expanded', 'true')
+  }
+
+  plusButton?.addEventListener('click', () => {
+    if (menuSheet.hidden) openMenu()
+    else closeMenu()
+  })
+
+  form.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !menuSheet.hidden) {
+      closeMenu()
+      plusButton?.focus()
+    }
+  })
+
+  messageInput?.addEventListener('focus', () => {
+    if (!menuSheet.hidden) closeMenu()
+  })
 
   form.addEventListener('submit', (event) => event.preventDefault())
   return form
