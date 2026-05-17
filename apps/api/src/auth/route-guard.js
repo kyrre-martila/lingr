@@ -12,9 +12,11 @@ export const resolveRouteProtection = ({ viewer, requiresAuth = false, allowOnbo
   return { outcome: ROUTE_OUTCOME.ALLOW, reasonCode: null }
 }
 
+const isAuthReasonCode = (reasonCode) => reasonCode === REASON_CODES.AUTH.REQUIRES_AUTH || reasonCode === REASON_CODES.AUTH.SESSION_EXPIRED
+
 export const toRouteGuardError = ({ reasonCode }) => ({
   kind: reasonCode.startsWith('auth.') ? DOMAIN_ERROR_KIND.AUTH : DOMAIN_ERROR_KIND.ROUTE,
   reasonCode,
   message: 'Route access denied',
-  statusCode: 403
+  statusCode: isAuthReasonCode(reasonCode) ? 401 : 403
 })

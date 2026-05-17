@@ -10,6 +10,7 @@ const operationMap = Object.freeze({
   'auth.login': { method: 'POST', path: '/v1/auth/login', body: ({ email, password }) => ({ email, password }) },
   'auth.logout': { method: 'POST', path: '/v1/auth/logout' },
   'profile.get': { method: 'GET', path: '/v1/profile/viewer' },
+  'profile.completeness': { method: 'GET', path: '/v1/profile/completeness' },
   'conversations.viewer.list': { method: 'GET', path: '/v1/conversations/viewer' },
   'conversations.messages.list': { method: 'GET', path: ({ conversationId }) => `/v1/conversations/${encodeURIComponent(conversationId)}/messages` },
   'conversations.messages.send': { method: 'POST', path: ({ conversationId }) => `/v1/conversations/${encodeURIComponent(conversationId)}/messages`, body: ({ conversationId, text, ...rest }) => ({
