@@ -8,6 +8,13 @@ export const SESSION_STATES = {
   INCOMPLETE_PROFILE: 'incomplete-profile'
 }
 
+export const resolveSessionStateFromFlags = ({ isAuthenticated, onboardingComplete, profileComplete }) => {
+  if (!isAuthenticated) return SESSION_STATES.ANONYMOUS
+  if (!onboardingComplete) return SESSION_STATES.ONBOARDING
+  if (!profileComplete) return SESSION_STATES.INCOMPLETE_PROFILE
+  return SESSION_STATES.SIGNED_IN
+}
+
 const createMockSession = (sessionState = SESSION_STATES.ANONYMOUS) => ({
   state: sessionState,
   user: sessionState === SESSION_STATES.ANONYMOUS ? null : { id: 'mock-user-1', displayName: 'Ari', profileComplete: sessionState === SESSION_STATES.SIGNED_IN },

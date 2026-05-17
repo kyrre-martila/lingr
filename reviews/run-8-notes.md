@@ -1,60 +1,66 @@
-# Run 8 Notes — Lingr-native Authentication MVP
+# Run 8 Notes — Authenticated Gating Flow Stabilization
 
-## Auth architecture decisions
-- Added first Lingr-native auth endpoints: `POST /v1/auth/register`, `POST /v1/auth/login`, `POST /v1/auth/logout`.
-- Kept implementation intentionally simple and backend-ready with in-memory auth/session store boundary (`session-store.js`) that can later be replaced by DB-backed persistence.
-- Preserved shared contract usage and canonical reason-code behavior for auth failures.
+## Onboarding gating decisions
+- Kept onboarding as the first post-auth required gate.
+- Added centralized session-state resolver logic so auth state + onboarding completion decide whether a user remains in `onboarding` state.
+- Route guard now emits canonical shared reason code `route.requires_onboarding` when authenticated users are still onboarding-gated.
+- Onboarding completion is treated as a session/profile readiness input rather than scattered per-component checks.
 
-## Session strategy
-- Bearer-token session model with TTL-based expiration.
-- Session lookup now returns explicit expired-session signal, converted to viewer auth state `expired`.
-- Route guard maps expired viewer to canonical `auth.session_expired` instead of generic anonymous failure.
-- Logout invalidates session token explicitly.
+## Profile completion requirements (MVP)
+- Defined minimal profile-complete gate for Run 8 as:
+  - user is authenticated
+  - onboarding is complete
+  - profile completion is complete flag (derived session readiness signal)
+- Added canonical shared reason code `route.requires_profile_completion` for app-route redirects when profile is incomplete.
+- Users in incomplete-profile state are allowed to access `/profile` and routed there from other app routes.
 
-## Route gating decisions
-- Route guard behavior now supports explicit expired-session reason propagation.
-- Enforced onboarding gating remains active through existing route-access layer; onboarding-only routes are blocked for signed-in users in enforced mode.
+## Route access decisions
+- Centralized route gating in `apps/web/src/state/route-access.js`.
+- Added reason-code mapping in route guard responses:
+  - `auth.requires_auth`
+  - `route.requires_onboarding`
+  - `route.requires_profile_completion`
+  - `route.unknown_route`
+- Enforced path guidance:
+  - unauthenticated app access → `/onboarding`
+  - incomplete onboarding → discovery/onboarding gate handling
+  - incomplete profile → `/profile`
+  - complete profile → app routes allowed
 
-## Transport/session propagation changes
-- HTTP transport now supports:
-  - auth operations (`auth.register`, `auth.login`, `auth.logout`)
-  - profile snapshot (`profile.get`)
-  - existing conversation operations
-- HTTP requests now include `Authorization: Bearer <token>` when session token exists.
-- Default API client reads persisted session token from `localStorage`.
-- Mock fallback behavior tightened: fallback to mock is now explicit dev-only (`__LINGR_DEV_MOCK_FALLBACK__`) for conversation operations; other failures surface without silent fallback.
+## Session/profile update behavior
+- Added `resolveSessionStateFromFlags` in session state module to derive canonical session state from readiness flags.
+- Session state progression is now explicit and testable:
+  - anonymous
+  - onboarding required
+  - profile completion required
+  - signed-in ready
+- This keeps onboarding/profile completion transitions aligned with route gating in one place.
 
-## Files/modules added
-- `apps/api/src/routes/auth.js`
-- `apps/web/test/auth-session-flow.test.js`
+## Transport/session consistency behavior
+- Existing authenticated HTTP transport behavior remains in place (Bearer token auto-attachment after login).
+- Existing expired-session envelope handling remains canonical (`auth.session_expired`), with no silent mock fallback in authenticated app flows unless explicit dev mock mode is enabled.
 
-## Files/modules updated
-- `apps/api/src/auth/session-store.js`
-- `apps/api/src/auth/middleware.js`
-- `apps/api/src/auth/route-guard.js`
-- `apps/api/src/routes/index.js`
-- `apps/web/src/api/http-transport.js`
-- `apps/web/src/api/client.js`
+## Tests/checks added
+- Expanded `apps/web/test/auth-session-flow.test.js` coverage for:
+  - unauthenticated route access block + redirect
+  - authenticated incomplete onboarding gating
+  - authenticated incomplete profile gating
+  - authenticated completed profile access
+  - expired session canonical error envelope
+  - profile/onboarding completion state progression resolution
 
-## Deferred auth features (intentional)
-- Apple Sign In
-- Google Sign In
-- passwordless login
-- account linking
-- advanced role systems
-- notifications
-- realtime systems
-
-## Local test commands
-- `pnpm --filter @lingr/web test`
-- `pnpm --filter @lingr/api test`
+## Deferred work
+- Persist onboarding completion to backend profile/user record (currently represented as readiness/session state input).
+- Introduce dedicated `/auth` and `/profile-completion` route surfaces if product wants separated UX from full profile screen.
+- Wire server-provided onboarding/profile completion flags directly into client bootstrap session hydration.
+- Password reset and email verification flow hardening (separate Run 8 sub-scope).
 
 ## Manual testing checklist
-- [ ] Register new user with email/password and capture session token.
-- [ ] Login with existing email/password and verify session token rotation.
-- [ ] Logout and verify protected route access fails with auth reason code.
-- [ ] Force-expire session and verify canonical `auth.session_expired`.
-- [ ] Access conversation list with active token and verify success.
-- [ ] Send text message with active token and verify success envelope.
-- [ ] Confirm onboarding route gating behavior in enforced mode.
-- [ ] Confirm mock fallback only activates when dev flag is explicitly enabled.
+- [ ] Register with email/password and verify session token is created.
+- [ ] Login with existing credentials and verify session token is used by subsequent API requests.
+- [ ] Visit `/discovery` while unauthenticated and verify redirect guidance to onboarding/auth entry path.
+- [ ] Authenticate with onboarding incomplete and verify app-route gating remains onboarding-blocked.
+- [ ] Mark onboarding complete with profile incomplete and verify non-profile app routes redirect to `/profile`.
+- [ ] Complete profile requirements and verify `/discovery`, `/conversations`, and `/profile` are all accessible.
+- [ ] Expire a session token and verify protected operations return `auth.session_expired` and app handles session loss gracefully.
+- [ ] Confirm mock fallback only activates when explicit dev mock fallback flag is enabled.
