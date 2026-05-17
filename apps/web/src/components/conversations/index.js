@@ -136,7 +136,7 @@ const createInputArea = ({ canCompose, onSubmit, error }) => {
     <div class="composer-shell">
       <button id="composer-plus-trigger" class="composer-shell__plus" type="button" aria-label="Open calm menu" aria-haspopup="dialog" aria-controls="composer-plus-sheet" aria-expanded="false" ${canCompose ? '' : 'disabled'}>+</button>
       <textarea id="message-input" class="onboarding-input composer-shell__field" rows="1" placeholder="Write a message..." ${canCompose ? '' : 'disabled'}></textarea>
-      <button class="composer-shell__send" type="submit" aria-label="Send message" ${canCompose ? '' : 'disabled'}>Send</button>
+      <button class="composer-shell__send" type="submit" aria-label="Send message" ${canCompose ? '' : 'disabled'}>${canCompose ? 'Send' : 'Paused'}</button>
     </div>
     ${error ? `<p class="onboarding-form__error" role="status">${error}</p>` : ''}
   `
@@ -144,6 +144,7 @@ const createInputArea = ({ canCompose, onSubmit, error }) => {
   form.addEventListener('submit', (event) => {
     event.preventDefault()
     const text = form.querySelector('#message-input')?.value || ''
+    if (!canCompose) return
     onSubmit(text)
   })
   const plusButton = form.querySelector('.composer-shell__plus')
@@ -214,7 +215,7 @@ export const createConversationsSection = () => {
   const listHost = section.querySelector('[data-list]')
   const detailHost = section.querySelector('[data-detail]')
 
-  const state = { loading: true, conversations: [], activeId: '', messagesStatus: 'idle', messages: [], messagesError: null, submitError: '' }
+  const state = { loading: true, conversations: [], activeId: '', messagesStatus: 'idle', messages: [], messagesError: null, submitError: '', sending: false }
 
   const render = () => {
     if (state.loading) {
@@ -253,18 +254,37 @@ export const createConversationsSection = () => {
       canCompose: active.state === 'active',
       error: state.submitError,
       onSubmit: async (text) => {
+        if (state.sending) return
         state.submitError = ''
-        const response = await sendConversationMessage({ conversationId: active.conversationId, text })
+        const trimmed = String(text || '').trim()
+        const optimisticId = `tmp_${Date.now()}`
+        const optimistic = trimmed ? { messageId: optimisticId, conversationId: active.conversationId, senderUserId: 'usr_mock_viewer', type: 'text', visibility: 'conversation', deliveryState: 'queued', content: { text: trimmed } } : null
+        if (optimistic) state.messages.push(optimistic)
+        state.sending = true
+        render()
+
+        const response = await sendConversationMessage({ conversationId: active.conversationId, text: trimmed })
+        state.sending = false
+
         if (response.status === 'error') {
+          state.messages = state.messages.filter((item) => item.messageId !== optimisticId)
           state.submitError = response.error.kind === DOMAIN_ERROR_KIND.VALIDATION
             ? 'Please enter a message before sending.'
-            : response.error.kind === DOMAIN_ERROR_KIND.PERMISSION
-              ? 'You cannot send messages in this conversation right now.'
-              : 'Message could not be sent. Retry in a moment.'
+            : response.error.kind === DOMAIN_ERROR_KIND.AUTH
+              ? 'Your session has expired. Please sign in again.'
+              : response.error.kind === DOMAIN_ERROR_KIND.PERMISSION
+                ? 'You cannot send messages in this conversation right now.'
+                : response.error.retryable
+                  ? 'Temporary send issue. Please retry.'
+                  : 'Message could not be sent. Retry in a moment.'
           render()
           return
         }
+
+        state.messages = state.messages.filter((item) => item.messageId !== optimisticId)
         state.messages.push(response.data)
+        state.messages.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime())
+        await loadMessages()
         render()
       }
     }))
@@ -284,7 +304,7 @@ export const createConversationsSection = () => {
       return
     }
     state.messagesStatus = 'success'
-    state.messages = response.data.items || []
+    state.messages = (response.data.items || []).slice().sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime())
   }
 
   const boot = async () => {
