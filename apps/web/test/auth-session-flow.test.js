@@ -48,7 +48,7 @@ test('unauthenticated users are redirected to onboarding when accessing app rout
 test('authenticated users with incomplete onboarding are routed to onboarding', () => {
   const result = evaluateRouteGuard({ path: '/profile', sessionState: SESSION_STATES.ONBOARDING, mode: GUARD_MODES.ENFORCED })
   assert.equal(result.allowed, false)
-  assert.equal(result.suggestedRedirectTarget, '/discovery')
+  assert.equal(result.suggestedRedirectTarget, '/onboarding')
   assert.equal(result.blockedReasonCode, 'route.requires_onboarding')
 })
 
@@ -59,6 +59,19 @@ test('authenticated users with incomplete profile are routed to profile completi
   assert.equal(blocked.suggestedRedirectTarget, '/profile')
   assert.equal(blocked.blockedReasonCode, 'route.requires_profile_completion')
   assert.equal(allowed.allowed, true)
+})
+
+
+
+test('incomplete users trying discovery are redirected directly to their required flow', () => {
+  const onboarding = evaluateRouteGuard({ path: '/discovery', sessionState: SESSION_STATES.ONBOARDING, mode: GUARD_MODES.ENFORCED })
+  const incompleteProfile = evaluateRouteGuard({ path: '/discovery', sessionState: SESSION_STATES.INCOMPLETE_PROFILE, mode: GUARD_MODES.ENFORCED })
+  assert.equal(onboarding.allowed, false)
+  assert.equal(onboarding.suggestedRedirectTarget, '/onboarding')
+  assert.equal(onboarding.blockedReasonCode, 'route.requires_onboarding')
+  assert.equal(incompleteProfile.allowed, false)
+  assert.equal(incompleteProfile.suggestedRedirectTarget, '/profile')
+  assert.equal(incompleteProfile.blockedReasonCode, 'route.requires_profile_completion')
 })
 
 test('authenticated users with complete profile can access app routes', () => {
