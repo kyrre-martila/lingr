@@ -55,7 +55,7 @@ const getBlockedReason = ({ routeMeta, sessionState }) => {
 const getSuggestedRedirectTarget = ({ blockedReason }) => {
   if (blockedReason === BLOCK_REASONS.REQUIRES_APP_SESSION) return '/onboarding'
   if (blockedReason === BLOCK_REASONS.REQUIRES_PROFILE_COMPLETION) return '/profile'
-  if (blockedReason === BLOCK_REASONS.REQUIRES_ONBOARDING) return '/discovery'
+  if (blockedReason === BLOCK_REASONS.REQUIRES_ONBOARDING) return '/onboarding'
   return null
 }
 
