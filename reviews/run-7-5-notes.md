@@ -1,61 +1,66 @@
-# Run 7.5 Notes — Calm Chat Stabilization
+# Run 7.5 Notes — Frontend/Backend Chat Wiring
 
-## Files changed
-- `apps/web/src/data/mocks/conversations.js`
-- `apps/web/src/api/mock-transport.js`
-- `apps/web/src/components/conversations/index.js`
-- `apps/web/test/conversation-guardrails.test.js`
-- `apps/api/src/services/conversation-service.js`
-- `apps/api/test/conversation-service.test.js`
-- `reviews/run-7-5-notes.md`
+## Chat wiring decisions
+- Active chat list now resolves through the conversation service boundary, with API client transport selecting HTTP-first for `conversations.*` operations.
+- Timeline reads now resolve through backend/API boundary and are normalized to ascending timeline order before render.
+- Send flow now routes through backend/API boundary and performs safe optimistic append only for non-empty text, then refetches to confirm final consistency.
+- Active chat UI does not read directly from mock conversation arrays.
 
-## Pressure fields removed
-Removed pressure/timing mechanics from active conversation mock data path:
-- conversation-level: `updatedAt`, `unread`, `nextPromptAt`
-- message-level: `time`
-- safety timing metadata: `messageIntervalHours`, `preferredResponseWindowHours`
+## Services changed
+- `apps/web/src/api/http-transport.js` (new): operation-to-REST mapping for:
+  - `conversations.viewer.list` → `GET /v1/conversations/viewer`
+  - `conversations.messages.list` → `GET /v1/conversations/:conversationId/messages`
+  - `conversations.messages.send` → `POST /v1/conversations/:conversationId/messages`
+- `apps/web/src/api/client.js`: default transport is HTTP-first for conversation operations, with isolated mock fallback on transport failure.
+- `apps/web/src/components/conversations/index.js`:
+  - loads conversation list via service boundary
+  - loads timeline via service boundary
+  - sends text via service boundary
+  - optimistic append + rollback on failure
+  - refetch after successful send for consistency
+  - explicit auth/permission/validation/retryable messaging
 
-## System sender decisions
-- Treated `system` and `layer_unlock` as system-originated message types.
-- System-originated rows map to `senderUserId: null`.
-- Viewer send endpoint now rejects system-originated message types (`permission.not_allowed`) to prevent client-side spoofing.
+## Mock dependencies removed or deferred
+- Removed active-chat direct dependency on UI-owned mock conversation data.
+- Mock transport remains only as an isolated fallback boundary when HTTP conversation operations are unavailable/failing (documented in `createDefaultTransport`).
 
-## Message ordering decision
-- Timeline list endpoint now returns messages in ascending `createdAt` order.
-- Frontend append-after-send behavior remains consistent with ascending order.
+## Transport behavior
+- Conversation operations are routed through HTTP transport first.
+- If HTTP returns a non-success envelope or transport failure, client falls back to mock transport for continuity in local/demo contexts.
+- Non-conversation operations continue using existing mock transport behavior unchanged.
 
-## app_invite validation changes
-- Preserved canonical app invite validation (`match_cards | guess_me | snuggle`) at API boundary.
-- Invalid values continue returning canonical reason code `message.invalid_payload_by_type`.
-
-## Placeholder media decision
-- Removed `placeholder://` persistence behavior from `playing_now` send path in mock transport.
-- Poster URL is now `null` when no concrete URL is supplied.
-
-## layer_unlock CTA decision
-- If `ctaLabel` and `ctaRoute` are both present, CTA now renders as a real anchor action.
-- If only `ctaLabel` exists, it remains non-interactive text.
-- MVP mock data now provides a route for the layer unlock CTA.
+## Error states handled in send flow
+- Loading: local `sending` state prevents duplicate sends.
+- Success: optimistic row replaced by server-confirmed row, then timeline refetch.
+- Validation error: “Please enter a message before sending.”
+- Auth error: “Your session has expired. Please sign in again.”
+- Permission error: “You cannot send messages in this conversation right now.”
+- Retryable/domain error: “Temporary send issue. Please retry.”
 
 ## Tests/checks added
-- Guardrail test: no pressure fields in active conversation mock data.
-- Guardrail test: system/layer_unlock sender maps to `null`.
-- Guardrail test: `placeholder://` is not persisted.
-- Guardrail check: layer unlock CTA rendering path includes actionable link when route exists.
-- API test: timeline query ordering uses ascending `createdAt`.
-- API test: viewer send rejects system-origin message types.
-- Existing API test retained: app_invite rejects invalid app IDs.
+- Added `apps/web/test/http-transport.test.js`:
+  - verifies conversation list REST mapping
+  - verifies canonical send body mapping (`{ type: 'text', content: { text } }`)
 
-## Issues intentionally deferred
-- No realtime messaging.
-- No typing indicators, online state, read receipts, last seen, per-message timestamps.
-- No redesign of frontend.
-- No additional product features beyond stabilization guards.
+## Remaining risks
+- HTTP transport currently has no session/header integration, so authenticated API calls depend on environment-level auth wiring not implemented in this run.
+- Mock fallback can hide backend failures in local demo mode; acceptable for this run but should be tightened once auth/session transport is finalized.
+- No realtime sync in scope; consistency is maintained via post-send refetch.
 
 ## Manual testing checklist
-- [ ] Open conversations and verify no timestamp-style pressure labels appear from active mock data.
-- [ ] Verify layer unlock row appears as a subtle system row and CTA is actionable when present.
-- [ ] Verify sending a playing-now card without poster URL returns `posterUrl: null`.
-- [ ] Verify API timeline messages are returned in ascending chronological order.
-- [ ] Verify `app_invite` rejects non-canonical `appId` values.
-- [ ] Verify user cannot send `system` or `layer_unlock` as viewer-originated messages.
+- [ ] Open conversation list and verify initial load comes from service/API boundary.
+- [ ] Open a conversation and verify timeline fetch path uses backend/API boundary.
+- [ ] Send valid text and verify optimistic append then stable timeline after refetch.
+- [ ] Send empty text and verify validation message.
+- [ ] Simulate auth failure and verify auth error message.
+- [ ] Simulate permission failure and verify permission error message.
+- [ ] Simulate retryable send failure and verify retry prompt.
+- [ ] Verify layer unlock/system rows still render with `senderUserId: null`.
+- [ ] Verify timeline remains ascending after fetch and after send.
+- [ ] Verify no typing/online/read-receipt/last-seen/per-message-time mechanics appear.
+
+## Local run/test commands
+- `pnpm --filter @lingr/web test`
+- `pnpm --filter @lingr/api test`
+- `pnpm --filter @lingr/web dev`
+- `pnpm --filter @lingr/api dev`
