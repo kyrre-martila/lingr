@@ -64,3 +64,30 @@
 - [ ] Complete profile requirements and verify `/discovery`, `/conversations`, and `/profile` are all accessible.
 - [ ] Expire a session token and verify protected operations return `auth.session_expired` and app handles session loss gracefully.
 - [ ] Confirm mock fallback only activates when explicit dev mock fallback flag is enabled.
+
+## Run 8 stabilization fixes (Prompt 4)
+- Route guard API semantics now distinguish auth failures from permission failures:
+  - `auth.requires_auth` => HTTP 401
+  - `auth.session_expired` => HTTP 401
+  - route/permission denials remain 403
+- Protected profile endpoints now require authenticated viewer context at route policy level:
+  - `GET /v1/profile/viewer`
+  - `GET /v1/profile/completeness`
+- Mock fallback hardened to explicit dev-only behavior:
+  - fallback only for conversation operations
+  - fallback requires explicit `globalThis.__LINGR_DEV_MOCK_FALLBACK__ === true`
+  - fallback is disabled in production/staging-like environments (`NODE_ENV=production|staging`, or common deploy hostnames)
+  - auth/profile failures never silently downgrade to mock paths
+
+## Onboarding/profile source of truth (current MVP)
+- Onboarding completion is currently represented as account lifecycle/session-readiness state (`onboarding` -> active readiness transition), not yet as fully normalized backend onboarding milestone records.
+- Profile completeness is sourced from profile data completeness checks and exposed via `/v1/profile/completeness`.
+- Session state in web is derived from three inputs:
+  - authentication presence
+  - onboarding completion readiness
+  - profile completion readiness
+  This resolves to `anonymous`, `onboarding`, `incomplete-profile`, or `signed-in`.
+- Deferred MVP hardening:
+  - persist onboarding milestones with explicit backend completion markers,
+  - bootstrap session/readiness from authoritative server hydration on app load,
+  - strengthen long-lived token/session lifecycle controls (rotation/revocation/multi-tab coherence).

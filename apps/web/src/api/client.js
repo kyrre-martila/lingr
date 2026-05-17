@@ -3,7 +3,18 @@ import { createHttpTransport } from './http-transport.js'
 import { toAsyncError, toAsyncSuccess } from './envelope.js'
 
 const preferHttpTransport = () => typeof globalThis !== 'undefined' && globalThis.location && globalThis.location.hostname !== 'localhost-mock'
-const shouldAllowMockFallback = () => Boolean(globalThis?.__LINGR_DEV_MOCK_FALLBACK__)
+
+const isProductionLikeBuild = () => {
+  const env = String(globalThis?.process?.env?.NODE_ENV || '').toLowerCase()
+  const host = String(globalThis?.location?.hostname || '').toLowerCase()
+  return env === 'production' || env === 'staging' || host.endsWith('.vercel.app') || host.endsWith('.netlify.app')
+}
+
+const shouldAllowMockFallback = () => {
+  if (isProductionLikeBuild()) return false
+  return globalThis?.__LINGR_DEV_MOCK_FALLBACK__ === true
+}
+
 const getSessionToken = () => globalThis?.localStorage?.getItem('lingr.sessionToken') || null
 
 export const createDefaultTransport = () => {

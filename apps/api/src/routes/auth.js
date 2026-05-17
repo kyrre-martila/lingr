@@ -21,7 +21,7 @@ export const registerRoute = async (req, res) => {
 export const loginRoute = async (req, res) => {
   const { email, password } = req.body || {}
   const user = await authenticateWithEmailPassword({ email, password })
-  if (!user) throw new ApiError({ message: 'Invalid credentials', kind: DOMAIN_ERROR_KIND.AUTH, reasonCode: REASON_CODES.AUTH.REQUIRES_AUTH, statusCode: 401 })
+  if (!user) throw new ApiError({ message: 'Invalid credentials', kind: DOMAIN_ERROR_KIND.AUTH, reasonCode: REASON_CODES.AUTH.INVALID_CREDENTIALS, statusCode: 401 })
   const session = await createSession({ userId: user.userId })
   write(res, 200, ok({ userId: user.userId, sessionToken: session.token, lifecycleState: user.lifecycleState }, { requestId: req.requestId, ...viewerMeta(req.viewer) }))
 }
