@@ -4,9 +4,13 @@ import { getViewerProfileRoute, updateViewerProfileBasicsRoute, getViewerProfile
 import { archiveViewerGlimpsRoute, createGlimpsRoute, getViewerGlimpsByIdRoute, listViewerGlimpsRoute } from './glimps.js'
 import { acceptSparkRoute, createSparkInvitationRoute, declineSparkRoute, getViewerSparkByIdRoute, listViewerSparksRoute, pauseSparkRoute } from './spark.js'
 import { createConversationFromSparkRoute, getViewerConversationByIdRoute, listConversationMessagesRoute, listViewerConversationsRoute, sendConversationMessageRoute } from './conversation.js'
+import { loginRoute, logoutRoute, registerRoute } from './auth.js'
 
 export const routes = Object.freeze([
   { method: 'GET', path: '/health', requiresJson: false, handler: withRouteProtection(healthRoute, { requiresAuth: false, allowOnboarding: true }) },
+  { method: 'POST', path: '/v1/auth/register', requiresJson: true, handler: withRouteProtection(registerRoute, { requiresAuth: false, allowOnboarding: true }) },
+  { method: 'POST', path: '/v1/auth/login', requiresJson: true, handler: withRouteProtection(loginRoute, { requiresAuth: false, allowOnboarding: true }) },
+  { method: 'POST', path: '/v1/auth/logout', requiresJson: false, handler: withRouteProtection(logoutRoute, { requiresAuth: false, allowOnboarding: true }) },
   { method: 'GET', path: '/status', requiresJson: false, handler: withRouteProtection(healthRoute, { requiresAuth: false, allowOnboarding: true }) },
   { method: 'GET', path: '/v1/profile/viewer', requiresJson: false, handler: withRouteProtection(getViewerProfileRoute, { requiresAuth: false, allowOnboarding: true }) },
   { method: 'PATCH', path: '/v1/profile/viewer', requiresJson: true, handler: withRouteProtection(updateViewerProfileBasicsRoute, { requiresAuth: true, allowOnboarding: true }) },
