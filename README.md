@@ -1,42 +1,39 @@
 # Lingr — README
 
-A slow dating app built around presence, reflection, and intentional connection.
+A slow dating app built around intentional pacing, emotional safety, and local density.
 
 ## Core direction
-Lingr is intentionally anti-swipe and anti-urgency.
-
-The app is designed for:
-- calm pacing
-- emotional safety
-- mutual curiosity
-- meaningful conversation over addictive engagement
-
-## Chat philosophy (Run 7)
-Lingr chat should feel:
-- calm
-- low-pressure
-- warm
+Lingr is intentionally:
+- slow
 - intentional
-- familiar enough to feel natural
+- calm
+- emotionally safe
+- anti-pressure
+- anti-swipe
+- anti-dopamine optimization
 
-Lingr chat must avoid:
-- online indicators
+**Philosophy must exist in code, not only in copy.**
+
+## Non-negotiable product constraints
+Never include:
+- online status
 - typing indicators
-- last seen
 - read receipts
+- last seen
 - per-message timestamps
 - urgency mechanics
-- addictive messaging patterns
+- streaks
+- engagement loops
 
-## Chat structure
-Default chat is normal first:
-- clean message interface
+## Chat structure (MVP)
+Default chat is normal-first:
+- clean interface
 - subtle Lingr visual language
-- no pressure mechanics
+- low-pressure interaction by design
 
-Composer includes a **+** button at bottom-left.
+Composer includes a bottom-left **+** button.
 
-Pressing **+** opens:
+Pressing **+** opens root menu:
 - Apps
 - Playing now
 
@@ -50,18 +47,76 @@ Playing now:
 - Movie
 - TV Series
 
-Playing now is a lightweight “right now” share in chat cards, not a permanent preference field.
+These are optional apps inside chat, not gamification mechanics.
 
-## Message types
-- `text`
-- `system`
-- `layer_unlock`
-- `playing_now`
-- `app_invite`
+## Progression model
+Window is not early chat.
 
-## Window repositioning
-Window is no longer the early chat experience.
+Window is a later-stage relationship mode that should happen only after:
+- meaningful chat
+- Sparks
+- multiple Glimps
+- Layer unlock progression
 
-Window is now a later-stage, mutually chosen, more exclusive connection mode.
+## Auth strategy (MVP)
+MVP authentication is Lingr-native only:
+- email/password
+- session persistence
+- onboarding gating
+- profile completion gating
 
-In short: **chat is normal first, deeper later**.
+Deferred until post-MVP:
+- Apple Sign In
+- Google Sign In
+- passwordless auth
+- account linking
+
+## Localization foundation
+- Canonical language: English (`en`)
+- Launch-ready language: Norwegian Bokmål (`nb-NO`)
+- UI strings must use translation keys (no hardcoded literals in product UI)
+- Backend reason codes remain stable and language-agnostic
+- Frontend localization layer translates reason codes and UI keys
+
+Recommended i18n structure:
+- `locales/en/*.json` as canonical source copy
+- `locales/nb-NO/*.json` as launch translation pack
+- shared key namespaces (`auth.*`, `chat.*`, `discovery.*`, `region.*`, `safety.*`)
+
+## Region-by-region launch model
+Lingr does not launch globally at once.
+
+User flow:
+1. Register
+2. Select country
+3. Select county/state/region
+4. Region open → continue
+5. Region closed → vote for region + join waitlist + receive email later
+
+Domain split:
+- Marketing: `lingr.dating`
+- App: `app.lingr.dating`
+- API: `api.lingr.dating`
+- Future: `cdn.lingr.dating`, `admin.lingr.dating`
+
+Goal: healthy local dating pools through density-first rollout.
+
+## Go-to-market
+No big global launch day.
+
+Launch strategy:
+- slow rollout
+- one region at a time
+- weekly openings
+- waitlist-driven priority
+- social hype + email reactivation
+
+Possible early sequence:
+- Trøndelag
+- Troms
+- Bergen
+- Oslo later
+
+Final order should be determined by waitlist demand.
+
+**Data > assumptions.**

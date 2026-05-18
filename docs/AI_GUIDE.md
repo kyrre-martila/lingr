@@ -17,37 +17,26 @@ Never optimize for:
 - urgency loops
 - addictive interaction patterns
 
-## Chat-first direction (Run 7)
-Early connection experience is now standard calm chat.
+**Philosophy must exist in code, not only in copy.**
 
-### Chat tone requirements
-Chat should feel:
-- calm
-- low-pressure
-- warm
-- intentional
-- familiar enough to feel natural
-
-### Explicitly prohibited in chat
+## Non-negotiable exclusions
 Do not add:
-- online indicators
+- online status
 - typing indicators
-- last seen
 - read receipts
+- last seen
 - per-message timestamps
 - urgency mechanics
-- addictive messaging patterns
+- streaks
+- engagement loops
 
-## Chat structure rules
-Default chat includes:
-- clean message interface
-- subtle Lingr palette styling
-- no pressure mechanics
+## Chat architecture rules
+Default chat is normal-first, calm, and familiar.
 
 Composer behavior:
-- include **+** button at bottom-left next to message field
+- include **+** button at bottom-left
 
-On **+** press, first level options:
+On **+** press, root options:
 - Apps
 - Playing now
 
@@ -61,37 +50,67 @@ Playing now list:
 - Movie
 - TV Series
 
-## Playing now philosophy
-Playing now is conversational context about what a person is into **right now**.
+These are optional apps inside chat. They are not gamification systems.
 
-It is:
-- temporary-feeling
-- lightweight
-- shareable as in-chat cards
+## Window progression policy
+Window is later-stage only.
 
-It is not:
-- a permanent profile preference
-- a scoring mechanic
-- a compatibility ranking system
-
-## Message type vocabulary
-Use these message types in docs/contracts:
-- `text`
-- `system`
-- `layer_unlock`
-- `playing_now`
-- `app_invite`
-
-## Window lifecycle policy
-Window is no longer part of the early chat experience.
-
-Window is a later-stage, mutually chosen deeper mode.
+Window should happen only after:
+- meaningful chat
+- Sparks
+- multiple Glimps
+- Layer unlock progression
 
 Design principle:
 - normal chat first
-- deeper exclusivity later
+- depth later
 
-## Delivery rules for contributors
+## Auth policy (MVP)
+Use Lingr-native auth only:
+- email/password
+- session persistence
+- onboarding gating
+- profile completion gating
+
+Do not add in MVP:
+- Apple Sign In
+- Google Sign In
+- passwordless auth
+- account linking
+
+## Localization policy
+- Canonical language: English (`en`)
+- Launch-ready language: Norwegian Bokmål (`nb-NO`)
+- UI copy must be translation-key driven
+- Backend reason codes stay stable and backend-safe
+- Frontend i18n layer handles user-facing translation
+
+Suggested key structure:
+- `auth.*`
+- `onboarding.*`
+- `profile.*`
+- `chat.*`
+- `apps.*`
+- `playing_now.*`
+- `region.*`
+- `safety.*`
+
+## Region launch policy
+Lingr opens region-by-region to protect local match density and dating quality.
+
+Flow to document/build toward:
+1. Register
+2. Country selection
+3. County/state/region selection
+4. Open region: continue registration
+5. Closed region: vote + waitlist + later email notification
+
+Domain model:
+- `lingr.dating` (marketing)
+- `app.lingr.dating` (web app)
+- `api.lingr.dating` (API)
+- future: `cdn.lingr.dating`, `admin.lingr.dating`
+
+## Delivery rules
 For this phase, documentation-first changes only.
-Do not implement backend/frontend chat features until documentation alignment is approved.
-Do not redesign UI while defining this direction.
+Do not implement production feature changes unless explicitly requested in a dedicated implementation run.
