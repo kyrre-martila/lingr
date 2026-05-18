@@ -5,6 +5,8 @@ import { createSparkInvitation } from './spark-service.js'
 
 const toExternalUserId = (id) => `${INTERNAL_ID_STRATEGY.API_USER_ID_PREFIX}${id}`
 const utcDayKey = (date = new Date()) => date.toISOString().slice(0, 10)
+const DISCOVERY_NOT_NOW_COOLDOWN_DAYS = 14
+const DAY_MS = 24 * 60 * 60 * 1000
 const requireViewerId = (viewer) => {
   const userId = viewer?.identity?.userId
   if (!userId) throw new ApiError({ message: 'Authentication required for discovery', kind: DOMAIN_ERROR_KIND.AUTH, reasonCode: REASON_CODES.AUTH.REQUIRES_AUTH, statusCode: 401 })
@@ -54,8 +56,8 @@ export const getDailyDiscovery = async ({ viewer, dbClient, now = new Date() }) 
 
   const blocked = await db.blockRelation.findMany({ where: { OR: [{ blockerUserId: viewerUserId }, { blockedUserId: viewerUserId }] }, select: { blockerUserId: true, blockedUserId: true } })
   const blockedSet = new Set(blocked.map((b) => (b.blockerUserId === viewerUserId ? b.blockedUserId : b.blockerUserId)))
-  const seen = await db.discoveryView.findMany({ where: { viewerUserId }, select: { discoveredUserId: true } })
-  const seenSet = new Set(seen.map((s) => s.discoveredUserId))
+  const seen = await db.discoveryView.findMany({ where: { viewerUserId }, select: { discoveredUserId: true, createdAt: true } })
+  const seenSet = new Set(seen.filter((s) => now.getTime() - new Date(s.createdAt).getTime() < (DISCOVERY_NOT_NOW_COOLDOWN_DAYS * DAY_MS)).map((s) => s.discoveredUserId))
   const sparkRows = await db.spark.findMany({ where: { status: { in: SPARK_ACTIVE_STATES }, OR: [{ initiatorUserId: viewerUserId }, { recipientUserId: viewerUserId }] }, select: { initiatorUserId: true, recipientUserId: true } })
   const sparkSet = new Set(sparkRows.map((s) => (s.initiatorUserId === viewerUserId ? s.recipientUserId : s.initiatorUserId)))
 
@@ -73,7 +75,7 @@ export const getDailyDiscovery = async ({ viewer, dbClient, now = new Date() }) 
   const filtered = people.filter((p) => !blockedSet.has(p.id) && !sparkSet.has(p.id) && !seenSet.has(p.id)).slice(0, remaining)
   if (!filtered.length) return { state: DISCOVERY_STATE.EMPTY, reasonCode: DISCOVERY_REASON_CODES.NO_AVAILABLE_PEOPLE, limitPerDay: DISCOVERY_LIMIT_PER_DAY, remaining, introductions: [] }
 
-  return { state: DISCOVERY_STATE.READY, reasonCode: null, limitPerDay: DISCOVERY_LIMIT_PER_DAY, remaining, introductions: filtered.map(toDiscoveryDto) }
+  return { state: DISCOVERY_STATE.READY, reasonCode: null, limitPerDay: DISCOVERY_LIMIT_PER_DAY, remaining, notNowCooldownDays: DISCOVERY_NOT_NOW_COOLDOWN_DAYS, introductions: filtered.map(toDiscoveryDto) }
 }
 
 export const dismissIntroduction = async ({ viewer, discoveredUserId, dbClient, now = new Date() }) => {
@@ -89,6 +91,12 @@ export const dismissIntroduction = async ({ viewer, discoveredUserId, dbClient, 
 }
 
 export const createSparkFromDiscovery = async ({ viewer, discoveredUserId, dbClient, now = new Date() }) => {
-  await dismissIntroduction({ viewer, discoveredUserId, dbClient, now })
-  return createSparkInvitation({ viewer, payload: { recipientUserId: toExternalUserId(discoveredUserId) }, dbClient })
+  const db = dbClient || await getDbClient()
+  await dismissIntroduction({ viewer, discoveredUserId, dbClient: db, now })
+  try {
+    return { spark: await createSparkInvitation({ viewer, payload: { recipientUserId: toExternalUserId(discoveredUserId) }, dbClient: db }), state: 'sent' }
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.reasonCode !== REASON_CODES.SPARK.DUPLICATE_ACTIVE_SPARK) throw error
+    return { spark: null, state: 'already_exists' }
+  }
 }
