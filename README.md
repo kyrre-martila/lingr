@@ -120,3 +120,9 @@ Possible early sequence:
 Final order should be determined by waitlist demand.
 
 **Data > assumptions.**
+
+## Discovery philosophy (Run 9 polish)
+- Discovery is framed as a calm introduction, one person at a time.
+- Primary emphasis is on Glimps and emotional atmosphere, not profile-scanning behavior.
+- UX tone uses gentle language (`Send spark`, `Not now`) and warm empty states.
+- Avoid swipe metaphors, gamified pacing cues, and urgency copy.
