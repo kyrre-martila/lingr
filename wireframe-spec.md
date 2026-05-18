@@ -1,4 +1,4 @@
-# Lingr — Wireframe Spec (Run 7 Chat Direction)
+# Lingr — Wireframe Spec (Run 9 Direction Alignment)
 
 ## Primary chat screen
 Default chat is a normal, clean message interface with subtle Lingr palette styling.
@@ -11,15 +11,17 @@ Required visible elements:
 
 ## Pressure-free interaction rules
 The chat wireframe must not show:
-- online presence dots
+- online presence
 - typing indicators
 - read receipts
-- last seen labels
+- last seen
 - per-message timestamps
-- urgency cues (countdowns, streak hints, “reply now” patterns)
+- urgency cues
+- streak indicators
+- any engagement-loop mechanics
 
 ## Plus menu structure
-Tapping **+** opens first-level sheet with:
+Tapping **+** opens root sheet with:
 1. Apps
 2. Playing now
 
@@ -33,20 +35,32 @@ Tapping **+** opens first-level sheet with:
 - Movie
 - TV Series
 
-Playing now shares as lightweight chat cards, not profile edits.
+These are optional apps inside chat and should not be positioned as gamification.
 
 ## System moments in timeline
 Chat timeline supports subtle system rows for:
 - layer unlock events
 - app invites
-- playing now card shares
+- playing now shares
 
 System rows should be informative and gentle, never urgency-driven.
 
 ## Window placement in journey
 Window is removed from early chat framing.
 
-Chat progression:
-1. normal conversation first
-2. trust and familiarity second
-3. optional Window stage later (exclusive/deeper)
+Window should be presented only after progression signals:
+1. meaningful chat established
+2. Sparks progression exists
+3. multiple Glimps exist
+4. Layer unlock progression reached
+5. optional Window stage appears
+
+## Region launch wireframe dependencies
+Onboarding/registration wireframes should include:
+- country selection
+- county/state/region selection
+- open-region continue path
+- closed-region vote + waitlist path
+- email notification expectation state
+
+This supports density-first local launch, not global day-one availability.
