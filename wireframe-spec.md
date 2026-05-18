@@ -76,3 +76,13 @@ This supports density-first local launch, not global day-one availability.
   - limit reached: “You’ve explored today’s introductions.”
   - no available people: “Nothing new for now. Some connections are worth waiting for.”
 - No urgency UI: no countdowns, no red badges, no engagement prompts.
+
+## Discovery MVP (Run 9)
+
+- Discovery now uses live service integration (`discovery.get`) and renders one introduction at a time in a calm editorial layout.
+- States implemented: loading, empty, daily limit reached, unavailable region, onboarding required, profile incomplete.
+- Spark action uses real API call (`spark.create`) and confirms softly with a subtle confirmation state.
+- Pass action is intentionally quiet and advances pacing without swipe/card metaphors.
+- Daily pacing avoids countdown timers and urgency framing.
+- Discovery progress persists across refresh with backend data + lightweight client dismissal memory.
+- Recommendation engine ranking and deeper personalization remain deferred.
