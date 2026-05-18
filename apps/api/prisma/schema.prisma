@@ -218,3 +218,40 @@ model Message {
   @@index([conversationId, createdAt(sort: Desc)])
   @@map("messages")
 }
+
+
+model BlockRelation {
+  id            String   @id @default(cuid())
+  blockerUserId String
+  blockedUserId String
+  createdAt     DateTime @default(now())
+
+  @@unique([blockerUserId, blockedUserId])
+  @@index([blockedUserId, blockerUserId])
+  @@map("block_relations")
+}
+
+model DiscoveryView {
+  id               String   @id @default(cuid())
+  viewerUserId     String
+  discoveredUserId String
+  firstSeenDayKey  String
+  createdAt        DateTime @default(now())
+
+  @@unique([viewerUserId, discoveredUserId])
+  @@index([viewerUserId, firstSeenDayKey])
+  @@map("discovery_views")
+}
+
+model DiscoveryDailyTracker {
+  id              String   @id @default(cuid())
+  viewerUserId    String
+  dayKey          String
+  introducedCount Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([viewerUserId, dayKey])
+  @@index([viewerUserId, createdAt])
+  @@map("discovery_daily_trackers")
+}

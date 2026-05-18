@@ -64,3 +64,15 @@ Onboarding/registration wireframes should include:
 - email notification expectation state
 
 This supports density-first local launch, not global day-one availability.
+
+## Discovery MVP screen (Run 9)
+- One introduction shown at a time (no stack, no swipe).
+- Daily cap visible as calm pacing copy (e.g. “2 of 3 remaining”).
+- Primary content order: Glimps snippets, emotional rhythm hints, reflective prompt cues.
+- Quiet actions only:
+  - `Pass quietly`
+  - `Send Spark`
+- Calm empty states:
+  - limit reached: “You’ve explored today’s introductions.”
+  - no available people: “Nothing new for now. Some connections are worth waiting for.”
+- No urgency UI: no countdowns, no red badges, no engagement prompts.
