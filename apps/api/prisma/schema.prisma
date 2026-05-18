@@ -255,3 +255,53 @@ model DiscoveryDailyTracker {
   @@index([viewerUserId, createdAt])
   @@map("discovery_daily_trackers")
 }
+
+enum RegionLaunchStatus {
+  closed
+  waitlist
+  open
+  paused
+}
+
+model Country {
+  id        String   @id @default(cuid())
+  isoCode   String   @unique
+  name      String
+  enabled   Boolean  @default(true)
+  regions   Region[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("countries")
+}
+
+model Region {
+  id           String             @id @default(cuid())
+  countryId    String
+  slug         String
+  name         String
+  launchStatus RegionLaunchStatus @default(closed)
+  launchDate   DateTime?
+  isOpen       Boolean            @default(false)
+  voteCount    Int                @default(0)
+  country      Country            @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  votes        RegionInterestVote[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@unique([countryId, slug])
+  @@map("regions")
+}
+
+model RegionInterestVote {
+  id        String   @id @default(cuid())
+  regionId  String
+  email     String
+  firstName String?
+  locale    String   @default("en")
+  createdAt DateTime @default(now())
+  region    Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([regionId, email])
+  @@map("region_interest_votes")
+}

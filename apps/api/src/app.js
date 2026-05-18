@@ -10,7 +10,9 @@ export const createApp = () => async (req, res) => {
     withRequestContext(req)
     await withAuthContext(req)
 
-    const pathname = new URL(req.url, 'http://localhost').pathname
+    const url = new URL(req.url, 'http://localhost')
+    const pathname = url.pathname
+    req.query = Object.fromEntries(url.searchParams.entries())
     const route = routes.find((entry) => {
       if (entry.method !== req.method) return false
       if (!entry.path.includes(':')) return entry.path === pathname

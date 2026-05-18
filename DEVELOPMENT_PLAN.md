@@ -239,3 +239,12 @@ Planned scope:
 - `Not now` is a soft dismiss, not rejection: it marks the profile as viewed and hides it for a cooldown window.
 - MVP cooldown is configurable; current default is **14 days**.
 - Discovery spark sends through discovery-specific API flow and avoids duplicate spark creation.
+
+
+## Region rollout foundation (implemented)
+- Canonical models: `Country` (ISO + enabled), `Region` (country-linked slug/name), `RegionInterestVote` (email waitlist + vote signal).
+- Launch lifecycle: `closed`, `waitlist`, `open`, `paused`.
+- API contracts: `GET /v1/regions/countries`, `GET /v1/regions/:countryCode`, `GET /v1/regions/check`, `POST /v1/regions/vote`.
+- Reason codes: `region.closed`, `region.waitlist`, `region.open`, `region.invalid`.
+- Controlled density intent: this is not social-status exclusivity; it is healthy pool rollout sequencing.
+- Localization constraint: names and UI copy are key-driven and locale-ready (`en` canonical, `nb-NO` launch pack).

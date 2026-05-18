@@ -128,3 +128,12 @@ Avoid:
 - swipe-stack framing
 - gamified counters or urgency language
 - celebratory “match” mechanics for spark success
+
+
+## Region rollout foundation (implemented)
+- Canonical models: `Country` (ISO + enabled), `Region` (country-linked slug/name), `RegionInterestVote` (email waitlist + vote signal).
+- Launch lifecycle: `closed`, `waitlist`, `open`, `paused`.
+- API contracts: `GET /v1/regions/countries`, `GET /v1/regions/:countryCode`, `GET /v1/regions/check`, `POST /v1/regions/vote`.
+- Reason codes: `region.closed`, `region.waitlist`, `region.open`, `region.invalid`.
+- Controlled density intent: this is not social-status exclusivity; it is healthy pool rollout sequencing.
+- Localization constraint: names and UI copy are key-driven and locale-ready (`en` canonical, `nb-NO` launch pack).
