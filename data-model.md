@@ -109,3 +109,9 @@ Suggested records:
   - `getRemainingDiscoveryCount(viewer)`
   - `dismissIntroduction()`
   - `createSparkFromDiscovery()`
+
+## Run 9 Discovery → Spark semantics
+- Calm discovery actions vocabulary: `send_spark`, `not_now`.
+- `not_now` persists in `discovery_views` and applies a soft cooldown exclusion window (default 14 days).
+- `send_spark` performs discovery view marking + Spark creation transactionally from the discovery interaction boundary.
+- Duplicate active spark attempts return calm, non-gamified `already_exists` semantics instead of creating duplicates.

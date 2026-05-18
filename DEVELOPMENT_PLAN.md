@@ -233,3 +233,9 @@ Planned scope:
 - Discovery now uses a server-authoritative UTC daily cap contract (`DISCOVERY_LIMIT_PER_DAY`).
 - MVP filtering excludes self, blocked users, active Sparks, previously viewed people, and non-active accounts.
 - UI baseline moved to one-at-a-time introduction with calm empty states and no swipe/feed mechanics.
+
+### Run 9 discovery-to-spark completion (MVP)
+- Discovery card actions are intentionally calm and limited to `Send spark` and `Not now`.
+- `Not now` is a soft dismiss, not rejection: it marks the profile as viewed and hides it for a cooldown window.
+- MVP cooldown is configurable; current default is **14 days**.
+- Discovery spark sends through discovery-specific API flow and avoids duplicate spark creation.

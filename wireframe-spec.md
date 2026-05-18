@@ -86,3 +86,11 @@ This supports density-first local launch, not global day-one availability.
 - Daily pacing avoids countdown timers and urgency framing.
 - Discovery progress persists across refresh with backend data + lightweight client dismissal memory.
 - Recommendation engine ranking and deeper personalization remain deferred.
+
+## Run 9 calm interaction vocabulary update
+- Discovery action labels are now:
+  - `Send spark`
+  - `Not now`
+- `Not now` is framed as temporary pacing, never as permanent rejection.
+- Discovery states include loading, unavailable region, daily limit reached, empty, and subtle spark confirmation.
+- Do not display remaining counters, timers, urgency prompts, or online indicators in discovery.

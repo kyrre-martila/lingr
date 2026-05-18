@@ -5,7 +5,7 @@ import { archiveViewerGlimpsRoute, createGlimpsRoute, getViewerGlimpsByIdRoute, 
 import { acceptSparkRoute, createSparkInvitationRoute, declineSparkRoute, getViewerSparkByIdRoute, listViewerSparksRoute, pauseSparkRoute } from './spark.js'
 import { createConversationFromSparkRoute, getViewerConversationByIdRoute, listConversationMessagesRoute, listViewerConversationsRoute, sendConversationMessageRoute } from './conversation.js'
 import { loginRoute, logoutRoute, registerRoute } from './auth.js'
-import { getDailyDiscoveryRoute } from './discovery.js'
+import { dismissDiscoveryIntroductionRoute, getDailyDiscoveryRoute, sendDiscoverySparkRoute } from './discovery.js'
 
 export const routes = Object.freeze([
   { method: 'GET', path: '/health', requiresJson: false, handler: withRouteProtection(healthRoute, { requiresAuth: false, allowOnboarding: true }) },
@@ -34,4 +34,6 @@ export const routes = Object.freeze([
   { method: 'GET', path: '/v1/conversations/:conversationId/messages', requiresJson: false, handler: withRouteProtection(listConversationMessagesRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'POST', path: '/v1/conversations/:conversationId/messages', requiresJson: true, handler: withRouteProtection(sendConversationMessageRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'GET', path: '/v1/discovery/daily', requiresJson: false, handler: withRouteProtection(getDailyDiscoveryRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'POST', path: '/v1/discovery/not-now', requiresJson: true, handler: withRouteProtection(dismissDiscoveryIntroductionRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'POST', path: '/v1/discovery/spark', requiresJson: true, handler: withRouteProtection(sendDiscoverySparkRoute, { requiresAuth: true, allowOnboarding: true }) },
 ])

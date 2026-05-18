@@ -1,4 +1,4 @@
-import { getDailyDiscovery, sendSparkInvitation } from '../services/discovery-service.js'
+import { getDailyDiscovery, sendDiscoveryNotNow, sendDiscoverySpark } from '../services/discovery-service.js'
 import { DISCOVERY_REASON_CODES, DISCOVERY_STATE } from '../domain/contracts.js'
 
 const COPY = Object.freeze({
@@ -7,7 +7,7 @@ const COPY = Object.freeze({
   loading: 'discovery.loading',
   sent: 'discovery.spark_sent',
   send: 'discovery.send_spark',
-  pass: 'discovery.pass_quietly',
+  pass: 'discovery.not_now',
   interestsLabel: 'discovery.interests',
   reflectionLabel: 'discovery.reflection',
   layersLabel: 'discovery.layers',
@@ -71,7 +71,7 @@ export const createDiscoverySection = () => {
     const response = await getDailyDiscovery()
     if (response.status === 'error') return renderEmpty(host, response.error.reasonCode)
     const data = response.data
-    meta.textContent = `${data.remaining}/${data.limitPerDay}`
+    meta.textContent = ''
 
     if (data.state !== DISCOVERY_STATE.READY || !data.introductions?.length) return renderEmpty(host, data.reasonCode)
     const queue = data.introductions.filter((item) => !dismissed.has(item.userId))
@@ -81,7 +81,7 @@ export const createDiscoverySection = () => {
       const current = queue[0]
       if (!current) return renderEmpty(host, DISCOVERY_REASON_CODES.DAILY_LIMIT_REACHED)
       const card = introCard(current, async () => {
-        const sparkResult = await sendSparkInvitation({ recipientUserId: current.userId })
+        const sparkResult = await sendDiscoverySpark({ discoveredUserId: current.userId })
         if (sparkResult.status === 'error') return renderEmpty(host, sparkResult.error.reasonCode)
         dismissed.add(current.userId)
         writeDismissed(dismissed)
@@ -91,7 +91,9 @@ export const createDiscoverySection = () => {
         feedback.dataset.i18n = COPY.sent
         host.replaceChildren(feedback)
         globalThis.setTimeout(showCurrent, 350)
-      }, () => {
+      }, async () => {
+        const notNowResult = await sendDiscoveryNotNow({ discoveredUserId: current.userId })
+        if (notNowResult.status === 'error') return renderEmpty(host, notNowResult.error.reasonCode)
         dismissed.add(current.userId)
         writeDismissed(dismissed)
         queue.shift()

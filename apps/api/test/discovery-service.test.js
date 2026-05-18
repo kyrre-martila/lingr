@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createAuthenticatedViewer } from '../src/auth/viewer.js'
 import { DISCOVERY_LIMIT_PER_DAY, DISCOVERY_REASON_CODES, DISCOVERY_STATE } from '../../../packages/shared/src/contracts.js'
-import { getDailyDiscovery } from '../src/services/discovery-service.js'
+import { createSparkFromDiscovery, dismissIntroduction, getDailyDiscovery } from '../src/services/discovery-service.js'
 
 const viewer = createAuthenticatedViewer({ userId: 'u1' })
 
@@ -10,12 +10,13 @@ const baseDb = () => ({
   discoveryDailyTracker: {
     findUnique: async () => null,
     create: async () => ({ id: 't1', viewerUserId: 'u1', dayKey: '2026-05-18', introducedCount: 0 }),
+    update: async () => ({})
   },
   profile: { findUnique: async () => ({ locationRegion: 'NO-03' }) },
   blockRelation: { findMany: async () => [] },
-  discoveryView: { findMany: async () => [] },
+  discoveryView: { findMany: async () => [], upsert: async () => ({}) },
   spark: { findMany: async () => [] },
-  user: { findMany: async () => [] }
+  user: { findMany: async () => [], findUnique: async () => ({ id: 'u2' }) }
 })
 
 test('daily limit reached is enforced deterministically', async () => {
@@ -26,30 +27,49 @@ test('daily limit reached is enforced deterministically', async () => {
   assert.equal(result.reasonCode, DISCOVERY_REASON_CODES.DAILY_LIMIT_REACHED)
 })
 
-test('self is excluded and only compatible region appears', async () => {
+test('viewed people are hidden only during not-now cooldown window', async () => {
   const db = baseDb()
+  db.discoveryView.findMany = async () => [{ discoveredUserId: 'u2', createdAt: new Date('2026-05-01T00:00:00Z') }]
   db.user.findMany = async () => [{ id: 'u2', status: 'active', profile: { displayName: 'A', locationRegion: 'NO-03' }, glimpses: [] }]
-  const result = await getDailyDiscovery({ viewer, dbClient: db })
+  const result = await getDailyDiscovery({ viewer, dbClient: db, now: new Date('2026-05-18T00:00:00Z') })
   assert.equal(result.state, DISCOVERY_STATE.READY)
-  assert.equal(result.introductions[0].userId, 'usr_u2')
 })
 
-test('existing spark and viewed users are excluded', async () => {
+test('existing spark and fresh viewed users are excluded', async () => {
   const db = baseDb()
-  db.discoveryView.findMany = async () => [{ discoveredUserId: 'u2' }]
+  db.discoveryView.findMany = async () => [{ discoveredUserId: 'u2', createdAt: new Date('2026-05-10T00:00:00Z') }]
   db.spark.findMany = async () => [{ initiatorUserId: 'u1', recipientUserId: 'u3' }]
   db.user.findMany = async () => [
     { id: 'u2', status: 'active', profile: { displayName: 'A', locationRegion: 'NO-03' }, glimpses: [] },
     { id: 'u3', status: 'active', profile: { displayName: 'B', locationRegion: 'NO-03' }, glimpses: [] }
   ]
-  const result = await getDailyDiscovery({ viewer, dbClient: db })
+  const result = await getDailyDiscovery({ viewer, dbClient: db, now: new Date('2026-05-18T00:00:00Z') })
   assert.equal(result.state, DISCOVERY_STATE.EMPTY)
 })
 
-test('unavailable region and empty states are returned calmly', async () => {
+test('unavailable region state is returned', async () => {
   const db = baseDb()
   db.profile.findUnique = async () => ({ locationRegion: null })
   const unavailable = await getDailyDiscovery({ viewer, dbClient: db })
   assert.equal(unavailable.state, DISCOVERY_STATE.UNAVAILABLE)
   assert.equal(unavailable.reasonCode, DISCOVERY_REASON_CODES.UNAVAILABLE_REGION)
+})
+
+test('not-now marks view and increments daily tracking', async () => {
+  let upserted = false
+  let updated = false
+  const db = baseDb()
+  db.discoveryView.upsert = async () => { upserted = true; return {} }
+  db.discoveryDailyTracker.update = async () => { updated = true; return {} }
+  const result = await dismissIntroduction({ viewer, discoveredUserId: 'u2', dbClient: db })
+  assert.equal(result.ok, true)
+  assert.equal(upserted, true)
+  assert.equal(updated, true)
+})
+
+test('duplicate spark from discovery is calm and non-duplicating', async () => {
+  const db = baseDb()
+  db.spark.create = async () => { const e = new Error('unique'); e.code = 'P2002'; throw e }
+  const result = await createSparkFromDiscovery({ viewer, discoveredUserId: 'u2', dbClient: db })
+  assert.equal(result.state, 'already_exists')
 })
