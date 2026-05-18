@@ -115,3 +115,12 @@ Suggested records:
 - `not_now` persists in `discovery_views` and applies a soft cooldown exclusion window (default 14 days).
 - `send_spark` performs discovery view marking + Spark creation transactionally from the discovery interaction boundary.
 - Duplicate active spark attempts return calm, non-gamified `already_exists` semantics instead of creating duplicates.
+
+
+## Region rollout foundation (implemented)
+- Canonical models: `Country` (ISO + enabled), `Region` (country-linked slug/name), `RegionInterestVote` (email waitlist + vote signal).
+- Launch lifecycle: `closed`, `waitlist`, `open`, `paused`.
+- API contracts: `GET /v1/regions/countries`, `GET /v1/regions/:countryCode`, `GET /v1/regions/check`, `POST /v1/regions/vote`.
+- Reason codes: `region.closed`, `region.waitlist`, `region.open`, `region.invalid`.
+- Controlled density intent: this is not social-status exclusivity; it is healthy pool rollout sequencing.
+- Localization constraint: names and UI copy are key-driven and locale-ready (`en` canonical, `nb-NO` launch pack).

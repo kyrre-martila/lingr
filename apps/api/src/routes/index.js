@@ -6,6 +6,7 @@ import { acceptSparkRoute, createSparkInvitationRoute, declineSparkRoute, getVie
 import { createConversationFromSparkRoute, getViewerConversationByIdRoute, listConversationMessagesRoute, listViewerConversationsRoute, sendConversationMessageRoute } from './conversation.js'
 import { loginRoute, logoutRoute, registerRoute } from './auth.js'
 import { dismissDiscoveryIntroductionRoute, getDailyDiscoveryRoute, sendDiscoverySparkRoute } from './discovery.js'
+import { checkRegionRoute, listCountriesRoute, listRegionsByCountryRoute, voteRegionRoute } from './regions.js'
 
 export const routes = Object.freeze([
   { method: 'GET', path: '/health', requiresJson: false, handler: withRouteProtection(healthRoute, { requiresAuth: false, allowOnboarding: true }) },
@@ -33,6 +34,10 @@ export const routes = Object.freeze([
   { method: 'POST', path: '/v1/conversations', requiresJson: true, handler: withRouteProtection(createConversationFromSparkRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'GET', path: '/v1/conversations/:conversationId/messages', requiresJson: false, handler: withRouteProtection(listConversationMessagesRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'POST', path: '/v1/conversations/:conversationId/messages', requiresJson: true, handler: withRouteProtection(sendConversationMessageRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'GET', path: '/v1/regions/countries', requiresJson: false, handler: withRouteProtection(listCountriesRoute, { requiresAuth: false, allowOnboarding: true }) },
+  { method: 'GET', path: '/v1/regions/:countryCode', requiresJson: false, handler: withRouteProtection(listRegionsByCountryRoute, { requiresAuth: false, allowOnboarding: true }) },
+  { method: 'GET', path: '/v1/regions/check', requiresJson: false, handler: withRouteProtection(checkRegionRoute, { requiresAuth: false, allowOnboarding: true }) },
+  { method: 'POST', path: '/v1/regions/vote', requiresJson: true, handler: withRouteProtection(voteRegionRoute, { requiresAuth: false, allowOnboarding: true }) },
   { method: 'GET', path: '/v1/discovery/daily', requiresJson: false, handler: withRouteProtection(getDailyDiscoveryRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'POST', path: '/v1/discovery/not-now', requiresJson: true, handler: withRouteProtection(dismissDiscoveryIntroductionRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'POST', path: '/v1/discovery/spark', requiresJson: true, handler: withRouteProtection(sendDiscoverySparkRoute, { requiresAuth: true, allowOnboarding: true }) },

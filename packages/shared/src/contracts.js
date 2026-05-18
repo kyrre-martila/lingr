@@ -77,6 +77,9 @@ export const DISCOVERY_REASON_CODES = Object.freeze({
   PROFILE_INCOMPLETE: 'discovery.profile_incomplete'
 })
 
+export const REGION_LAUNCH_STATUS = Object.freeze({ CLOSED: 'closed', WAITLIST: 'waitlist', OPEN: 'open', PAUSED: 'paused' })
+export const REGION_REASON_CODES = Object.freeze({ CLOSED: 'region.closed', WAITLIST: 'region.waitlist', OPEN: 'region.open', INVALID: 'region.invalid' })
+
 const DISCOVERY_STATE_VALUES = toSet(DISCOVERY_STATE)
 export const isSupportedDiscoveryState = (value) => has(DISCOVERY_STATE_VALUES, value)
 export const SPARK_STATE = Object.freeze({ POTENTIAL: 'potential', INVITED: 'invited', ACCEPTED: 'accepted', PAUSED: 'paused', DECLINED: 'declined', EXPIRED: 'expired' })
