@@ -94,3 +94,18 @@ Suggested records:
 - `app.lingr.dating` — web app
 - `api.lingr.dating` — API
 - future: `cdn.lingr.dating`, `admin.lingr.dating`
+
+## Discovery MVP foundation (Run 9)
+- Shared contract constants:
+  - `DISCOVERY_LIMIT_PER_DAY = 3`
+  - `DISCOVERY_STATE`: `ready | limit_reached | empty | unavailable`
+  - `DISCOVERY_REASON_CODES`: `daily_limit_reached | no_available_people | unavailable_region | onboarding_required | profile_incomplete`
+- Persistence additions:
+  - `discovery_daily_trackers` for UTC-day authoritative counters.
+  - `discovery_views` to prevent repeat introductions.
+  - `block_relations` to exclude blocked pairs.
+- Discovery service boundary methods:
+  - `getDailyDiscovery(viewer)`
+  - `getRemainingDiscoveryCount(viewer)`
+  - `dismissIntroduction()`
+  - `createSparkFromDiscovery()`

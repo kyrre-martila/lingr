@@ -27,7 +27,8 @@ export const REASON_CODES = Object.freeze({
   GLIMPS: Object.freeze({ NOT_FOUND: 'glimps.not_found', INVALID_STATE_TRANSITION: 'glimps.invalid_state_transition' }),
   SPARK: Object.freeze({ NOT_FOUND: 'spark.not_found', INVALID_STATE_TRANSITION: 'spark.invalid_state_transition', INVALID_SELF_SPARK: 'spark.invalid_self_spark', DUPLICATE_ACTIVE_SPARK: 'spark.duplicate_active_spark', INVALID_RECIPIENT_REFERENCE: 'spark.invalid_recipient_reference', INVALID_SOURCE_GLIMPS_REFERENCE: 'spark.invalid_source_glimps_reference' }),
   CONVERSATION: Object.freeze({ NOT_FOUND: 'conversation.not_found', INVALID_SPARK_REFERENCE: 'conversation.invalid_spark_reference' }),
-  MESSAGE: Object.freeze({ INVALID_TYPE: 'message.invalid_type', INVALID_PAYLOAD_BY_TYPE: 'message.invalid_payload_by_type' })
+  MESSAGE: Object.freeze({ INVALID_TYPE: 'message.invalid_type', INVALID_PAYLOAD_BY_TYPE: 'message.invalid_payload_by_type' }),
+  DISCOVERY: Object.freeze({ DAILY_LIMIT_REACHED: 'discovery.daily_limit_reached', NO_AVAILABLE_PEOPLE: 'discovery.no_available_people', UNAVAILABLE_REGION: 'discovery.unavailable_region', ONBOARDING_REQUIRED: 'discovery.onboarding_required', PROFILE_INCOMPLETE: 'discovery.profile_incomplete' })
 })
 
 export const INTERNAL_ID_STRATEGY = Object.freeze({
@@ -58,6 +59,26 @@ const ERROR_KIND_VALUES = toSet(DOMAIN_ERROR_KIND)
 export const isApiSuccessEnvelope = (value) => Boolean(value && has(STATUS_VALUES, value.status) && value.status === API_RESPONSE_STATUS.SUCCESS && 'data' in value)
 export const isApiErrorEnvelope = (value) => Boolean(value && has(STATUS_VALUES, value.status) && value.status === API_RESPONSE_STATUS.ERROR && value.error && has(ERROR_KIND_VALUES, value.error.kind) && typeof value.error.reasonCode === 'string')
 
+
+
+export const DISCOVERY_LIMIT_PER_DAY = 3
+export const DISCOVERY_STATE = Object.freeze({
+  READY: 'ready',
+  LIMIT_REACHED: 'limit_reached',
+  EMPTY: 'empty',
+  UNAVAILABLE: 'unavailable'
+})
+
+export const DISCOVERY_REASON_CODES = Object.freeze({
+  DAILY_LIMIT_REACHED: 'discovery.daily_limit_reached',
+  NO_AVAILABLE_PEOPLE: 'discovery.no_available_people',
+  UNAVAILABLE_REGION: 'discovery.unavailable_region',
+  ONBOARDING_REQUIRED: 'discovery.onboarding_required',
+  PROFILE_INCOMPLETE: 'discovery.profile_incomplete'
+})
+
+const DISCOVERY_STATE_VALUES = toSet(DISCOVERY_STATE)
+export const isSupportedDiscoveryState = (value) => has(DISCOVERY_STATE_VALUES, value)
 export const SPARK_STATE = Object.freeze({ POTENTIAL: 'potential', INVITED: 'invited', ACCEPTED: 'accepted', PAUSED: 'paused', DECLINED: 'declined', EXPIRED: 'expired' })
 export const SPARK_ACTION = Object.freeze({ CREATE: 'create', ACCEPT: 'accept', PAUSE: 'pause', DECLINE: 'decline', EXPIRE: 'expire', READ: 'read' })
 export const SPARK_TERMINAL_STATES = Object.freeze([SPARK_STATE.DECLINED, SPARK_STATE.EXPIRED])

@@ -228,3 +228,8 @@ Planned scope:
 - account linking
 - broad global availability day-one strategy
 - engagement mechanics that conflict with calm philosophy
+
+### Run 9 implementation baseline (added)
+- Discovery now uses a server-authoritative UTC daily cap contract (`DISCOVERY_LIMIT_PER_DAY`).
+- MVP filtering excludes self, blocked users, active Sparks, previously viewed people, and non-active accounts.
+- UI baseline moved to one-at-a-time introduction with calm empty states and no swipe/feed mechanics.

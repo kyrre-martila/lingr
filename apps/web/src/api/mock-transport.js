@@ -7,7 +7,7 @@ import { DOMAIN_ERROR_KIND, MESSAGE_TYPE, PLAYING_NOW_MEDIA_TYPE, REASON_CODES, 
 
 const snapshot = {
   profile: createProfileMockData(),
-  discovery: createDiscoveryMockData(),
+  discovery: { state: 'ready', limitPerDay: 3, remaining: 2, reasonCode: null, introductions: [{ userId: 'usr_mock_a', displayName: 'Arden', locationRegion: 'Queens, NY', layersSummary: 'Grounded and reflective', bio: 'Taking things slowly.', glimpses: [{ glimpsId: 'glp_1', reflection: 'I value repair after conflict.', mood: 'Calm', prompt: 'What helps you feel safe?', emotionalTone: 'grounded' }] }] },
   conversations: createConversationsMockData(),
   glimps: createGlimpsInitialState(),
   spark: { invites: [] },
