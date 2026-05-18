@@ -1,23 +1,58 @@
-import { getDiscoverySnapshot } from '../services/discovery-service.js'
+import { getDailyDiscovery, sendSparkInvitation } from '../services/discovery-service.js'
 import { DISCOVERY_REASON_CODES, DISCOVERY_STATE } from '../domain/contracts.js'
 
-const fallback = { state: DISCOVERY_STATE.EMPTY, limitPerDay: 3, remaining: 0, introductions: [], reasonCode: DISCOVERY_REASON_CODES.NO_AVAILABLE_PEOPLE }
-const response = getDiscoverySnapshot()
-const data = response.status === 'success' ? response.data : fallback
+const COPY = Object.freeze({
+  title: 'discovery.title',
+  subtitle: 'discovery.subtitle',
+  loading: 'discovery.loading',
+  sent: 'discovery.spark_sent',
+  send: 'discovery.send_spark',
+  pass: 'discovery.pass_quietly',
+  interestsLabel: 'discovery.interests',
+  reflectionLabel: 'discovery.reflection',
+  layersLabel: 'discovery.layers',
+  limitMeta: 'discovery.limit_meta'
+})
 
-const emptyCopy = {
-  [DISCOVERY_REASON_CODES.NO_AVAILABLE_PEOPLE]: 'Nothing new for now. Some connections are worth waiting for.',
-  [DISCOVERY_REASON_CODES.DAILY_LIMIT_REACHED]: "You’ve explored today’s introductions.",
-  [DISCOVERY_REASON_CODES.UNAVAILABLE_REGION]: 'Discovery is not open in your region yet.',
-  [DISCOVERY_REASON_CODES.ONBOARDING_REQUIRED]: 'Finish onboarding to begin discovery.',
-  [DISCOVERY_REASON_CODES.PROFILE_INCOMPLETE]: 'Complete your profile to start discovery.'
+const EMPTY_REASON_COPY = Object.freeze({
+  [DISCOVERY_REASON_CODES.NO_AVAILABLE_PEOPLE]: 'discovery.empty.no_available_people',
+  [DISCOVERY_REASON_CODES.DAILY_LIMIT_REACHED]: 'discovery.empty.daily_limit_reached',
+  [DISCOVERY_REASON_CODES.UNAVAILABLE_REGION]: 'discovery.empty.unavailable_region',
+  [DISCOVERY_REASON_CODES.ONBOARDING_REQUIRED]: 'discovery.empty.onboarding_required',
+  [DISCOVERY_REASON_CODES.PROFILE_INCOMPLETE]: 'discovery.empty.profile_incomplete'
+})
+
+const readDismissed = () => {
+  try { return new Set(JSON.parse(globalThis.sessionStorage?.getItem('lingr.discovery.dismissed') || '[]')) } catch { return new Set() }
+}
+const writeDismissed = (set) => globalThis.sessionStorage?.setItem('lingr.discovery.dismissed', JSON.stringify([...set]))
+
+const createTag = (text) => {
+  const li = document.createElement('li')
+  li.className = 'discovery-tag'
+  li.textContent = text
+  return li
 }
 
-const createIntroCard = (intro) => {
+const renderEmpty = (host, reasonCode) => {
+  const panel = document.createElement('section')
+  panel.className = 'discovery-empty soft-panel'
+  panel.setAttribute('aria-live', 'polite')
+  panel.dataset.i18n = EMPTY_REASON_COPY[reasonCode] || EMPTY_REASON_COPY[DISCOVERY_REASON_CODES.NO_AVAILABLE_PEOPLE]
+  host.replaceChildren(panel)
+}
+
+const introCard = (intro, onSpark, onPass) => {
   const card = document.createElement('article')
-  card.className = 'daily-connection-card soft-panel'
+  card.className = 'discovery-card soft-panel'
+  card.tabIndex = 0
   const glimpse = intro.glimpses?.[0]
-  card.innerHTML = `<h3>${intro.displayName}</h3><p>${intro.locationRegion || 'Nearby'}</p>${glimpse ? `<p><strong>${glimpse.mood}</strong></p><p>${glimpse.reflection}</p>` : '<p>A calm introduction waiting to unfold.</p>'}<div class="discovery-actions"><button class="button button--ghost" type="button">Pass quietly</button><button class="button" type="button">Send Spark</button></div>`
+  const interestTokens = String(intro.layersSummary || '').split(/[•,]/).map((v) => v.trim()).filter(Boolean).slice(0, 3)
+  card.innerHTML = `<p class="discovery-name">${intro.displayName}</p><p class="discovery-region">${intro.locationRegion || ''}</p><p class="discovery-label" data-i18n="${COPY.reflectionLabel}"></p><p>${glimpse?.reflection || ''}</p><p class="discovery-label" data-i18n="${COPY.interestsLabel}"></p><ul class="discovery-tags"></ul><p class="discovery-label" data-i18n="${COPY.layersLabel}"></p><p>${intro.layersSummary || ''}</p><div class="discovery-actions"><button class="button button--ghost" type="button" data-action="pass" data-i18n="${COPY.pass}" aria-label="Pass quietly"></button><button class="button" type="button" data-action="spark" data-i18n="${COPY.send}" aria-label="Send Spark"></button></div><p class="discovery-feedback" aria-live="polite"></p>`
+  const tags = card.querySelector('.discovery-tags')
+  interestTokens.forEach((token) => tags?.append(createTag(token)))
+  card.querySelector('[data-action="spark"]')?.addEventListener('click', onSpark)
+  card.querySelector('[data-action="pass"]')?.addEventListener('click', onPass)
   return card
 }
 
@@ -25,14 +60,49 @@ export const createDiscoverySection = () => {
   const section = document.createElement('section')
   section.id = 'discovery'
   section.className = 'section section--paper'
-  section.innerHTML = `<div class="container discovery-shell flow"><p class="eyebrow">Discovery</p><h2>Today’s introductions</h2><p class="lead">A small, thoughtful set. No rush.</p><p>${data.remaining} of ${data.limitPerDay} introductions remaining today.</p><div class="daily-connections"></div><div class="discovery-empty-host"></div></div>`
+  section.innerHTML = `<div class="container discovery-shell flow"><p class="eyebrow">Discovery</p><h2 data-i18n="${COPY.title}"></h2><p class="lead" data-i18n="${COPY.subtitle}"></p><p class="discovery-meta" data-i18n="${COPY.limitMeta}"></p><div class="daily-connections" aria-live="polite"></div></div>`
+
   const host = section.querySelector('.daily-connections')
-  if (data.state === DISCOVERY_STATE.READY && data.introductions.length) host?.append(createIntroCard(data.introductions[0]))
-  else {
-    const empty = document.createElement('section')
-    empty.className = 'discovery-empty soft-panel'
-    empty.innerHTML = `<p>${emptyCopy[data.reasonCode] || emptyCopy[DISCOVERY_REASON_CODES.NO_AVAILABLE_PEOPLE]}</p>`
-    section.querySelector('.discovery-empty-host')?.append(empty)
+  const meta = section.querySelector('.discovery-meta')
+  const dismissed = readDismissed()
+
+  const render = async () => {
+    host.innerHTML = `<p data-i18n="${COPY.loading}"></p>`
+    const response = await getDailyDiscovery()
+    if (response.status === 'error') return renderEmpty(host, response.error.reasonCode)
+    const data = response.data
+    meta.textContent = `${data.remaining}/${data.limitPerDay}`
+
+    if (data.state !== DISCOVERY_STATE.READY || !data.introductions?.length) return renderEmpty(host, data.reasonCode)
+    const queue = data.introductions.filter((item) => !dismissed.has(item.userId))
+    if (!queue.length) return renderEmpty(host, DISCOVERY_REASON_CODES.NO_AVAILABLE_PEOPLE)
+
+    const showCurrent = () => {
+      const current = queue[0]
+      if (!current) return renderEmpty(host, DISCOVERY_REASON_CODES.DAILY_LIMIT_REACHED)
+      const card = introCard(current, async () => {
+        const sparkResult = await sendSparkInvitation({ recipientUserId: current.userId })
+        if (sparkResult.status === 'error') return renderEmpty(host, sparkResult.error.reasonCode)
+        dismissed.add(current.userId)
+        writeDismissed(dismissed)
+        queue.shift()
+        const feedback = document.createElement('p')
+        feedback.className = 'discovery-feedback-banner'
+        feedback.dataset.i18n = COPY.sent
+        host.replaceChildren(feedback)
+        globalThis.setTimeout(showCurrent, 350)
+      }, () => {
+        dismissed.add(current.userId)
+        writeDismissed(dismissed)
+        queue.shift()
+        showCurrent()
+      })
+      host.replaceChildren(card)
+    }
+
+    showCurrent()
   }
+
+  render()
   return section
 }

@@ -11,6 +11,8 @@ const operationMap = Object.freeze({
   'auth.logout': { method: 'POST', path: '/v1/auth/logout' },
   'profile.get': { method: 'GET', path: '/v1/profile/viewer' },
   'profile.completeness': { method: 'GET', path: '/v1/profile/completeness' },
+  'discovery.get': { method: 'GET', path: '/v1/discovery/daily' },
+  'spark.create': { method: 'POST', path: '/v1/sparks', body: ({ recipientUserId, sourceGlimpsId, softResonanceContext }) => ({ recipientUserId, ...(sourceGlimpsId ? { sourceGlimpsId } : {}), ...(softResonanceContext ? { softResonanceContext } : {}) }) },
   'conversations.viewer.list': { method: 'GET', path: '/v1/conversations/viewer' },
   'conversations.messages.list': { method: 'GET', path: ({ conversationId }) => `/v1/conversations/${encodeURIComponent(conversationId)}/messages` },
   'conversations.messages.send': { method: 'POST', path: ({ conversationId }) => `/v1/conversations/${encodeURIComponent(conversationId)}/messages`, body: ({ conversationId, text, ...rest }) => ({
