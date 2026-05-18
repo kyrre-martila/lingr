@@ -1,0 +1,1 @@
+export default {"title":"Laget for rolige introduksjoner.","subtitle":"Én person om gangen. Ta et pust før hvert valg.","loading":"Gjør klar dagens introduksjoner…","spark_sent":"Spark sendt.","send_spark":"Send spark","not_now":"Ikke nå"}

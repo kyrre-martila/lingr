@@ -248,3 +248,9 @@ Planned scope:
 - Reason codes: `region.closed`, `region.waitlist`, `region.open`, `region.invalid`.
 - Controlled density intent: this is not social-status exclusivity; it is healthy pool rollout sequencing.
 - Localization constraint: names and UI copy are key-driven and locale-ready (`en` canonical, `nb-NO` launch pack).
+
+### Run 9.1 — Localization foundation (completed)
+- Established namespace i18n architecture before broader migration.
+- Migrated high-touch active surfaces first (discovery/chat/auth/onboarding error paths).
+- Added locale detection + persisted override with `en` fallback.
+- Deferred full-screen translation sweep to later runs to avoid scope creep.

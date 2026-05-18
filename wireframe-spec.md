@@ -118,3 +118,8 @@ This supports density-first local launch, not global day-one availability.
 - Reason codes: `region.closed`, `region.waitlist`, `region.open`, `region.invalid`.
 - Controlled density intent: this is not social-status exclusivity; it is healthy pool rollout sequencing.
 - Localization constraint: names and UI copy are key-driven and locale-ready (`en` canonical, `nb-NO` launch pack).
+
+## Localization wireframe baseline (Run 9 foundation)
+- High-touch onboarding/discovery/chat frames must bind all visible UI copy to translation keys.
+- Screen-reader labels and keyboard controls must remain semantically stable across locales.
+- Region selection UI must remain locale-ready without English-only assumptions.

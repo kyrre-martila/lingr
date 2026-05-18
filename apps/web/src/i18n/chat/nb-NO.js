@@ -1,0 +1,1 @@
+export default {"title":"En roligere måte å starte samtaler på.","lead":"Ingen hast, ingen støyende indikatorer og rom for å pause før du svarer.","loading_conversations":"Laster samtaler…","loading_messages":"Laster meldinger…","send":"Send","paused":"Pauset"}

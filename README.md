@@ -135,3 +135,9 @@ Final order should be determined by waitlist demand.
 - Reason codes: `region.closed`, `region.waitlist`, `region.open`, `region.invalid`.
 - Controlled density intent: this is not social-status exclusivity; it is healthy pool rollout sequencing.
 - Localization constraint: names and UI copy are key-driven and locale-ready (`en` canonical, `nb-NO` launch pack).
+
+## Run 9 localization foundation
+- Added namespace-based web i18n foundation under `apps/web/src/i18n/` with `en` canonical + `nb-NO` launch pack.
+- Core high-touch surfaces use translation keys (`discovery`, `chat`, `auth`, `onboarding`, `errors`, `regions`).
+- Backend reason codes remain canonical and untranslated (frontend maps to `errors.*`).
+- Locale handling supports browser detection, manual override persistence, and English fallback.

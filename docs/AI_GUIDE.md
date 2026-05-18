@@ -137,3 +137,8 @@ Avoid:
 - Reason codes: `region.closed`, `region.waitlist`, `region.open`, `region.invalid`.
 - Controlled density intent: this is not social-status exclusivity; it is healthy pool rollout sequencing.
 - Localization constraint: names and UI copy are key-driven and locale-ready (`en` canonical, `nb-NO` launch pack).
+
+## Localization implementation guardrail (Run 9 foundation)
+- Web UI must reference translation keys from namespace packs in `apps/web/src/i18n/*`.
+- Do not localize backend contracts or reason codes.
+- High-touch surfaces migrate first; full migration is intentionally deferred.
