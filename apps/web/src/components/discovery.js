@@ -8,10 +8,10 @@ const COPY = Object.freeze({
   sent: 'discovery.spark_sent',
   send: 'discovery.send_spark',
   pass: 'discovery.not_now',
-  interestsLabel: 'discovery.interests',
+  unavailableCta: 'discovery.unavailable.cta',
+  glimpseLabel: 'discovery.glimpse',
   reflectionLabel: 'discovery.reflection',
-  layersLabel: 'discovery.layers',
-  limitMeta: 'discovery.limit_meta'
+  layersLabel: 'discovery.layers'
 })
 
 const EMPTY_REASON_COPY = Object.freeze({
@@ -39,6 +39,14 @@ const renderEmpty = (host, reasonCode) => {
   panel.className = 'discovery-empty soft-panel'
   panel.setAttribute('aria-live', 'polite')
   panel.dataset.i18n = EMPTY_REASON_COPY[reasonCode] || EMPTY_REASON_COPY[DISCOVERY_REASON_CODES.NO_AVAILABLE_PEOPLE]
+  if (reasonCode === DISCOVERY_REASON_CODES.UNAVAILABLE_REGION) {
+    const cta = document.createElement('button')
+    cta.className = 'button button--ghost discovery-empty__cta'
+    cta.type = 'button'
+    cta.dataset.i18n = COPY.unavailableCta
+    cta.setAttribute('aria-label', 'Join waitlist updates')
+    panel.append(cta)
+  }
   host.replaceChildren(panel)
 }
 
@@ -48,7 +56,7 @@ const introCard = (intro, onSpark, onPass) => {
   card.tabIndex = 0
   const glimpse = intro.glimpses?.[0]
   const interestTokens = String(intro.layersSummary || '').split(/[•,]/).map((v) => v.trim()).filter(Boolean).slice(0, 3)
-  card.innerHTML = `<p class="discovery-name">${intro.displayName}</p><p class="discovery-region">${intro.locationRegion || ''}</p><p class="discovery-label" data-i18n="${COPY.reflectionLabel}"></p><p>${glimpse?.reflection || ''}</p><p class="discovery-label" data-i18n="${COPY.interestsLabel}"></p><ul class="discovery-tags"></ul><p class="discovery-label" data-i18n="${COPY.layersLabel}"></p><p>${intro.layersSummary || ''}</p><div class="discovery-actions"><button class="button button--ghost" type="button" data-action="pass" data-i18n="${COPY.pass}" aria-label="Pass quietly"></button><button class="button" type="button" data-action="spark" data-i18n="${COPY.send}" aria-label="Send Spark"></button></div><p class="discovery-feedback" aria-live="polite"></p>`
+  card.innerHTML = `<p class="discovery-name">${intro.displayName}</p><p class="discovery-region">${intro.locationRegion || ''}</p><p class="discovery-label" data-i18n="${COPY.glimpseLabel}"></p><p class="discovery-quote">${glimpse?.reflection || ''}</p><p class="discovery-label" data-i18n="${COPY.reflectionLabel}"></p><p class="discovery-reflection">${glimpse?.prompt || ''}</p><p class="discovery-label" data-i18n="${COPY.layersLabel}"></p><ul class="discovery-tags"></ul><div class="discovery-actions"><button class="button button--ghost" type="button" data-action="pass" data-i18n="${COPY.pass}" aria-label="Not now"></button><button class="button" type="button" data-action="spark" data-i18n="${COPY.send}" aria-label="Send spark"></button></div><p class="discovery-feedback" aria-live="polite"></p>`
   const tags = card.querySelector('.discovery-tags')
   interestTokens.forEach((token) => tags?.append(createTag(token)))
   card.querySelector('[data-action="spark"]')?.addEventListener('click', onSpark)
@@ -60,18 +68,16 @@ export const createDiscoverySection = () => {
   const section = document.createElement('section')
   section.id = 'discovery'
   section.className = 'section section--paper'
-  section.innerHTML = `<div class="container discovery-shell flow"><p class="eyebrow">Discovery</p><h2 data-i18n="${COPY.title}"></h2><p class="lead" data-i18n="${COPY.subtitle}"></p><p class="discovery-meta" data-i18n="${COPY.limitMeta}"></p><div class="daily-connections" aria-live="polite"></div></div>`
+  section.innerHTML = `<div class="container discovery-shell flow"><p class="eyebrow">Discovery</p><h2 data-i18n="${COPY.title}"></h2><p class="lead" data-i18n="${COPY.subtitle}"></p><div class="daily-connections" aria-live="polite"></div></div>`
 
   const host = section.querySelector('.daily-connections')
-  const meta = section.querySelector('.discovery-meta')
   const dismissed = readDismissed()
 
   const render = async () => {
-    host.innerHTML = `<p data-i18n="${COPY.loading}"></p>`
+    host.innerHTML = `<p class="discovery-loading" data-i18n="${COPY.loading}"></p>`
     const response = await getDailyDiscovery()
     if (response.status === 'error') return renderEmpty(host, response.error.reasonCode)
     const data = response.data
-    meta.textContent = ''
 
     if (data.state !== DISCOVERY_STATE.READY || !data.introductions?.length) return renderEmpty(host, data.reasonCode)
     const queue = data.introductions.filter((item) => !dismissed.has(item.userId))
@@ -90,7 +96,7 @@ export const createDiscoverySection = () => {
         feedback.className = 'discovery-feedback-banner'
         feedback.dataset.i18n = COPY.sent
         host.replaceChildren(feedback)
-        globalThis.setTimeout(showCurrent, 350)
+        globalThis.setTimeout(showCurrent, 450)
       }, async () => {
         const notNowResult = await sendDiscoveryNotNow({ discoveredUserId: current.userId })
         if (notNowResult.status === 'error') return renderEmpty(host, notNowResult.error.reasonCode)

@@ -114,3 +114,17 @@ Domain model:
 ## Delivery rules
 For this phase, documentation-first changes only.
 Do not implement production feature changes unless explicitly requested in a dedicated implementation run.
+
+## Discovery implementation guardrails
+Discovery should feel editorial, calm, and emotionally safe.
+
+Required behavior:
+- introduction model, one person at a time
+- Glimps-first presentation before profile metadata
+- quiet actions and low-pressure copy (`Send spark`, `Not now`)
+- warm empty/loading/unavailable states
+
+Avoid:
+- swipe-stack framing
+- gamified counters or urgency language
+- celebratory “match” mechanics for spark success

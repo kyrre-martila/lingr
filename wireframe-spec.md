@@ -94,3 +94,18 @@ This supports density-first local launch, not global day-one availability.
 - `Not now` is framed as temporary pacing, never as permanent rejection.
 - Discovery states include loading, unavailable region, daily limit reached, empty, and subtle spark confirmation.
 - Do not display remaining counters, timers, urgency prompts, or online indicators in discovery.
+
+## Discovery editorial polish principles (Run 9)
+- Discovery is an **introduction**, not a profile browsing feed.
+- Show one person at a time with spacious, low-contrast, calm composition.
+- Prioritize Glimps first (moment, reflection, emotional tone), then supporting context.
+- Action language stays gentle: `Send spark` and `Not now` only.
+- Empty and unavailable states should feel warm and open-ended, never punitive.
+- Region unavailable copy: “Lingr has not opened in your area yet.” with a soft waitlist/vote placeholder CTA.
+- Spark success is subtle and quiet: no confetti, no “match” celebration patterns.
+
+### Discovery visual anti-patterns to avoid
+- Swipe-stack/card deck metaphors.
+- “Hot profile card” visual hierarchy.
+- Gamified counters/timers/urgency banners.
+- Optimization copy (“more profiles”, “out of likes”, “daily limit reached”).
