@@ -1,0 +1,1 @@
+export default {"title":"A calmer way to begin talking.","lead":"No urgency, no noisy indicators, and space to pause before replying.","loading_conversations":"Loading conversations…","loading_messages":"Loading messages…","send":"Send","paused":"Paused"}

@@ -10,6 +10,7 @@ import { createAppShell } from './components/app-shell.js'
 import { ROUTE_PAGE_BUILDERS } from './app/page-builders.js'
 import { setMockSessionState } from './state/session.js'
 import { createNotFoundView } from './components/not-found.js'
+import { applyTranslations, getLocale, setLocale } from './i18n/index.js'
 
 const root = document.body
 
@@ -51,11 +52,13 @@ const renderApp = () => {
   root.innerHTML = ''
   if (path === '/') {
     renderLandingPage()
+    applyTranslations(document)
     return
   }
 
   if (!pageBuilder) {
     root.append(createNotFoundView())
+    applyTranslations(document)
     return
   }
 
@@ -65,7 +68,12 @@ const renderApp = () => {
       pageBuilder
     })
   )
+  applyTranslations(document)
 }
 
 window.addEventListener('popstate', renderApp)
 renderApp()
+
+const locale = getLocale()
+setLocale(locale)
+applyTranslations(document)

@@ -1,0 +1,1 @@
+export default {"title":"Designed for slow introductions.","subtitle":"One person at a time. Take a breath before each choice.","loading":"Preparing today's introductions…","spark_sent":"Spark sent.","send_spark":"Send spark","not_now":"Not now"}
