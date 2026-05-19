@@ -169,3 +169,9 @@ Required MVP sections:
 - Closed/waitlist regions should never feel like rejection; use warm language and waitlist-notify CTA.
 - Marketing-to-app handoff should preserve selected region in MVP (query param/local storage/session transfer acceptable).
 - Discovery must stay region-scoped with no cross-region leakage for MVP.
+
+## Auth implementation guardrail (Run 9.5)
+- Production-safe MVP auth must use Prisma persistence, not process memory.
+- Password hashing must use bcrypt with minimum 12 rounds.
+- Auth payloads must remain minimal and never expose password hashes or internal auth material.
+- Session lifecycle must remain status-driven (`active`, `expired`, `revoked`) with explicit expiry behavior.
