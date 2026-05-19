@@ -4,33 +4,33 @@ import { createHttpTransport } from '../src/api/http-transport.js'
 import { evaluateRouteGuard, GUARD_MODES } from '../src/state/route-access.js'
 import { SESSION_STATES, resolveSessionStateFromFlags } from '../src/state/session.js'
 
-test('register/login/logout operations are mapped and include bearer token when available', async () => {
+test('register/login/logout operations are mapped and send cookie credentials', async () => {
   const calls = []
   const transport = createHttpTransport({
     fetchImpl: async (url, options) => {
       calls.push({ url, options })
       return { json: async () => ({ status: 'success', data: {} }) }
-    },
-    getSessionToken: () => 'sess_abc'
+    }
   })
 
   await transport.request({ operation: 'auth.register', payload: { email: 'a@b.com', password: 'password123', countryCode: 'NO', regionSlug: 'trondelag' } })
   await transport.request({ operation: 'auth.login', payload: { email: 'a@b.com', password: 'password123' } })
   await transport.request({ operation: 'auth.logout', payload: {} })
   assert.equal(calls.length, 3)
-  assert.equal(calls[0].options.headers.authorization, 'Bearer sess_abc')
+  assert.equal(calls[0].options.credentials, 'include')
+  assert.equal(calls[0].options.headers.authorization, undefined)
   assert.equal(calls[0].options.method, 'POST')
 })
 
 test('expired session returns auth error envelope from protected conversations route', async () => {
   const transport = createHttpTransport({
-    fetchImpl: async () => ({ json: async () => ({ status: 'error', error: { kind: 'auth', reasonCode: 'auth.session_expired', retryable: false } }) }),
-    getSessionToken: () => 'expired_token'
+    fetchImpl: async () => ({ json: async () => ({ status: 'error', error: { kind: 'auth', reasonCode: 'auth.session_expired', retryable: false } }) })
   })
   const envelope = await transport.request({ operation: 'conversations.viewer.list', payload: {} })
   assert.equal(envelope.ok, false)
   assert.equal(envelope.error.reasonCode, 'auth.session_expired')
 })
+// ... unchanged
 
 test('route gating keeps onboarding-only routes blocked for signed-in users in enforced mode', () => {
   const result = evaluateRouteGuard({ path: '/onboarding', sessionState: SESSION_STATES.SIGNED_IN, mode: GUARD_MODES.ENFORCED })
@@ -61,8 +61,6 @@ test('authenticated users with incomplete profile are routed to profile completi
   assert.equal(allowed.allowed, true)
 })
 
-
-
 test('incomplete users trying discovery are redirected directly to their required flow', () => {
   const onboarding = evaluateRouteGuard({ path: '/discovery', sessionState: SESSION_STATES.ONBOARDING, mode: GUARD_MODES.ENFORCED })
   const incompleteProfile = evaluateRouteGuard({ path: '/discovery', sessionState: SESSION_STATES.INCOMPLETE_PROFILE, mode: GUARD_MODES.ENFORCED })
@@ -86,7 +84,6 @@ test('session state resolves from onboarding and profile completion flags', () =
   assert.equal(resolveSessionStateFromFlags({ isAuthenticated: true, onboardingComplete: true, profileComplete: false }), SESSION_STATES.INCOMPLETE_PROFILE)
   assert.equal(resolveSessionStateFromFlags({ isAuthenticated: true, onboardingComplete: true, profileComplete: true }), SESSION_STATES.SIGNED_IN)
 })
-
 
 test('register operation includes region gating payload', async () => {
   const calls = []

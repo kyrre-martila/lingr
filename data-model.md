@@ -144,3 +144,12 @@ Suggested records:
 - Layer 0 data is intentionally atmosphere-first: `glimpses`, reflection context, and non-identifying energy descriptors.
 - Identity progression occurs after reciprocal intent pathways; discovery is not profile browsing.
 - Public discovery DTO omits timestamp fields to reduce urgency pressure patterns.
+
+## Run 9.5.1 auth transport update (web MVP)
+- Session transport for web is HttpOnly cookie (`lingr_session`) rather than JS-readable bearer storage.
+- Cookie attributes: `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` in production.
+- Canonical auth semantics remain: expired session = `auth.session_expired`; missing/revoked = `auth.requires_auth`.
+- Deferred mobile strategy: native secure-storage bearer flow is post-MVP and documented only.
+
+## Run 9.5.1 Layer 0 discovery conformance
+- Layer 0 discovery DTOs (API + mock transport) must not include direct identity (`name`, `displayName`), exact/region location, timestamps, or activity/urgency metadata.

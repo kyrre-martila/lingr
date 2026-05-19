@@ -167,3 +167,10 @@ Final order should be determined by waitlist demand.
 - Discovery is an introduction flow, not profile shopping.
 - Public discovery response shape avoids timestamp exposure and urgency cues.
 - Action copy stays low-pressure (`Spark`, `Not now`) and must be localized.
+
+## Run 9.5.1 web session transport hardening
+- Web session auth uses HttpOnly cookie transport (MVP default), not `localStorage` bearer tokens.
+- Cookie policy: `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` in production.
+- Canonical auth behavior: expired sessions return `auth.session_expired`; missing/revoked sessions return `auth.requires_auth`.
+- Mobile bearer-token strategy remains deferred to a future native secure-storage implementation.
+- Layer 0 discovery conformance: no names, no location metadata, no timestamps, no activity/urgency fields in discovery introduction payloads.

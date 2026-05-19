@@ -15,11 +15,9 @@ const shouldAllowMockFallback = () => {
   return globalThis?.__LINGR_DEV_MOCK_FALLBACK__ === true
 }
 
-const getSessionToken = () => globalThis?.localStorage?.getItem('lingr.sessionToken') || null
-
 export const createDefaultTransport = () => {
   const mock = createMockTransport()
-  const http = createHttpTransport({ baseUrl: globalThis?.__LINGR_API_BASE_URL || 'http://localhost:3000', getSessionToken })
+  const http = createHttpTransport({ baseUrl: globalThis?.__LINGR_API_BASE_URL || 'http://localhost:3000' })
 
   return {
     requestSync: (input) => mock.requestSync(input),
