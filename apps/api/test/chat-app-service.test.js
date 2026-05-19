@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createAnonymousViewer, createAuthenticatedViewer } from '../src/auth/viewer.js'
 import { REASON_CODES } from '../../../packages/shared/src/contracts.js'
-import { acceptChatAppInvite, completeChatAppSession, inviteChatApp } from '../src/services/chat-app-service.js'
+import { acceptChatAppInvite, answerMatchCardsSession, completeChatAppSession, inviteChatApp, startMatchCardsSession } from '../src/services/chat-app-service.js'
 
 const now = new Date('2026-05-19T00:00:00.000Z')
 
@@ -20,6 +20,21 @@ const makeDb = () => {
       update: async ({ where, data }) => {
         const row = { ...store.get(where.id), ...data, updatedAt: now }
         store.set(where.id, row)
+        return row
+      }
+    }
+    ,
+    matchCardsSession: {
+      create: async ({ data }) => {
+        const row = { id: 'm1', answerByInviter: null, answerByInvitee: null, createdAt: now, updatedAt: now, ...data }
+        store.set(`m_${data.appSessionId}`, row)
+        return row
+      },
+      findUnique: async ({ where }) => store.get(`m_${where.appSessionId}`) || null,
+      update: async ({ where, data }) => {
+        const key = `m_${where.appSessionId}`
+        const row = { ...store.get(key), ...data, updatedAt: now }
+        store.set(key, row)
         return row
       }
     }
@@ -53,4 +68,37 @@ test('app sessions cannot leak across conversations', async () => {
   const db = makeDb()
   const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'match_cards' }, dbClient: db })
   await assert.rejects(acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u3' }), appSessionId: invited.appSessionId, dbClient: db }), (e) => e.reasonCode === REASON_CODES.CONVERSATION.NOT_FOUND)
+})
+
+test('match cards invite flow starts a single-question session', async () => {
+  const db = makeDb()
+  const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'match_cards' }, dbClient: db })
+  await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
+  const session = await startMatchCardsSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, dbClient: db })
+  assert.equal(session.state, 'question_active')
+  assert.equal(Boolean(session.questionPromptKey), true)
+})
+
+test('match cards reveals only after both answers and persists answers', async () => {
+  const db = makeDb()
+  const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'match_cards' }, dbClient: db })
+  await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
+  await startMatchCardsSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, dbClient: db })
+  const oneAnswer = await answerMatchCardsSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, answer: 'Tea and silence.', dbClient: db })
+  assert.equal(oneAnswer.revealState, 'hidden')
+  assert.equal(oneAnswer.answerByInviter, 'Tea and silence.')
+  assert.equal(oneAnswer.completed, false)
+  const both = await answerMatchCardsSession({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, answer: 'A warm shower.', dbClient: db })
+  assert.equal(both.revealState, 'revealed')
+  assert.equal(both.state, 'revealed')
+  assert.equal(both.completed, true)
+  assert.equal(both.answerByInvitee, 'A warm shower.')
+})
+
+test('match cards no unilateral reveal for non-participant', async () => {
+  const db = makeDb()
+  const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'match_cards' }, dbClient: db })
+  await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
+  await startMatchCardsSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, dbClient: db })
+  await assert.rejects(answerMatchCardsSession({ viewer: createAuthenticatedViewer({ userId: 'u3' }), appSessionId: invited.appSessionId, answer: 'peek', dbClient: db }), (e) => e.reasonCode === REASON_CODES.CONVERSATION.NOT_FOUND)
 })

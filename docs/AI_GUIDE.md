@@ -249,3 +249,29 @@ Accessibility and truthfulness constraints:
 - App lifecycle (MVP): `invite -> accept -> active -> complete` with optional `dismissed`.
 - Persistence ownership: app sessions are relationship-scoped through conversation ownership and must not leak globally.
 - Forbidden mechanics: streaks, scores, timers, reminders, badges, leaderboards, urgency prompts, reward loops.
+
+## Run 11.1 Match Cards philosophy and guardrails
+Match Cards is a calm intimacy helper inside chat.
+
+Required behavior:
+- one person starts Match Cards
+- exactly one thoughtful question in MVP
+- both answer privately
+- reveal only after both have answered
+
+Question design rules:
+- favor gentle emotional curiosity
+- allow reflective but low-pressure responses
+- keep prompts safe for early trust
+
+Forbidden prompt styles:
+- therapy/diagnostic framing
+- trauma-mining questions
+- sexual prompts
+- hyper-romantic pressure prompts
+- dating-app cliché adversarial prompts (e.g., “red flags”)
+
+Implementation anti-patterns to avoid:
+- scores, winners, best-answer systems
+- timers/reminders/streak loops
+- unilateral reveal or “seen” pressure mechanics

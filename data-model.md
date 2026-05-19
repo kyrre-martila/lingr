@@ -207,3 +207,14 @@ Suggested records:
 - App lifecycle (MVP): `invite -> accept -> active -> complete` with optional `dismissed`.
 - Persistence ownership: app sessions are relationship-scoped through conversation ownership and must not leak globally.
 - Forbidden mechanics: streaks, scores, timers, reminders, badges, leaderboards, urgency prompts, reward loops.
+
+## Run 11.1 Match Cards MVP
+- Match Cards remains a calm conversation helper, not a game mechanic.
+- Lifecycle (single-question session): `invite -> accepted -> question_active -> both_answered -> revealed -> complete`.
+- Persistence is conversation-scoped via `AppSession` + `MatchCardsSession`:
+  - selected question (`questionId`, `questionPromptKey`, `questionTone`)
+  - per-person answers (`answerByInviter`, `answerByInvitee`)
+  - reveal semantics (`revealState`: `hidden|revealed`)
+  - completion state (`completed` boolean)
+- Reveal policy is strict reciprocal reveal: answers are shown only after both participants have answered.
+- No global profile stats, rankings, compatibility scoring, or cross-conversation aggregation.
