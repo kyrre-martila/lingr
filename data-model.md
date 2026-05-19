@@ -230,3 +230,15 @@ Suggested records:
   - completion flag (`completed`)
 - Reveal policy is reciprocal only: no unilateral reveal before both participants submit answer + guess.
 - Forbidden mechanics: points, score, winner/loser framing, rankings, streaks, timers, reminders, compatibility scoring.
+
+## Run 11.3 Snuggle MVP
+- Snuggle is a consent-first shared-presence app, not a game or retention mechanic.
+- Lifecycle (MVP): `invite -> accepted -> active_shared_hold -> complete` with optional decline via completion path.
+- Persistence is relationship-scoped via `AppSession` + `SnuggleSession`:
+  - hold state (`holdByInviter`, `holdByInvitee`)
+  - shared-presence state (`sharedMomentState`: `quiet|together|passed`)
+  - completion semantics (`completionReason`: `moment_passed`)
+  - completion flag (`completed`)
+- Shared moment appears only when both people are actively holding.
+- Neutral ending language only; no blame framing and no presence leakage.
+- Forbidden mechanics: timers, scores, streaks, reminders, online/last-seen/seen-state, or profile stats.

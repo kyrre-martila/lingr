@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createAnonymousViewer, createAuthenticatedViewer } from '../src/auth/viewer.js'
 import { REASON_CODES } from '../../../packages/shared/src/contracts.js'
-import { acceptChatAppInvite, answerGuessMeSession, answerMatchCardsSession, completeChatAppSession, inviteChatApp, startGuessMeSession, startMatchCardsSession } from '../src/services/chat-app-service.js'
+import { acceptChatAppInvite, answerGuessMeSession, answerMatchCardsSession, completeChatAppSession, completeSnuggleSession, inviteChatApp, setSnuggleHoldState, startGuessMeSession, startMatchCardsSession, startSnuggleSession } from '../src/services/chat-app-service.js'
 
 const now = new Date('2026-05-19T00:00:00.000Z')
 
@@ -46,6 +46,20 @@ const makeDb = () => {
       findUnique: async ({ where }) => store.get(`g_${where.appSessionId}`) || null,
       update: async ({ where, data }) => {
         const key = `g_${where.appSessionId}`
+        const row = { ...store.get(key), ...data, updatedAt: now }
+        store.set(key, row)
+        return row
+      }
+    },
+    snuggleSession: {
+      create: async ({ data }) => {
+        const row = { id: 's1', holdByInviter: false, holdByInvitee: false, completionReason: null, createdAt: now, updatedAt: now, ...data }
+        store.set(`s_${data.appSessionId}`, row)
+        return row
+      },
+      findUnique: async ({ where }) => store.get(`s_${where.appSessionId}`) || null,
+      update: async ({ where, data }) => {
+        const key = `s_${where.appSessionId}`
         const row = { ...store.get(key), ...data, updatedAt: now }
         store.set(key, row)
         return row
@@ -149,4 +163,41 @@ test('guess me no unilateral reveal and relationship isolation', async () => {
   await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
   await startGuessMeSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, dbClient: db })
   await assert.rejects(answerGuessMeSession({ viewer: createAuthenticatedViewer({ userId: 'u3' }), appSessionId: invited.appSessionId, ownAnswer: 'apps.guess_me.options.walk', guess: 'apps.guess_me.options.film', dbClient: db }), (e) => e.reasonCode === REASON_CODES.CONVERSATION.NOT_FOUND)
+})
+
+test('snuggle requires consent first and starts only after accept', async () => {
+  const db = makeDb()
+  const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'snuggle' }, dbClient: db })
+  assert.equal(invited.lifecycle, 'invite')
+  const accepted = await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
+  assert.equal(accepted.lifecycle, 'active')
+  const started = await startSnuggleSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, dbClient: db })
+  assert.equal(started.state, 'active_shared_hold')
+  assert.equal(started.sharedMomentState, 'quiet')
+})
+
+test('snuggle shared state appears only when both hold', async () => {
+  const db = makeDb()
+  const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'snuggle' }, dbClient: db })
+  await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
+  await startSnuggleSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, dbClient: db })
+  const one = await setSnuggleHoldState({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, hold: true, dbClient: db })
+  assert.equal(one.holdByInviter, true)
+  assert.equal(one.holdByInvitee, false)
+  assert.equal(one.sharedMomentState, 'quiet')
+  const both = await setSnuggleHoldState({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, hold: true, dbClient: db })
+  assert.equal(both.sharedMomentState, 'together')
+})
+
+test('snuggle decline and neutral ending semantics', async () => {
+  const db = makeDb()
+  const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'snuggle' }, dbClient: db })
+  const declined = await completeChatAppSession({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
+  assert.equal(declined.lifecycle, 'complete')
+  const invited2 = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'snuggle' }, dbClient: db })
+  await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited2.appSessionId, dbClient: db })
+  await startSnuggleSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited2.appSessionId, dbClient: db })
+  const completed = await completeSnuggleSession({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited2.appSessionId, dbClient: db })
+  assert.equal(completed.sharedMomentState, 'passed')
+  assert.equal(completed.completionReason, 'moment_passed')
 })

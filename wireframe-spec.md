@@ -223,3 +223,14 @@ Layer UI must not include:
 - Reveal tone remains editorial and warm (example: “You guessed each other surprisingly well.” / “You saw this one differently.”).
 - Waiting copy must be low-pressure (example: “Your part is saved. The rest can wait.”).
 - Forbidden UI mechanics: points, winner badges, correctness markers, countdowns, urgency language, leaderboards.
+
+## Run 11.3 Snuggle MVP wireframe notes
+- Timeline starts with subtle invitation row (example: "Maja invited you to Snuggle.").
+- Invitation must provide explicit consent controls: `Join` and `Decline`.
+- Active Snuggle uses accessible, low-precision "Hold gently" controls.
+- Shared state copy remains gentle:
+  - together: "You're here together."
+  - quiet: "A small quiet moment."
+  - end: "That moment passed."
+- End states must never frame abandonment or absence as blame.
+- Forbidden UI mechanics: timers, durations, scores, streaks, reminders, online indicators, activity tracking.
