@@ -254,3 +254,20 @@ Planned scope:
 - Migrated high-touch active surfaces first (discovery/chat/auth/onboarding error paths).
 - Added locale detection + persisted override with `en` fallback.
 - Deferred full-screen translation sweep to later runs to avoid scope creep.
+
+## Run 9.2 — Marketing/waitlist site foundation (`lingr.dating`)
+Goal: establish a calm pre-launch web presence and collect region demand signals before broad opening.
+
+Delivered baseline:
+- Created `apps/site` as lightweight marketing shell (not a full brand site).
+- Added structured sections: hero, what Lingr is, how it works, region rollout rationale, waitlist voting, and preview placeholders.
+- Connected waitlist voting flow to API region rollout contracts.
+- Added localization-ready copy architecture with `en` + `nb-NO` packs.
+- Added MVP SEO metadata + OG baseline.
+- Added accessibility baseline with keyboard path, semantic structure, live updates, and reduced-motion respect.
+
+Deferred from this run:
+- Final production visuals/assets for screenshots.
+- CMS/content tooling.
+- Full analytics instrumentation and conversion experiments.
+- Geo-suggested region preselection.

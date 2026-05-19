@@ -142,3 +142,24 @@ Avoid:
 - Web UI must reference translation keys from namespace packs in `apps/web/src/i18n/*`.
 - Do not localize backend contracts or reason codes.
 - High-touch surfaces migrate first; full migration is intentionally deferred.
+
+## Marketing website foundation policy (`lingr.dating`)
+Purpose at MVP stage:
+- explain Lingr clearly and calmly
+- communicate philosophy (slow, intentional, emotionally safe)
+- collect waitlist interest and region voting signals
+- support soft region-by-region momentum
+
+Guardrails:
+- This is not a hype funnel or urgency machine.
+- Avoid manipulative scarcity copy or pressure CTAs.
+- Use warm, reflective language and low-pressure pacing.
+- Keep implementation simple, fast, and localization-ready (`en`, `nb-NO`).
+
+Required MVP sections:
+- Hero with calm positioning + region CTA
+- What Lingr is (slow dating and safety principles)
+- How Lingr works (Glimps → Sparks → Layers → Conversation)
+- Region rollout rationale
+- Region voting/waitlist form connected to API contracts
+- Placeholder preview area until final assets are ready
