@@ -113,6 +113,7 @@ export const MESSAGE_DELIVERY_STATE = Object.freeze({ QUEUED: 'queued', SENT: 's
 export const PLAYING_NOW_MEDIA_TYPE = Object.freeze({ SONG: 'song', MOVIE: 'movie', TV_SERIES: 'tv_series' })
 
 export const APP_INVITE_APP_ID = Object.freeze({ MATCH_CARDS: 'match_cards', GUESS_ME: 'guess_me', SNUGGLE: 'snuggle' })
+export const LAYER_LEVEL = Object.freeze({ DISCOVERY: 0, MUTUAL_SPARK: 1, MEANINGFUL_CONVERSATION: 2, DEEPER_TRUST: 3 })
 
 export const MESSAGE_PAYLOAD_KIND = Object.freeze({
   TEXT: 'text_payload',

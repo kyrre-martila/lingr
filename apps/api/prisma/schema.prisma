@@ -81,12 +81,35 @@ model User {
   receivedSparks     Spark[]   @relation("SparkRecipient")
   conversationParticipants ConversationParticipant[]
   sentMessages       Message[]
+  relationshipLayersAsPrimary RelationshipLayer[] @relation("RelationshipLayerPrimary")
+  relationshipLayersAsSecondary RelationshipLayer[] @relation("RelationshipLayerSecondary")
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
   pausedAt           DateTime?
   deletedAt          DateTime?
 
   @@map("users")
+}
+
+model RelationshipLayer {
+  id                  String   @id @default(cuid())
+  primaryUserId       String
+  secondaryUserId     String
+  currentLayer        Int      @default(0)
+  reciprocalMessageCount Int   @default(0)
+  lastMessageSenderId String?
+  layer1UnlockedAt    DateTime?
+  layer2UnlockedAt    DateTime?
+  layer3UnlockedAt    DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  primaryUser         User     @relation("RelationshipLayerPrimary", fields: [primaryUserId], references: [id], onDelete: Cascade)
+  secondaryUser       User     @relation("RelationshipLayerSecondary", fields: [secondaryUserId], references: [id], onDelete: Cascade)
+
+  @@unique([primaryUserId, secondaryUserId])
+  @@index([primaryUserId, secondaryUserId, currentLayer])
+  @@map("relationship_layers")
 }
 
 model Glimps {
