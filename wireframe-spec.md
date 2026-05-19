@@ -206,3 +206,10 @@ Layer UI must not include:
 - App lifecycle (MVP): `invite -> accept -> active -> complete` with optional `dismissed`.
 - Persistence ownership: app sessions are relationship-scoped through conversation ownership and must not leak globally.
 - Forbidden mechanics: streaks, scores, timers, reminders, badges, leaderboards, urgency prompts, reward loops.
+
+## Run 11.1 Match Cards MVP wireframe notes
+- Timeline includes subtle system rows (example: “Maja started Match Cards.”).
+- One thoughtful prompt appears per session (no category browser, no multi-round flow).
+- Before reciprocal completion, show a soft waiting line (example: “Your answer is here when they’re ready.”).
+- Reveal treatment is editorial and warm; avoid quiz/trivia visuals and winner/loser framing.
+- No pressure mechanics: no seen states, timers, reminders, or “waiting on them” urgency cues.
