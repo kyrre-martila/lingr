@@ -321,3 +321,9 @@ Forbidden mechanics:
 - dopamine loops (scores, streaks, rankings, reminders)
 - timers/countdowns/duration pressure
 - guilt or blame framing (for example "they left" or "you missed it")
+
+
+## Run 11.5 cleanup updates
+- Keep Snuggle copy neutral and aggregate-only; avoid partner-presence phrasing.
+- Do not use completion as a proxy for decline; use dismiss/decline semantics.
+- Reveal states for Match Cards and Guess Me must wait for both participants to submit required input.

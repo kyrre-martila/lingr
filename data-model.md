@@ -242,3 +242,9 @@ Suggested records:
 - Shared moment appears only when both people are actively holding.
 - Neutral ending language only; no blame framing and no presence leakage.
 - Forbidden mechanics: timers, scores, streaks, reminders, online/last-seen/seen-state, or profile stats.
+
+
+## Run 11.5 cleanup updates
+- `SnuggleSession` is a persisted table linked 1:1 to `AppSession`.
+- Chat Apps lifecycle uses explicit invite/active/dismissed/complete transitions.
+- Snuggle state remains neutral and aggregate-only (`quiet`, `together`, `passed`).

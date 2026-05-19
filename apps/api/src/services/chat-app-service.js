@@ -41,6 +41,10 @@ const assertAppId = (appId) => {
     throw new ApiError({ message: 'Invalid appId', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
   }
 }
+const assertLifecycle = (session, allowed) => {
+  if (allowed.includes(session.lifecycle)) return
+  throw new ApiError({ message: 'Invalid app session transition', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.PERMISSION.NOT_ALLOWED, statusCode: 409 })
+}
 
 const assertConversationParticipant = async ({ db, conversationId, userId }) => {
   const participant = await db.conversationParticipant.findFirst({ where: { conversationId, userId }, select: { id: true } })
@@ -118,20 +122,22 @@ export const inviteChatApp = async ({ viewer, payload, dbClient }) => {
   return toDto(row)
 }
 
-const transition = async ({ viewer, appSessionId, nextState, fieldName, dbClient }) => {
+const transition = async ({ viewer, appSessionId, nextState, fieldName, allowedFrom, dbClient }) => {
   const userId = requireViewerId(viewer)
   const db = dbClient || await getDbClient()
   const id = stripPrefixId(appSessionId, INTERNAL_ID_STRATEGY.API_APP_SESSION_ID_PREFIX, 'appSessionId')
   const existing = await db.appSession.findUnique({ where: { id } })
   if (!existing) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
   await assertConversationParticipant({ db, conversationId: existing.conversationId, userId })
+  assertLifecycle(existing, allowedFrom)
+  if (existing.lifecycle === nextState && existing[fieldName] === userId) return toDto(existing)
   const row = await db.appSession.update({ where: { id }, data: { lifecycle: nextState, [fieldName]: userId } })
   return toDto(row)
 }
 
-export const acceptChatAppInvite = async ({ viewer, appSessionId, dbClient }) => transition({ viewer, appSessionId, nextState: APP_LIFECYCLE_STATE.ACTIVE, fieldName: 'acceptedByUserId', dbClient })
-export const completeChatAppSession = async ({ viewer, appSessionId, dbClient }) => transition({ viewer, appSessionId, nextState: APP_LIFECYCLE_STATE.COMPLETE, fieldName: 'completedByUserId', dbClient })
-export const dismissChatAppSession = async ({ viewer, appSessionId, dbClient }) => transition({ viewer, appSessionId, nextState: APP_LIFECYCLE_STATE.DISMISSED, fieldName: 'dismissedByUserId', dbClient })
+export const acceptChatAppInvite = async ({ viewer, appSessionId, dbClient }) => transition({ viewer, appSessionId, nextState: APP_LIFECYCLE_STATE.ACTIVE, fieldName: 'acceptedByUserId', allowedFrom: [APP_LIFECYCLE_STATE.INVITE], dbClient })
+export const completeChatAppSession = async ({ viewer, appSessionId, dbClient }) => transition({ viewer, appSessionId, nextState: APP_LIFECYCLE_STATE.COMPLETE, fieldName: 'completedByUserId', allowedFrom: [APP_LIFECYCLE_STATE.ACTIVE], dbClient })
+export const dismissChatAppSession = async ({ viewer, appSessionId, dbClient }) => transition({ viewer, appSessionId, nextState: APP_LIFECYCLE_STATE.DISMISSED, fieldName: 'dismissedByUserId', allowedFrom: [APP_LIFECYCLE_STATE.INVITE, APP_LIFECYCLE_STATE.ACTIVE], dbClient })
 
 export const startMatchCardsSession = async ({ viewer, appSessionId, dbClient }) => {
   const userId = requireViewerId(viewer)
@@ -140,6 +146,7 @@ export const startMatchCardsSession = async ({ viewer, appSessionId, dbClient })
   const appSession = await db.appSession.findUnique({ where: { id } })
   if (!appSession || appSession.appId !== APP_ID.MATCH_CARDS) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
   await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  assertLifecycle(appSession, [APP_LIFECYCLE_STATE.ACTIVE])
   const selected = pickMatchCardsQuestion(id.length)
   const created = await db.matchCardsSession.create({ data: { appSessionId: id, conversationId: appSession.conversationId, state: 'question_active', questionId: selected.id, questionPromptKey: selected.promptKey, questionTone: selected.tone, revealState: 'hidden', completed: false } })
   return toMatchCardsState(created)
@@ -152,6 +159,7 @@ export const answerMatchCardsSession = async ({ viewer, appSessionId, answer, db
   const appSession = await db.appSession.findUnique({ where: { id } })
   if (!appSession || appSession.appId !== APP_ID.MATCH_CARDS) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
   await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  assertLifecycle(appSession, [APP_LIFECYCLE_STATE.ACTIVE])
   const text = normalize(answer)
   if (!text) throw new ApiError({ message: 'Invalid answer', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
   const row = await db.matchCardsSession.findUnique({ where: { appSessionId: id } })
@@ -159,6 +167,7 @@ export const answerMatchCardsSession = async ({ viewer, appSessionId, answer, db
   const writeToInviter = appSession.invitedByUserId === userId
   const data = writeToInviter ? { answerByInviter: text } : { answerByInvitee: text }
   const answered = await db.matchCardsSession.update({ where: { appSessionId: id }, data })
+  if (row.completed) return toMatchCardsState(row)
   if (answered.answerByInviter && answered.answerByInvitee) {
     const revealed = await db.matchCardsSession.update({ where: { appSessionId: id }, data: { state: 'revealed', revealState: 'revealed', completed: true } })
     await db.appSession.update({ where: { id }, data: { lifecycle: APP_LIFECYCLE_STATE.COMPLETE, completedByUserId: userId } })
@@ -174,6 +183,7 @@ export const startGuessMeSession = async ({ viewer, appSessionId, dbClient }) =>
   const appSession = await db.appSession.findUnique({ where: { id } })
   if (!appSession || appSession.appId !== APP_ID.GUESS_ME) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
   await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  assertLifecycle(appSession, [APP_LIFECYCLE_STATE.ACTIVE])
   const selected = pickGuessMePrompt(id.length)
   const created = await db.guessMeSession.create({ data: { appSessionId: id, conversationId: appSession.conversationId, state: 'prompt_active', promptId: selected.id, promptKey: selected.promptKey, optionKeys: selected.optionKeys, revealState: 'hidden', completed: false } })
   return toGuessMeState(created)
@@ -186,11 +196,13 @@ export const answerGuessMeSession = async ({ viewer, appSessionId, ownAnswer, gu
   const appSession = await db.appSession.findUnique({ where: { id } })
   if (!appSession || appSession.appId !== APP_ID.GUESS_ME) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
   await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  assertLifecycle(appSession, [APP_LIFECYCLE_STATE.ACTIVE])
   const answerValue = normalize(ownAnswer)
   const guessValue = normalize(guess)
   if (!answerValue || !guessValue) throw new ApiError({ message: 'Invalid guess me input', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
   const row = await db.guessMeSession.findUnique({ where: { appSessionId: id } })
   if (!row) throw new ApiError({ message: 'Guess me session missing', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  if (row.completed) return toGuessMeState(row)
   const writeToInviter = appSession.invitedByUserId === userId
   const data = writeToInviter ? { ownAnswerByInviter: answerValue, guessByInviter: guessValue, state: 'awaiting_reveal' } : { ownAnswerByInvitee: answerValue, guessByInvitee: guessValue, state: 'awaiting_reveal' }
   const answered = await db.guessMeSession.update({ where: { appSessionId: id }, data })
@@ -209,6 +221,9 @@ export const startSnuggleSession = async ({ viewer, appSessionId, dbClient }) =>
   const appSession = await db.appSession.findUnique({ where: { id } })
   if (!appSession || appSession.appId !== APP_ID.SNUGGLE) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
   await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  assertLifecycle(appSession, [APP_LIFECYCLE_STATE.ACTIVE])
+  const existing = await db.snuggleSession.findUnique({ where: { appSessionId: id } })
+  if (existing) return toSnuggleState(existing)
   const created = await db.snuggleSession.create({ data: { appSessionId: id, conversationId: appSession.conversationId, state: 'active_shared_hold', holdByInviter: false, holdByInvitee: false, sharedMomentState: 'quiet', completionReason: null, completed: false } })
   return toSnuggleState(created)
 }
@@ -220,8 +235,10 @@ export const setSnuggleHoldState = async ({ viewer, appSessionId, hold, dbClient
   const appSession = await db.appSession.findUnique({ where: { id } })
   if (!appSession || appSession.appId !== APP_ID.SNUGGLE) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
   await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  assertLifecycle(appSession, [APP_LIFECYCLE_STATE.ACTIVE])
   const row = await db.snuggleSession.findUnique({ where: { appSessionId: id } })
   if (!row) throw new ApiError({ message: 'Snuggle session missing', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  if (row.completed || row.state !== 'active_shared_hold') throw new ApiError({ message: 'Snuggle session inactive', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.PERMISSION.NOT_ALLOWED, statusCode: 409 })
   const nextHold = Boolean(hold)
   const writeToInviter = appSession.invitedByUserId === userId
   const updated = await db.snuggleSession.update({
@@ -243,6 +260,10 @@ export const completeSnuggleSession = async ({ viewer, appSessionId, dbClient })
   const appSession = await db.appSession.findUnique({ where: { id } })
   if (!appSession || appSession.appId !== APP_ID.SNUGGLE) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
   await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  assertLifecycle(appSession, [APP_LIFECYCLE_STATE.ACTIVE])
+  const existing = await db.snuggleSession.findUnique({ where: { appSessionId: id } })
+  if (!existing) throw new ApiError({ message: 'Snuggle session missing', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  if (existing.completed) return toSnuggleState(existing)
   const completed = await db.snuggleSession.update({
     where: { appSessionId: id },
     data: { state: 'complete', holdByInviter: false, holdByInvitee: false, sharedMomentState: 'passed', completionReason: 'moment_passed', completed: true }
