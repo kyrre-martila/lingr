@@ -271,3 +271,9 @@ Deferred from this run:
 - CMS/content tooling.
 - Full analytics instrumentation and conversion experiments.
 - Geo-suggested region preselection.
+
+### Run 9 extension — region-aware registration
+- Implement pre-account registration gate: country + region + availability check.
+- Closed region path writes waitlist interest and returns warm non-rejection UX.
+- Marketing-to-app region context transfer is required in MVP to reduce duplicate entry friction.
+- Discovery remains restricted to open launch regions in same-region scope for MVP.

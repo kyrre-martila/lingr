@@ -1,7 +1,8 @@
 export const nbNO = {
   common: {
     localeLabel: 'Språk',
-    chooseRegion: 'Velg din region'
+    chooseRegion: 'Velg din region',
+    continueInApp: 'Fortsett i appen'
   },
   hero: {
     title: 'Noen mennesker er verdt å bruke tid på.',
@@ -31,7 +32,9 @@ export const nbNO = {
     chooseRegion: 'Velg region',
     loading: 'Laster regioner…',
     helper: 'Hvis regionen din ikke er åpen ennå, registrerer vi interessen din og oppdaterer deg rolig.',
-    statusOpen: 'Denne regionen er åpen nå. Du kan snart fortsette i appen.',
+    statusOpen: 'Denne regionen er åpen nå. Du kan fortsette i appen.',
+    unavailableTitle: 'Lingr har ikke åpnet i området ditt ennå.',
+    unavailableBody: 'Vi åpner rolig — ett sted om gangen.',
     statusWaitlist: 'Denne regionen er i ventelistemodus. Stemmen din hjelper oss å prioritere lanseringsrekkefølge.',
     statusClosed: 'Denne regionen er stengt akkurat nå. Du kan fortsatt stemme og bli med på ventelisten.'
   },

@@ -6,7 +6,7 @@ const DEFAULT_BASE_URL = 'http://localhost:3000'
 const normalizeBaseUrl = (value) => String(value || DEFAULT_BASE_URL).replace(/\/$/, '')
 
 const operationMap = Object.freeze({
-  'auth.register': { method: 'POST', path: '/v1/auth/register', body: ({ email, password }) => ({ email, password }) },
+  'auth.register': { method: 'POST', path: '/v1/auth/register', body: ({ email, password, countryCode, regionSlug }) => ({ email, password, countryCode, regionSlug }) },
   'auth.login': { method: 'POST', path: '/v1/auth/login', body: ({ email, password }) => ({ email, password }) },
   'auth.logout': { method: 'POST', path: '/v1/auth/logout' },
   'profile.get': { method: 'GET', path: '/v1/profile/viewer' },

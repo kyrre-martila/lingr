@@ -149,3 +149,9 @@ Final order should be determined by waitlist demand.
 - Region voting is wired to `api.lingr.dating` region endpoints (`countries`, `regions`, `check`, `vote`).
 - Localization-ready foundation includes `en` + `nb-NO` translation packs and key-driven rendering.
 - Accessibility baseline includes keyboard-usable controls, skip link, semantic headings, live-region updates, and reduced-motion support.
+
+## Run 9 registration gating integration
+- Registration now starts with country → region selection and availability check before account creation.
+- Open regions continue into account creation; closed/waitlist regions route to warm waitlist enrollment (email + optional first name + locale + region), with dedupe protection.
+- Marketing (`lingr.dating`) can hand selected region into app (`app.lingr.dating`) using MVP query-param transfer to avoid duplicate region entry.
+- Region policy for authenticated users: if a region later pauses/closes, users receive graceful unavailable messaging and retain account access boundaries; app must never fail silently.

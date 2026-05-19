@@ -123,3 +123,13 @@ This supports density-first local launch, not global day-one availability.
 - High-touch onboarding/discovery/chat frames must bind all visible UI copy to translation keys.
 - Screen-reader labels and keyboard controls must remain semantically stable across locales.
 - Region selection UI must remain locale-ready without English-only assumptions.
+
+## Registration entry wireframe (implemented direction)
+1. Choose country
+2. Choose region/state/county
+3. Availability check
+4. Branch:
+   - open: continue registration form
+   - closed/waitlist: warm unavailable copy + notify CTA
+
+Copy tone should be guided/calm/intentional, never punitive.

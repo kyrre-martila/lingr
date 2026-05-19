@@ -163,3 +163,9 @@ Required MVP sections:
 - Region rollout rationale
 - Region voting/waitlist form connected to API contracts
 - Placeholder preview area until final assets are ready
+
+## Run 9 implementation extension
+- Registration must be region-gated **before** account creation.
+- Closed/waitlist regions should never feel like rejection; use warm language and waitlist-notify CTA.
+- Marketing-to-app handoff should preserve selected region in MVP (query param/local storage/session transfer acceptable).
+- Discovery must stay region-scoped with no cross-region leakage for MVP.

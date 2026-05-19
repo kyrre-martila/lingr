@@ -124,3 +124,8 @@ Suggested records:
 - Reason codes: `region.closed`, `region.waitlist`, `region.open`, `region.invalid`.
 - Controlled density intent: this is not social-status exclusivity; it is healthy pool rollout sequencing.
 - Localization constraint: names and UI copy are key-driven and locale-ready (`en` canonical, `nb-NO` launch pack).
+
+## Run 9 implementation note — registration gate
+- `POST /v1/auth/register` now requires `countryCode` and `regionSlug` with email/password.
+- Server checks region availability before account creation and returns region reason codes on closed paths.
+- Waitlist persistence remains deduped by `(regionId, email)` with locale + optional firstName updates.

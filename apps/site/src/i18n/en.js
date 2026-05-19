@@ -1,7 +1,8 @@
 export const en = {
   common: {
     localeLabel: 'Language',
-    chooseRegion: 'Choose your region'
+    chooseRegion: 'Choose your region',
+    continueInApp: 'Continue in app'
   },
   hero: {
     title: 'Some people are worth taking time with.',
@@ -31,7 +32,9 @@ export const en = {
     chooseRegion: 'Choose region',
     loading: 'Loading regions…',
     helper: 'If your region is not open yet, we keep your interest and update you quietly.',
-    statusOpen: 'This region is open now. You can continue in the app soon.',
+    statusOpen: 'This region is open now. You can continue in the app.',
+    unavailableTitle: 'Lingr hasn’t opened in your area yet.',
+    unavailableBody: 'We’re opening slowly — one place at a time.',
     statusWaitlist: 'This region is in waitlist mode. Your vote helps us prioritize launch order.',
     statusClosed: 'This region is currently closed. You can still vote and join the waitlist.'
   },

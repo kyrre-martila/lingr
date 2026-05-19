@@ -4,7 +4,7 @@ import { nbNO } from './i18n/nb-NO.js'
 const API_BASE = 'https://api.lingr.dating'
 const packs = { en, 'nb-NO': nbNO }
 
-const state = { locale: 'en', countries: [], regions: [], selectedCountry: '', selectedRegion: '', regionStatus: '' }
+const state = { locale: 'en', countries: [], regions: [], selectedCountry: '', selectedRegion: '', regionStatus: '', canContinueInApp: false }
 
 const t = (key) => key.split('.').reduce((o, k) => o?.[k], packs[state.locale]) || key
 
@@ -37,6 +37,7 @@ const render = () => {
           <button class="button" type="submit">${t('waitlist.submit')}</button>
         </form>
         <p id="region-status" aria-live="polite">${state.regionStatus}</p>
+        ${state.canContinueInApp ? `<p><a class="button" href="https://app.lingr.dating/onboarding?countryCode=${encodeURIComponent(state.selectedCountry)}&regionSlug=${encodeURIComponent(state.selectedRegion)}&locale=${encodeURIComponent(state.locale)}">${t('common.continueInApp')}</a></p>` : ''}
       </section>
       <section><h2>${t('screenshots.title')}</h2><div class="shots">${t('screenshots.placeholders').map((s) => `<article class="shot" aria-label="${s}">${s}</article>`).join('')}</div></section>
     </div>`
@@ -45,7 +46,7 @@ const render = () => {
 
 const bindEvents = () => {
   document.getElementById('locale-select').onchange = (e) => { state.locale = e.target.value; localStorage.setItem('lingr.site.locale', state.locale); render() }
-  document.getElementById('country').onchange = async (e) => { state.selectedCountry = e.target.value; state.selectedRegion = ''; state.regions = []; state.regionStatus = ''; render(); if (state.selectedCountry) await loadRegions() }
+  document.getElementById('country').onchange = async (e) => { state.selectedCountry = e.target.value; state.selectedRegion = ''; state.regions = []; state.regionStatus = ''; state.canContinueInApp = false; render(); if (state.selectedCountry) await loadRegions() }
   document.getElementById('region').onchange = async (e) => { state.selectedRegion = e.target.value; await checkRegion() }
   document.getElementById('waitlist-form').onsubmit = submitVote
 }
@@ -68,7 +69,8 @@ const checkRegion = async () => {
   const res = await fetch(`${API_BASE}/v1/regions/check?countryCode=${state.selectedCountry}&regionSlug=${state.selectedRegion}`)
   const body = await res.json()
   const reason = body.data.reasonCode
-  state.regionStatus = reason === 'region.open' ? t('waitlist.statusOpen') : reason === 'region.waitlist' ? t('waitlist.statusWaitlist') : t('waitlist.statusClosed')
+  state.canContinueInApp = reason === 'region.open'
+  state.regionStatus = reason === 'region.open' ? t('waitlist.statusOpen') : `${t('waitlist.unavailableTitle')} ${t('waitlist.unavailableBody')}`
   render()
 }
 
