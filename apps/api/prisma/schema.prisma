@@ -111,6 +111,7 @@ model RelationshipLayer {
   primaryUserId       String
   secondaryUserId     String
   currentLayer        Int      @default(0)
+  trustScore          Int      @default(0)
   reciprocalMessageCount Int   @default(0)
   lastMessageSenderId String?
   lastCountedMessageAt DateTime?
@@ -126,6 +127,33 @@ model RelationshipLayer {
   @@unique([primaryUserId, secondaryUserId])
   @@index([primaryUserId, secondaryUserId, currentLayer])
   @@map("relationship_layers")
+}
+
+model LayerRule {
+  id                 String   @id @default(cuid())
+  fromLayer          Int
+  toLayer            Int
+  minElapsedMinutes  Int
+  requiredTrustScore Int
+  enabled            Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([fromLayer, toLayer])
+  @@index([enabled, fromLayer, toLayer])
+  @@map("layer_rules")
+}
+
+model TrustSignalRule {
+  id         String   @id @default(cuid())
+  signalType String   @unique
+  points     Int
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([enabled, signalType])
+  @@map("trust_signal_rules")
 }
 
 model Glimps {
