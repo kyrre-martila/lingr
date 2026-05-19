@@ -141,3 +141,11 @@ Final order should be determined by waitlist demand.
 - Core high-touch surfaces use translation keys (`discovery`, `chat`, `auth`, `onboarding`, `errors`, `regions`).
 - Backend reason codes remain canonical and untranslated (frontend maps to `errors.*`).
 - Locale handling supports browser detection, manual override persistence, and English fallback.
+
+## Marketing site foundation (`lingr.dating`)
+- Added initial launch/waitlist site under `apps/site` for early region rollout momentum.
+- Scope is intentionally MVP-only: philosophy framing, simple product explanation, region vote/waitlist form, and placeholder previews.
+- Shares calm visual language with the app: warm spacing, non-urgent copy, and low-pressure CTAs.
+- Region voting is wired to `api.lingr.dating` region endpoints (`countries`, `regions`, `check`, `vote`).
+- Localization-ready foundation includes `en` + `nb-NO` translation packs and key-driven rendering.
+- Accessibility baseline includes keyboard-usable controls, skip link, semantic headings, live-region updates, and reduced-motion support.
