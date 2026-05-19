@@ -155,3 +155,9 @@ Final order should be determined by waitlist demand.
 - Open regions continue into account creation; closed/waitlist regions route to warm waitlist enrollment (email + optional first name + locale + region), with dedupe protection.
 - Marketing (`lingr.dating`) can hand selected region into app (`app.lingr.dating`) using MVP query-param transfer to avoid duplicate region entry.
 - Region policy for authenticated users: if a region later pauses/closes, users receive graceful unavailable messaging and retain account access boundaries; app must never fail silently.
+
+## Auth/session MVP hardening
+- API auth now uses Prisma-backed `users` + `sessions` persistence.
+- Passwords are hashed with bcrypt (`12` rounds minimum); plaintext and hashes are never returned by auth routes.
+- Session lifecycle uses DB `status` (`active`, `expired`, `revoked`) and 30-day expiration.
+- Session tokens are bearer transport values while DB stores only `tokenHash` for lookup/revocation.

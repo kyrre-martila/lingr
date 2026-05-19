@@ -7,9 +7,8 @@ export const resolveViewerContext = async (req) => {
   const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : null
 
   const session = await lookupSession({ sessionToken: bearerToken })
-  if (session?.expired) {
-    return { ...createAnonymousViewer({ requestId: req.requestId }), authState: AUTH_SESSION_STATE.EXPIRED }
-  }
+  if (session?.expired) return { ...createAnonymousViewer({ requestId: req.requestId }), authState: AUTH_SESSION_STATE.EXPIRED }
+  if (session?.revoked) return createAnonymousViewer({ requestId: req.requestId })
   if (!session) return createAnonymousViewer({ requestId: req.requestId })
 
   return createAuthenticatedViewer({

@@ -277,3 +277,9 @@ Deferred from this run:
 - Closed region path writes waitlist interest and returns warm non-rejection UX.
 - Marketing-to-app region context transfer is required in MVP to reduce duplicate entry friction.
 - Discovery remains restricted to open launch regions in same-region scope for MVP.
+
+### Run 9.5 — Auth stabilization (completed)
+- Replaced prototype in-memory auth/session maps with Prisma persistence.
+- Replaced SHA-256 password hashing with bcrypt (12 rounds).
+- Session lifecycle now uses DB-backed status transitions: `active`, `expired`, `revoked`.
+- Preserved auth API contracts (`register`, `login`, `logout`) and reason-code semantics.

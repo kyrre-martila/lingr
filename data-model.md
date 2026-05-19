@@ -129,3 +129,12 @@ Suggested records:
 - `POST /v1/auth/register` now requires `countryCode` and `regionSlug` with email/password.
 - Server checks region availability before account creation and returns region reason codes on closed paths.
 - Waitlist persistence remains deduped by `(regionId, email)` with locale + optional firstName updates.
+
+## Run 9.5 auth hardening (implemented)
+- `users` persistence now owns email/password credentials (`email`, `passwordHash`).
+- `sessions` persistence now owns session token identity via hashed token storage (`tokenHash`) plus status and expiry.
+- Session lifecycle semantics:
+  - `active`: usable
+  - `expired`: returns `auth.session_expired`
+  - `revoked`: treated as unauthenticated (`auth.requires_auth` guard behavior)
+- MVP expiration policy is fixed 30-day session TTL.

@@ -69,6 +69,8 @@ enum MessageDeliveryState {
 
 model User {
   id                 String     @id @default(cuid())
+  email              String     @unique
+  passwordHash       String
   authSubjectRef     String?    @unique
   status             UserStatus @default(active)
   isEmailVerified    Boolean    @default(false)
@@ -131,6 +133,7 @@ model Session {
   id          String        @id @default(cuid())
   userId      String
   status      SessionStatus @default(active)
+  tokenHash   String        @unique
   expiresAt   DateTime?
   lastSeenAt  DateTime?
   createdAt   DateTime      @default(now())
