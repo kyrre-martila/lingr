@@ -6,6 +6,8 @@ const canonicalPairFor = (leftUserId, rightUserId) => (leftUserId < rightUserId 
 
 const HIDDEN_TEXT = 'Getting to know someone takes time.'
 
+const asStringArray = (value) => Array.isArray(value) ? value.filter((item) => typeof item === 'string').map((item) => item.trim()).filter(Boolean) : []
+
 const buildVisibleProfile = ({ userId, profile, glimpses, layerLevel }) => {
   const base = {
     userId: toExternalUserId(userId),
@@ -27,19 +29,19 @@ const buildVisibleProfile = ({ userId, profile, glimpses, layerLevel }) => {
 
   if (layerLevel >= 1) {
     base.profile.firstName = profile?.displayName?.trim()?.split(/\s+/)[0] || null
-    base.profile.broadRegion = profile?.locationRegion ? profile.locationRegion.slice(0, 5) : null
+    base.profile.broadRegion = profile?.broadRegion || null
     base.profile.intro = profile?.layersSummary || null
     base.profile.glimpses = glimpses.map((g) => ({ reflection: g.reflection, emotionalTone: g.emotionalTone, energyTag: g.mood, prompt: g.prompt || null, imageNote: null }))
   }
   if (layerLevel >= 2) {
-    base.profile.interests = profile?.layersSummary ? profile.layersSummary.split(/[•,]/).map((item) => item.trim()).filter(Boolean) : []
+    base.profile.interests = asStringArray(profile?.revealInterests)
     base.profile.glimpses = glimpses.map((g) => ({ reflection: g.reflection, emotionalTone: g.emotionalTone, energyTag: g.mood, prompt: g.prompt || null, imageNote: g.imageNote || null }))
   }
   if (layerLevel >= 3) {
     base.profile.exactRegion = profile?.locationRegion || null
     base.profile.pronouns = profile?.pronouns || null
     base.profile.fullerBio = profile?.bio || null
-    base.profile.emotionalValues = profile?.layersSummary ? profile.layersSummary.split(/[•,]/).map((item) => item.trim()).filter(Boolean) : []
+    base.profile.emotionalValues = asStringArray(profile?.revealEmotionalValues)
   }
 
   return base

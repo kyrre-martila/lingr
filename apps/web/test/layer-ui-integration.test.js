@@ -36,3 +36,12 @@ test('layer hint localization keys exist in en and nb-NO', () => {
   assert.equal(typeof chatEn.layer_unlock.cta, 'string')
   assert.equal(typeof chatNb.layer_unlock.cta, 'string')
 })
+
+
+test('default discovery/chat rendering paths do not surface timestamps', () => {
+  const discoverySource = readFileSync(new URL('../src/components/discovery.js', import.meta.url), 'utf8')
+  const conversationSource = readFileSync(new URL('../src/components/conversations/index.js', import.meta.url), 'utf8')
+  for (const source of [discoverySource, conversationSource]) {
+    assert.doesNotMatch(source, /createdAt|updatedAt|timestamp|lastSeen|toLocale(Time|Date)String/i)
+  }
+})

@@ -98,6 +98,7 @@ model RelationshipLayer {
   currentLayer        Int      @default(0)
   reciprocalMessageCount Int   @default(0)
   lastMessageSenderId String?
+  lastCountedMessageAt DateTime?
   layer1UnlockedAt    DateTime?
   layer2UnlockedAt    DateTime?
   layer3UnlockedAt    DateTime?
@@ -141,6 +142,9 @@ model Profile {
   bio                 String?
   layersSummary       String?
   locationRegion      String?
+  broadRegion         String?
+  revealInterests     Json?
+  revealEmotionalValues Json?
   avatarAssetId       String?
   profileCompleteness Int      @default(0)
   visibility          String   @default("discoverable")

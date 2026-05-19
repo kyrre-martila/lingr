@@ -116,6 +116,6 @@ export const sendConversationMessage = async ({ viewer, conversationId, payload,
   if (SYSTEM_ORIGIN_MESSAGE_TYPES.has(type)) throw new ApiError({ message: 'System message types are service-origin only', kind: DOMAIN_ERROR_KIND.PERMISSION, reasonCode: REASON_CODES.PERMISSION.NOT_ALLOWED, statusCode: 403 })
   assertMessagePayload(type, payload?.content)
   const row = await db.message.create({ data: { conversationId: id, senderUserId: userId, type, visibility: MESSAGE_VISIBILITY.CONVERSATION, deliveryState: MESSAGE_DELIVERY_STATE.SENT, content: payload.content, metadata: payload.metadata || null } })
-  if (type === MESSAGE_TYPE.TEXT) await syncLayerAfterMessage({ conversationId: id, senderUserId: userId, dbClient: db })
+  if (type === MESSAGE_TYPE.TEXT) await syncLayerAfterMessage({ conversationId: id, senderUserId: userId, messageText: payload?.content?.text, dbClient: db })
   return toMessageDto(row)
 }

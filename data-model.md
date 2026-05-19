@@ -183,3 +183,19 @@ Suggested records:
 - Profile projections continue to be relationship-layer scoped and must preserve calm hidden-state placeholders.
 - Frontend localization requirement: all newly introduced layer copy must exist in both `en` and `nb-NO` translation packs.
 - Accessibility requirement: hidden-state messaging must be semantic text (non-link, non-button) unless an actual route action exists.
+
+## Run 10.5 stabilization cleanup (implemented)
+- Layer progression anti-gaming guardrails stay lightweight and invisible:
+  - reciprocal turn required
+  - minimum message quality heuristic (short/low-effort messages are ignored)
+  - minimum pacing between counted turns
+  - minimum relationship age before Layer 2/3 unlock eligibility
+- Progressive reveal now uses structured profile reveal fields rather than text parsing:
+  - `broadRegion` (intentional, non-derived broad location label)
+  - `revealInterests` (array)
+  - `revealEmotionalValues` (array)
+- Region reveal policy remains explicit:
+  - Layer 0: none
+  - Layer 1: `broadRegion` only
+  - Layer 3: `locationRegion` exact field
+- Timestamp philosophy guardrail: default user-facing discovery/chat rendering paths must not show timestamps.
