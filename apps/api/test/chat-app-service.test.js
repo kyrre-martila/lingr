@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createAnonymousViewer, createAuthenticatedViewer } from '../src/auth/viewer.js'
 import { REASON_CODES } from '../../../packages/shared/src/contracts.js'
-import { acceptChatAppInvite, answerMatchCardsSession, completeChatAppSession, inviteChatApp, startMatchCardsSession } from '../src/services/chat-app-service.js'
+import { acceptChatAppInvite, answerGuessMeSession, answerMatchCardsSession, completeChatAppSession, inviteChatApp, startGuessMeSession, startMatchCardsSession } from '../src/services/chat-app-service.js'
 
 const now = new Date('2026-05-19T00:00:00.000Z')
 
@@ -22,8 +22,7 @@ const makeDb = () => {
         store.set(where.id, row)
         return row
       }
-    }
-    ,
+    },
     matchCardsSession: {
       create: async ({ data }) => {
         const row = { id: 'm1', answerByInviter: null, answerByInvitee: null, createdAt: now, updatedAt: now, ...data }
@@ -33,6 +32,20 @@ const makeDb = () => {
       findUnique: async ({ where }) => store.get(`m_${where.appSessionId}`) || null,
       update: async ({ where, data }) => {
         const key = `m_${where.appSessionId}`
+        const row = { ...store.get(key), ...data, updatedAt: now }
+        store.set(key, row)
+        return row
+      }
+    },
+    guessMeSession: {
+      create: async ({ data }) => {
+        const row = { id: 'g1', ownAnswerByInviter: null, ownAnswerByInvitee: null, guessByInviter: null, guessByInvitee: null, createdAt: now, updatedAt: now, ...data }
+        store.set(`g_${data.appSessionId}`, row)
+        return row
+      },
+      findUnique: async ({ where }) => store.get(`g_${where.appSessionId}`) || null,
+      update: async ({ where, data }) => {
+        const key = `g_${where.appSessionId}`
         const row = { ...store.get(key), ...data, updatedAt: now }
         store.set(key, row)
         return row
@@ -101,4 +114,39 @@ test('match cards no unilateral reveal for non-participant', async () => {
   await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
   await startMatchCardsSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, dbClient: db })
   await assert.rejects(answerMatchCardsSession({ viewer: createAuthenticatedViewer({ userId: 'u3' }), appSessionId: invited.appSessionId, answer: 'peek', dbClient: db }), (e) => e.reasonCode === REASON_CODES.CONVERSATION.NOT_FOUND)
+})
+
+test('guess me invite flow starts a single prompt session', async () => {
+  const db = makeDb()
+  const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'guess_me' }, dbClient: db })
+  await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
+  const session = await startGuessMeSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, dbClient: db })
+  assert.equal(session.state, 'prompt_active')
+  assert.equal(Array.isArray(session.optionKeys), true)
+  assert.equal(session.optionKeys.length, 4)
+})
+
+test('guess me persists own answers and guesses then reveals only after both guessed', async () => {
+  const db = makeDb()
+  const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'guess_me' }, dbClient: db })
+  await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
+  await startGuessMeSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, dbClient: db })
+  const first = await answerGuessMeSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, ownAnswer: 'apps.guess_me.options.music', guess: 'apps.guess_me.options.good_food', dbClient: db })
+  assert.equal(first.ownAnswerByInviter, 'apps.guess_me.options.music')
+  assert.equal(first.guessByInviter, 'apps.guess_me.options.good_food')
+  assert.equal(first.revealState, 'hidden')
+  assert.equal(first.completed, false)
+  const second = await answerGuessMeSession({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, ownAnswer: 'apps.guess_me.options.fresh_air', guess: 'apps.guess_me.options.music', dbClient: db })
+  assert.equal(second.revealState, 'revealed')
+  assert.equal(second.completed, true)
+  assert.equal(second.ownAnswerByInvitee, 'apps.guess_me.options.fresh_air')
+  assert.equal(second.guessByInvitee, 'apps.guess_me.options.music')
+})
+
+test('guess me no unilateral reveal and relationship isolation', async () => {
+  const db = makeDb()
+  const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'guess_me' }, dbClient: db })
+  await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
+  await startGuessMeSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited.appSessionId, dbClient: db })
+  await assert.rejects(answerGuessMeSession({ viewer: createAuthenticatedViewer({ userId: 'u3' }), appSessionId: invited.appSessionId, ownAnswer: 'apps.guess_me.options.walk', guess: 'apps.guess_me.options.film', dbClient: db }), (e) => e.reasonCode === REASON_CODES.CONVERSATION.NOT_FOUND)
 })

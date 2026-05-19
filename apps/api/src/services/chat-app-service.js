@@ -30,6 +30,11 @@ const MATCH_CARDS_QUESTION_BANK = Object.freeze([
   { id: 'mc_q_small_mood_shift', promptKey: 'apps.match_cards.questions.small_mood_shift', tone: 'playful' },
   { id: 'mc_q_time_disappears', promptKey: 'apps.match_cards.questions.time_disappears', tone: 'curious' }
 ])
+const GUESS_ME_PROMPT_BANK = Object.freeze([
+  { id: 'gm_q_slow_sunday', promptKey: 'apps.guess_me.questions.slow_sunday', optionKeys: ['apps.guess_me.options.walk_outside', 'apps.guess_me.options.cooking', 'apps.guess_me.options.couch_film', 'apps.guess_me.options.seeing_friends'] },
+  { id: 'gm_q_mood_lift', promptKey: 'apps.guess_me.questions.mood_lift', optionKeys: ['apps.guess_me.options.music', 'apps.guess_me.options.good_food', 'apps.guess_me.options.fresh_air', 'apps.guess_me.options.kind_message'] },
+  { id: 'gm_q_tonight', promptKey: 'apps.guess_me.questions.tonight', optionKeys: ['apps.guess_me.options.stay_in', 'apps.guess_me.options.walk', 'apps.guess_me.options.film', 'apps.guess_me.options.cook_together'] }
+])
 
 const assertAppId = (appId) => {
   if (!Object.values(APP_ID).includes(appId)) {
@@ -56,6 +61,7 @@ const toDto = (row) => ({
 })
 
 const pickMatchCardsQuestion = (seed = 0) => MATCH_CARDS_QUESTION_BANK[Math.abs(seed) % MATCH_CARDS_QUESTION_BANK.length]
+const pickGuessMePrompt = (seed = 0) => GUESS_ME_PROMPT_BANK[Math.abs(seed) % GUESS_ME_PROMPT_BANK.length]
 
 const toMatchCardsState = (row) => ({
   appSessionId: toExternalSessionId(row.appSessionId),
@@ -66,6 +72,23 @@ const toMatchCardsState = (row) => ({
   questionTone: row.questionTone,
   answerByInviter: row.answerByInviter,
   answerByInvitee: row.answerByInvitee,
+  revealState: row.revealState,
+  completed: row.completed,
+  createdAt: row.createdAt.toISOString(),
+  updatedAt: row.updatedAt.toISOString()
+})
+
+const toGuessMeState = (row) => ({
+  appSessionId: toExternalSessionId(row.appSessionId),
+  conversationId: toExternalConversationId(row.conversationId),
+  state: row.state,
+  promptId: row.promptId,
+  promptKey: row.promptKey,
+  optionKeys: row.optionKeys,
+  ownAnswerByInviter: row.ownAnswerByInviter,
+  ownAnswerByInvitee: row.ownAnswerByInvitee,
+  guessByInviter: row.guessByInviter,
+  guessByInvitee: row.guessByInvitee,
   revealState: row.revealState,
   completed: row.completed,
   createdAt: row.createdAt.toISOString(),
@@ -129,4 +152,39 @@ export const answerMatchCardsSession = async ({ viewer, appSessionId, answer, db
     return toMatchCardsState(revealed)
   }
   return toMatchCardsState(answered)
+}
+
+export const startGuessMeSession = async ({ viewer, appSessionId, dbClient }) => {
+  const userId = requireViewerId(viewer)
+  const db = dbClient || await getDbClient()
+  const id = stripPrefixId(appSessionId, INTERNAL_ID_STRATEGY.API_APP_SESSION_ID_PREFIX, 'appSessionId')
+  const appSession = await db.appSession.findUnique({ where: { id } })
+  if (!appSession || appSession.appId !== APP_ID.GUESS_ME) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  const selected = pickGuessMePrompt(id.length)
+  const created = await db.guessMeSession.create({ data: { appSessionId: id, conversationId: appSession.conversationId, state: 'prompt_active', promptId: selected.id, promptKey: selected.promptKey, optionKeys: selected.optionKeys, revealState: 'hidden', completed: false } })
+  return toGuessMeState(created)
+}
+
+export const answerGuessMeSession = async ({ viewer, appSessionId, ownAnswer, guess, dbClient }) => {
+  const userId = requireViewerId(viewer)
+  const db = dbClient || await getDbClient()
+  const id = stripPrefixId(appSessionId, INTERNAL_ID_STRATEGY.API_APP_SESSION_ID_PREFIX, 'appSessionId')
+  const appSession = await db.appSession.findUnique({ where: { id } })
+  if (!appSession || appSession.appId !== APP_ID.GUESS_ME) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  const answerValue = normalize(ownAnswer)
+  const guessValue = normalize(guess)
+  if (!answerValue || !guessValue) throw new ApiError({ message: 'Invalid guess me input', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
+  const row = await db.guessMeSession.findUnique({ where: { appSessionId: id } })
+  if (!row) throw new ApiError({ message: 'Guess me session missing', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  const writeToInviter = appSession.invitedByUserId === userId
+  const data = writeToInviter ? { ownAnswerByInviter: answerValue, guessByInviter: guessValue, state: 'awaiting_reveal' } : { ownAnswerByInvitee: answerValue, guessByInvitee: guessValue, state: 'awaiting_reveal' }
+  const answered = await db.guessMeSession.update({ where: { appSessionId: id }, data })
+  if (answered.ownAnswerByInviter && answered.ownAnswerByInvitee && answered.guessByInviter && answered.guessByInvitee) {
+    const revealed = await db.guessMeSession.update({ where: { appSessionId: id }, data: { state: 'revealed', revealState: 'revealed', completed: true } })
+    await db.appSession.update({ where: { id }, data: { lifecycle: APP_LIFECYCLE_STATE.COMPLETE, completedByUserId: userId } })
+    return toGuessMeState(revealed)
+  }
+  return toGuessMeState(answered)
 }

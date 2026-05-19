@@ -218,3 +218,15 @@ Suggested records:
   - completion state (`completed` boolean)
 - Reveal policy is strict reciprocal reveal: answers are shown only after both participants have answered.
 - No global profile stats, rankings, compatibility scoring, or cross-conversation aggregation.
+
+## Run 11.2 Guess Me MVP
+- Guess Me is a conversation helper, not a quiz or compatibility score.
+- Lifecycle (single-prompt session): `invite -> accepted -> prompt_active -> both_submitted -> both_guessed -> revealed -> complete`.
+- Persistence is relationship-scoped via `AppSession` + `GuessMeSession`:
+  - selected prompt (`promptId`, `promptKey`, `optionKeys`)
+  - own answers (`ownAnswerByInviter`, `ownAnswerByInvitee`)
+  - partner guesses (`guessByInviter`, `guessByInvitee`)
+  - reveal semantics (`revealState`: `hidden|revealed`)
+  - completion flag (`completed`)
+- Reveal policy is reciprocal only: no unilateral reveal before both participants submit answer + guess.
+- Forbidden mechanics: points, score, winner/loser framing, rankings, streaks, timers, reminders, compatibility scoring.

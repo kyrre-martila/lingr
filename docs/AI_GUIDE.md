@@ -275,3 +275,31 @@ Implementation anti-patterns to avoid:
 - scores, winners, best-answer systems
 - timers/reminders/streak loops
 - unilateral reveal or “seen” pressure mechanics
+
+## Run 11.2 Guess Me philosophy and guardrails
+Guess Me helps two people discover small surprising preferences in a gentle way.
+
+Required behavior:
+- one person starts Guess Me
+- one prompt only in MVP
+- each person picks their own answer privately
+- each person guesses what the other chose
+- reveal happens only after both have provided answer + guess
+
+Prompt design rules:
+- exactly 4 options per prompt
+- light, safe, low-pressure, early-trust friendly
+- no sexual prompts
+- no trauma-mining or therapy prompts
+- no red-flag/interrogation framing
+- no judgment-heavy framing
+
+Reveal semantics:
+- pre-reveal: only self answer + self guess visible
+- post-reveal: both real answers + both guesses visible
+- keep copy warm and conversation-oriented
+
+Forbidden mechanics:
+- score/points/winner/loser/correctness framing
+- timers, streaks, rankings, percentages, rewards
+- compatibility scoring or profile-level aggregation
