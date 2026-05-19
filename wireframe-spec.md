@@ -234,3 +234,8 @@ Layer UI must not include:
   - end: "That moment passed."
 - End states must never frame abandonment or absence as blame.
 - Forbidden UI mechanics: timers, durations, scores, streaks, reminders, online indicators, activity tracking.
+
+
+## Run 11.5 cleanup updates
+- Added route-level Chat Apps endpoints for invite, accept, dismiss, complete, and app interaction actions.
+- Invalid lifecycle transitions are rejected with conflict semantics.

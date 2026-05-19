@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createAnonymousViewer, createAuthenticatedViewer } from '../src/auth/viewer.js'
 import { REASON_CODES } from '../../../packages/shared/src/contracts.js'
-import { acceptChatAppInvite, answerGuessMeSession, answerMatchCardsSession, completeChatAppSession, completeSnuggleSession, inviteChatApp, setSnuggleHoldState, startGuessMeSession, startMatchCardsSession, startSnuggleSession } from '../src/services/chat-app-service.js'
+import { acceptChatAppInvite, answerGuessMeSession, answerMatchCardsSession, completeChatAppSession, completeSnuggleSession, dismissChatAppSession, inviteChatApp, setSnuggleHoldState, startGuessMeSession, startMatchCardsSession, startSnuggleSession } from '../src/services/chat-app-service.js'
 
 const now = new Date('2026-05-19T00:00:00.000Z')
 
@@ -192,8 +192,8 @@ test('snuggle shared state appears only when both hold', async () => {
 test('snuggle decline and neutral ending semantics', async () => {
   const db = makeDb()
   const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'snuggle' }, dbClient: db })
-  const declined = await completeChatAppSession({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
-  assert.equal(declined.lifecycle, 'complete')
+  const declined = await dismissChatAppSession({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, dbClient: db })
+  assert.equal(declined.lifecycle, 'dismissed')
   const invited2 = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'snuggle' }, dbClient: db })
   await acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited2.appSessionId, dbClient: db })
   await startSnuggleSession({ viewer: createAuthenticatedViewer({ userId: 'u1' }), appSessionId: invited2.appSessionId, dbClient: db })
