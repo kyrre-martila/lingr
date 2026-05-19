@@ -20,8 +20,6 @@ const assertViewerReadiness = (viewer) => {
 
 const toDiscoveryDto = (row) => ({
   userId: toExternalUserId(row.id),
-  displayName: row.profile?.displayName || 'Someone nearby',
-  locationRegion: row.profile?.locationRegion || null,
   layersSummary: row.profile?.layersSummary || null,
   bio: row.profile?.bio || null,
   glimpses: row.glimpses.slice(0, 2).map((g) => ({ glimpsId: `${INTERNAL_ID_STRATEGY.API_GLIMPS_ID_PREFIX}${g.id}`, reflection: g.reflection, mood: g.mood, prompt: g.prompt || null, emotionalTone: g.emotionalTone }))

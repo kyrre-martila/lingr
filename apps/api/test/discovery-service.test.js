@@ -73,3 +73,22 @@ test('duplicate spark from discovery is calm and non-duplicating', async () => {
   const result = await createSparkFromDiscovery({ viewer, discoveredUserId: 'u2', dbClient: db })
   assert.equal(result.state, 'already_exists')
 })
+
+
+test('layer 0 discovery payload excludes direct identity and timestamps', async () => {
+  const db = baseDb()
+  db.user.findMany = async () => [{
+    id: 'u2',
+    status: 'active',
+    profile: { displayName: 'Sofia', locationRegion: 'NO-03', layersSummary: 'calm • curious', bio: 'Quiet walk by the sea' },
+    glimpses: [{ id: 'g1', reflection: 'Evening tea and sketchbook', mood: 'calm', prompt: 'What grounded you today?', emotionalTone: 'warm', createdAt: new Date('2026-05-01T00:00:00Z') }]
+  }]
+  const result = await getDailyDiscovery({ viewer, dbClient: db, now: new Date('2026-05-18T00:00:00Z') })
+  assert.equal(result.state, DISCOVERY_STATE.READY)
+  const intro = result.introductions[0]
+  assert.ok(intro.userId)
+  assert.equal(Object.hasOwn(intro, 'displayName'), false)
+  assert.equal(Object.hasOwn(intro, 'locationRegion'), false)
+  assert.equal(Object.hasOwn(intro, 'createdAt'), false)
+  assert.equal(Object.hasOwn(intro.glimpses[0], 'createdAt'), false)
+})

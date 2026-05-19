@@ -5,9 +5,9 @@ import { readFileSync } from 'node:fs'
 const discoverySource = readFileSync(new URL('../src/components/discovery.js', import.meta.url), 'utf8')
 
 test('discovery keeps calm action labels', () => {
-  assert.match(discoverySource, /discovery\.send_spark/)
+  assert.match(discoverySource, /discovery\.spark/)
   assert.match(discoverySource, /discovery\.not_now/)
-  assert.doesNotMatch(discoverySource, /Pass quietly|Send Spark/)
+  assert.doesNotMatch(discoverySource, /Pass quietly|Send spark/)
 })
 
 test('discovery region unavailable copy and waitlist CTA are present', () => {

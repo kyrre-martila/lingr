@@ -124,7 +124,7 @@ Final order should be determined by waitlist demand.
 ## Discovery philosophy (Run 9 polish)
 - Discovery is framed as a calm introduction, one person at a time.
 - Primary emphasis is on Glimps and emotional atmosphere, not profile-scanning behavior.
-- UX tone uses gentle language (`Send spark`, `Not now`) and warm empty states.
+- UX tone uses gentle language (`Spark`, `Not now`) and warm empty states.
 - Avoid swipe metaphors, gamified pacing cues, and urgency copy.
 
 
@@ -161,3 +161,9 @@ Final order should be determined by waitlist demand.
 - Passwords are hashed with bcrypt (`12` rounds minimum); plaintext and hashes are never returned by auth routes.
 - Session lifecycle uses DB `status` (`active`, `expired`, `revoked`) and 30-day expiration.
 - Session tokens are bearer transport values while DB stores only `tokenHash` for lookup/revocation.
+
+## Discovery philosophy hardening (Run 9.5)
+- Layer 0 discovery intentionally withholds direct identity markers (name/region) and foregrounds Glimps + emotional atmosphere.
+- Discovery is an introduction flow, not profile shopping.
+- Public discovery response shape avoids timestamp exposure and urgency cues.
+- Action copy stays low-pressure (`Spark`, `Not now`) and must be localized.

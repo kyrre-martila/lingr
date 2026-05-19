@@ -121,7 +121,7 @@ Discovery should feel editorial, calm, and emotionally safe.
 Required behavior:
 - introduction model, one person at a time
 - Glimps-first presentation before profile metadata
-- quiet actions and low-pressure copy (`Send spark`, `Not now`)
+- quiet actions and low-pressure copy (`Spark`, `Not now`)
 - warm empty/loading/unavailable states
 
 Avoid:
@@ -175,3 +175,10 @@ Required MVP sections:
 - Password hashing must use bcrypt with minimum 12 rounds.
 - Auth payloads must remain minimal and never expose password hashes or internal auth material.
 - Session lifecycle must remain status-driven (`active`, `expired`, `revoked`) with explicit expiry behavior.
+
+## Run 9.5 philosophy hardening notes (May 19, 2026)
+- Layer 0 discovery is anonymous-first: no names or region labels in discovery introductions.
+- Layer 0 payloads prioritize Glimps, reflection text, tone, and energy signals.
+- Discovery is an introduction moment, not profile browsing; avoid marketplace language.
+- CTA vocabulary stays calm: `Spark` and `Not now`.
+- Public discovery DTOs should not expose timestamps unless absolutely required for product function.
