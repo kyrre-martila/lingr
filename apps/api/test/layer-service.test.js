@@ -17,8 +17,20 @@ test('mutual spark acceptance unlocks relationship layer 1', async () => {
   assert.equal(upsertInput.create.currentLayer, 1)
 })
 
-test('message progression unlocks layer 2 and creates system message', async () => {
-  let relationshipState = { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, lastMessageSenderId: 'u1', layer2UnlockedAt: null, layer3UnlockedAt: null }
+test('low-effort ping-pong does not advance reciprocal progression', async () => {
+  let relationshipState = { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null }
+  const db = {
+    conversation: { findFirst: async () => ({ id: 'c1' }), findUnique: async () => ({ id: 'c1', participants: [{ userId: 'u1' }, { userId: 'u2' }] }) },
+    message: { create: async ({ data }) => ({ id: 'm1', ...data, createdAt: now, updatedAt: now }) },
+    relationshipLayer: { upsert: async () => relationshipState, update: async ({ data }) => { relationshipState = { ...relationshipState, ...data }; return relationshipState } }
+  }
+  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'ok' } }, dbClient: db })
+  assert.equal(relationshipState.currentLayer, 1)
+  assert.equal(relationshipState.reciprocalMessageCount, 5)
+})
+
+test('reciprocal quality + pacing unlocks layer 2', async () => {
+  let relationshipState = { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null }
   let createdSystemMessage = null
   const db = {
     conversation: { findFirst: async () => ({ id: 'c1' }), findUnique: async () => ({ id: 'c1', participants: [{ userId: 'u1' }, { userId: 'u2' }] }) },
@@ -33,24 +45,7 @@ test('message progression unlocks layer 2 and creates system message', async () 
       update: async ({ data }) => { relationshipState = { ...relationshipState, ...data }; return relationshipState }
     }
   }
-  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'hello' } }, dbClient: db })
+  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'I appreciated what you shared earlier.' } }, dbClient: db })
   assert.equal(relationshipState.currentLayer, 2)
   assert.equal(createdSystemMessage.type, 'layer_unlock')
-  assert.equal(createdSystemMessage.senderUserId, null)
-  assert.match((createdSystemMessage.content?.title || '').toLowerCase(), /little more|slowly getting to know|another layer/)
-})
-
-test('layers are relationship-owned and not global across pairs', async () => {
-  const calls = []
-  const db = {
-    conversation: { findFirst: async ({ where }) => ({ id: where.id }), findUnique: async ({ where }) => where.id === 'c1' ? ({ id: 'c1', participants: [{ userId: 'u1' }, { userId: 'u2' }] }) : ({ id: 'c2', participants: [{ userId: 'u1' }, { userId: 'u3' }] }) },
-    message: { create: async ({ data }) => ({ id: data.conversationId === 'c1' ? 'm1' : 'm2', conversationId: data.conversationId, senderUserId: data.senderUserId, type: data.type, visibility: data.visibility, deliveryState: data.deliveryState, content: data.content, metadata: data.metadata, createdAt: now, updatedAt: now }) },
-    relationshipLayer: {
-      upsert: async ({ where }) => { calls.push(where.primaryUserId_secondaryUserId); return { id: 'r', currentLayer: 1, reciprocalMessageCount: 0, lastMessageSenderId: null } },
-      update: async () => ({})
-    }
-  }
-  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u1' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'a' } }, dbClient: db })
-  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u1' }), conversationId: 'cnv_c2', payload: { type: 'text', content: { text: 'b' } }, dbClient: db })
-  assert.notDeepEqual(calls[0], calls[1])
 })

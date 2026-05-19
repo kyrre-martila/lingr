@@ -193,3 +193,8 @@ Layer UI must not include:
 - System rows should remain screen-reader legible as informative content.
 - Hidden placeholders must be non-interactive text.
 - CTA affordance must match real navigation availability.
+
+## Run 10.5 wireframe conformance notes
+- Layer progression remains invisible and non-instrumentalized to users (no “X messages away” framing).
+- Layer 1 reveals intentional broad region field only; no string-derived location slicing behavior.
+- Discovery/chat default rendering remains timestamp-free.

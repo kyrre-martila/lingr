@@ -235,3 +235,9 @@ Accessibility and truthfulness constraints:
 - `layer_unlock` is always system-authored (`senderUserId = null`).
 - CTA text should be interactive only when a real route exists.
 - If no route exists, render informational copy only (no fake links/buttons).
+
+## Run 10.5 stabilization guardrails
+- Keep progression simple and calm; do not add meaningfulness scoring, quotas, countdowns, or pressure mechanics.
+- Count only reciprocal, minimally substantive turns with light pacing checks.
+- Use explicit structured reveal fields for interests/values/region broadness; do not parse free-text summary fields for reveal state.
+- Keep default user-facing layer/discovery/chat surfaces timestamp-free.

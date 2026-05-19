@@ -283,7 +283,6 @@ export const createConversationsSection = () => {
 
         state.messages = state.messages.filter((item) => item.messageId !== optimisticId)
         state.messages.push(response.data)
-        state.messages.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime())
         await loadMessages()
         render()
       }
@@ -304,7 +303,7 @@ export const createConversationsSection = () => {
       return
     }
     state.messagesStatus = 'success'
-    state.messages = (response.data.items || []).slice().sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime())
+    state.messages = (response.data.items || []).slice()
   }
 
   const boot = async () => {

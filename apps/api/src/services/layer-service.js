@@ -2,6 +2,10 @@ import { LAYER_LEVEL, MESSAGE_DELIVERY_STATE, MESSAGE_TYPE, MESSAGE_VISIBILITY }
 
 const LAYER_2_RECIPROCAL_THRESHOLD = 6
 const LAYER_3_RECIPROCAL_THRESHOLD = 12
+const MIN_QUALITY_TEXT_LENGTH = 12
+const MIN_SECONDS_BETWEEN_COUNTED_TURNS = 20
+const MIN_SECONDS_TO_LAYER_2 = 15 * 60
+const MIN_SECONDS_TO_LAYER_3 = 60 * 60
 
 const canonicalPairFor = (leftUserId, rightUserId) => (leftUserId < rightUserId ? [leftUserId, rightUserId] : [rightUserId, leftUserId])
 
@@ -11,17 +15,32 @@ const buildSystemMessage = (layerLevel, profileName = 'this person') => {
   return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { title: `Another layer is now visible with ${profileName}.`, subtitle: 'Some things unfold naturally.' } }
 }
 
+const meetsQualityHeuristic = (messageText) => typeof messageText === 'string' && messageText.trim().length >= MIN_QUALITY_TEXT_LENGTH
+
+const hasMinimumPacingSinceLastCountedTurn = ({ now, lastCountedAt }) => {
+  if (!lastCountedAt) return true
+  return ((now.getTime() - lastCountedAt.getTime()) / 1000) >= MIN_SECONDS_BETWEEN_COUNTED_TURNS
+}
+
+const hasMinimumRelationshipAgeForLayer = ({ nextLayer, now, layer1UnlockedAt }) => {
+  if (!layer1UnlockedAt) return false
+  const ageSeconds = (now.getTime() - layer1UnlockedAt.getTime()) / 1000
+  if (nextLayer >= LAYER_LEVEL.DEEPER_TRUST) return ageSeconds >= MIN_SECONDS_TO_LAYER_3
+  if (nextLayer >= LAYER_LEVEL.MEANINGFUL_CONVERSATION) return ageSeconds >= MIN_SECONDS_TO_LAYER_2
+  return true
+}
+
 export const syncLayerAfterMutualSpark = async ({ spark, dbClient }) => {
   const [primaryUserId, secondaryUserId] = canonicalPairFor(spark.initiatorUserId, spark.recipientUserId)
   const now = new Date()
   await dbClient.relationshipLayer.upsert({
     where: { primaryUserId_secondaryUserId: { primaryUserId, secondaryUserId } },
-    create: { primaryUserId, secondaryUserId, currentLayer: LAYER_LEVEL.MUTUAL_SPARK, layer1UnlockedAt: now },
+    create: { primaryUserId, secondaryUserId, currentLayer: LAYER_LEVEL.MUTUAL_SPARK, reciprocalMessageCount: 0, layer1UnlockedAt: now },
     update: { currentLayer: { set: LAYER_LEVEL.MUTUAL_SPARK }, layer1UnlockedAt: now }
   })
 }
 
-export const syncLayerAfterMessage = async ({ conversationId, senderUserId, dbClient }) => {
+export const syncLayerAfterMessage = async ({ conversationId, senderUserId, messageText, dbClient }) => {
   const conversation = await dbClient.conversation.findUnique({ where: { id: conversationId }, include: { participants: { select: { userId: true } } } })
   if (!conversation || conversation.participants.length < 2) return null
   const [first, second] = conversation.participants.map((p) => p.userId)
@@ -29,15 +48,25 @@ export const syncLayerAfterMessage = async ({ conversationId, senderUserId, dbCl
   const now = new Date()
   const state = await dbClient.relationshipLayer.upsert({
     where: { primaryUserId_secondaryUserId: { primaryUserId, secondaryUserId } },
-    create: { primaryUserId, secondaryUserId, currentLayer: LAYER_LEVEL.MUTUAL_SPARK, reciprocalMessageCount: 0, lastMessageSenderId: senderUserId, layer1UnlockedAt: now },
+    create: { primaryUserId, secondaryUserId, currentLayer: LAYER_LEVEL.MUTUAL_SPARK, reciprocalMessageCount: 0, lastMessageSenderId: senderUserId, layer1UnlockedAt: now, lastCountedMessageAt: null },
     update: {}
   })
 
-  const reciprocalIncrement = state.lastMessageSenderId && state.lastMessageSenderId !== senderUserId ? 1 : 0
+  const shouldCountTurn = meetsQualityHeuristic(messageText)
+    && Boolean(state.lastMessageSenderId)
+    && state.lastMessageSenderId !== senderUserId
+    && hasMinimumPacingSinceLastCountedTurn({ now, lastCountedAt: state.lastCountedMessageAt || null })
+
+  const reciprocalIncrement = shouldCountTurn ? 1 : 0
   const reciprocalMessageCount = state.reciprocalMessageCount + reciprocalIncrement
   let nextLayer = state.currentLayer
   if (reciprocalMessageCount >= LAYER_3_RECIPROCAL_THRESHOLD) nextLayer = LAYER_LEVEL.DEEPER_TRUST
   else if (reciprocalMessageCount >= LAYER_2_RECIPROCAL_THRESHOLD) nextLayer = LAYER_LEVEL.MEANINGFUL_CONVERSATION
+
+  if (!hasMinimumRelationshipAgeForLayer({ nextLayer, now, layer1UnlockedAt: state.layer1UnlockedAt })) {
+    nextLayer = state.currentLayer
+  }
+
   const unlockedLayer = nextLayer > state.currentLayer ? nextLayer : null
 
   await dbClient.relationshipLayer.update({
@@ -45,6 +74,7 @@ export const syncLayerAfterMessage = async ({ conversationId, senderUserId, dbCl
     data: {
       reciprocalMessageCount,
       lastMessageSenderId: senderUserId,
+      lastCountedMessageAt: shouldCountTurn ? now : state.lastCountedMessageAt,
       currentLayer: nextLayer,
       layer2UnlockedAt: unlockedLayer === LAYER_LEVEL.MEANINGFUL_CONVERSATION ? now : state.layer2UnlockedAt,
       layer3UnlockedAt: unlockedLayer === LAYER_LEVEL.DEEPER_TRUST ? now : state.layer3UnlockedAt
