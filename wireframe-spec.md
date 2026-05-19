@@ -213,3 +213,13 @@ Layer UI must not include:
 - Before reciprocal completion, show a soft waiting line (example: “Your answer is here when they’re ready.”).
 - Reveal treatment is editorial and warm; avoid quiz/trivia visuals and winner/loser framing.
 - No pressure mechanics: no seen states, timers, reminders, or “waiting on them” urgency cues.
+
+## Run 11.2 Guess Me MVP wireframe notes
+- Timeline starts with a subtle system row (example: “Maja started Guess Me.”).
+- A single warm prompt with exactly four options appears for both people.
+- Input order is calm and private: choose your own answer, then guess your partner answer.
+- Before reveal, show only the viewer's own answer and own guess.
+- Reveal occurs only when both people completed both inputs.
+- Reveal tone remains editorial and warm (example: “You guessed each other surprisingly well.” / “You saw this one differently.”).
+- Waiting copy must be low-pressure (example: “Your part is saved. The rest can wait.”).
+- Forbidden UI mechanics: points, winner badges, correctness markers, countdowns, urgency language, leaderboards.
