@@ -95,6 +95,19 @@ const toGuessMeState = (row) => ({
   updatedAt: row.updatedAt.toISOString()
 })
 
+const toSnuggleState = (row) => ({
+  appSessionId: toExternalSessionId(row.appSessionId),
+  conversationId: toExternalConversationId(row.conversationId),
+  state: row.state,
+  holdByInviter: row.holdByInviter,
+  holdByInvitee: row.holdByInvitee,
+  sharedMomentState: row.sharedMomentState,
+  completionReason: row.completionReason,
+  completed: row.completed,
+  createdAt: row.createdAt.toISOString(),
+  updatedAt: row.updatedAt.toISOString()
+})
+
 export const inviteChatApp = async ({ viewer, payload, dbClient }) => {
   const userId = requireViewerId(viewer)
   const db = dbClient || await getDbClient()
@@ -187,4 +200,53 @@ export const answerGuessMeSession = async ({ viewer, appSessionId, ownAnswer, gu
     return toGuessMeState(revealed)
   }
   return toGuessMeState(answered)
+}
+
+export const startSnuggleSession = async ({ viewer, appSessionId, dbClient }) => {
+  const userId = requireViewerId(viewer)
+  const db = dbClient || await getDbClient()
+  const id = stripPrefixId(appSessionId, INTERNAL_ID_STRATEGY.API_APP_SESSION_ID_PREFIX, 'appSessionId')
+  const appSession = await db.appSession.findUnique({ where: { id } })
+  if (!appSession || appSession.appId !== APP_ID.SNUGGLE) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  const created = await db.snuggleSession.create({ data: { appSessionId: id, conversationId: appSession.conversationId, state: 'active_shared_hold', holdByInviter: false, holdByInvitee: false, sharedMomentState: 'quiet', completionReason: null, completed: false } })
+  return toSnuggleState(created)
+}
+
+export const setSnuggleHoldState = async ({ viewer, appSessionId, hold, dbClient }) => {
+  const userId = requireViewerId(viewer)
+  const db = dbClient || await getDbClient()
+  const id = stripPrefixId(appSessionId, INTERNAL_ID_STRATEGY.API_APP_SESSION_ID_PREFIX, 'appSessionId')
+  const appSession = await db.appSession.findUnique({ where: { id } })
+  if (!appSession || appSession.appId !== APP_ID.SNUGGLE) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  const row = await db.snuggleSession.findUnique({ where: { appSessionId: id } })
+  if (!row) throw new ApiError({ message: 'Snuggle session missing', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  const nextHold = Boolean(hold)
+  const writeToInviter = appSession.invitedByUserId === userId
+  const updated = await db.snuggleSession.update({
+    where: { appSessionId: id },
+    data: writeToInviter ? { holdByInviter: nextHold } : { holdByInvitee: nextHold }
+  })
+  const together = Boolean(updated.holdByInviter && updated.holdByInvitee)
+  const withPresence = await db.snuggleSession.update({
+    where: { appSessionId: id },
+    data: { sharedMomentState: together ? 'together' : 'quiet' }
+  })
+  return toSnuggleState(withPresence)
+}
+
+export const completeSnuggleSession = async ({ viewer, appSessionId, dbClient }) => {
+  const userId = requireViewerId(viewer)
+  const db = dbClient || await getDbClient()
+  const id = stripPrefixId(appSessionId, INTERNAL_ID_STRATEGY.API_APP_SESSION_ID_PREFIX, 'appSessionId')
+  const appSession = await db.appSession.findUnique({ where: { id } })
+  if (!appSession || appSession.appId !== APP_ID.SNUGGLE) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  await assertConversationParticipant({ db, conversationId: appSession.conversationId, userId })
+  const completed = await db.snuggleSession.update({
+    where: { appSessionId: id },
+    data: { state: 'complete', holdByInviter: false, holdByInvitee: false, sharedMomentState: 'passed', completionReason: 'moment_passed', completed: true }
+  })
+  await db.appSession.update({ where: { id }, data: { lifecycle: APP_LIFECYCLE_STATE.COMPLETE, completedByUserId: userId } })
+  return toSnuggleState(completed)
 }

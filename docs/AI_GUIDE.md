@@ -303,3 +303,21 @@ Forbidden mechanics:
 - score/points/winner/loser/correctness framing
 - timers, streaks, rankings, percentages, rewards
 - compatibility scoring or profile-level aggregation
+
+## Run 11.3 Snuggle philosophy and guardrails
+Snuggle is a tiny shared presence moment inside chat.
+
+Required behavior:
+- invitation is explicit and opt-in
+- nothing activates without acceptance
+- both can softly hold; shared state appears only when both are present
+- either person can stop naturally with neutral ending language
+
+Presence semantics:
+- Snuggle reflects in-session mutual presence only
+- it must not expose online status, seen state, last active, or activity traces
+
+Forbidden mechanics:
+- dopamine loops (scores, streaks, rankings, reminders)
+- timers/countdowns/duration pressure
+- guilt or blame framing (for example "they left" or "you missed it")
