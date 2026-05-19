@@ -152,3 +152,21 @@ Copy tone should be guided/calm/intentional, never punitive.
 - Hidden fields should render calm placeholders (example: “You'll discover more with time.”).
 - Avoid lock/premium/game metaphors; no padlock, no progress bars, no reveal percentages.
 - Same relationship must render same visible state across discovery/chat/profile/conversation surfaces.
+
+## Run 10.2 UI integration — Discovery/Chat/Profile
+- Discovery remains Layer 0 and anonymous-first on every introduction surface.
+- Discovery cards may show: Glimps reflection, tone context, energy tags, and optional calm curiosity hints (example: “More can unfold later.”).
+- Discovery cards must never show: personal name, exact or broad location, full profile payload, timestamps, activity signals, or urgency hints.
+- Conversation surfaces may show subtle relationship-layer context and calm system rows for `layer_unlock`.
+- Layer unlock rows can include a profile CTA only when an actionable route exists; otherwise render plain informative text with no link affordance.
+- Profile surfaces must render hidden states as calm placeholders (not lock-heavy, not premium/paywall-like, not game-like).
+
+### Forbidden layer UI patterns
+- No “Locked” framing.
+- No “Unlock profile” callouts.
+- No progress bars, quotas, countdowns, XP/streak/badge language, or pressure-to-chat prompts.
+
+### Accessibility and localization rules
+- All new user-visible copy must use i18n keys (`en`, `nb-NO`).
+- Hidden sections must expose clear non-interactive text indicating intentional unavailability.
+- Do not style hidden placeholders as interactive controls.

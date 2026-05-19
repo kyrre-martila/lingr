@@ -17,6 +17,7 @@ const COPY = Object.freeze({
   sparkAria: 'discovery.aria.spark',
   notNowAria: 'discovery.aria.not_now',
   waitlistAria: 'discovery.aria.waitlist'
+  ,layerHint: 'discovery.layer_hint'
 })
 
 const EMPTY_REASON_COPY = Object.freeze({
@@ -61,7 +62,7 @@ const introCard = (intro, onSpark, onPass) => {
   card.tabIndex = 0
   const glimpse = intro.glimpses?.[0]
   const interestTokens = String(intro.layersSummary || '').split(/[•,]/).map((v) => v.trim()).filter(Boolean).slice(0, 3)
-  card.innerHTML = `<p class="discovery-name" data-i18n="${COPY.anonymousName}"></p><p class="discovery-label" data-i18n="${COPY.glimpseLabel}"></p><p class="discovery-quote">${glimpse?.reflection || ''}</p><p class="discovery-label" data-i18n="${COPY.reflectionLabel}"></p><p class="discovery-reflection">${glimpse?.prompt || ''}</p><p class="discovery-label" data-i18n="${COPY.layersLabel}"></p><ul class="discovery-tags"></ul><div class="discovery-actions"><button class="button button--ghost" type="button" data-action="pass" data-i18n="${COPY.pass}" data-i18n-aria-label="${COPY.notNowAria}"></button><button class="button" type="button" data-action="spark" data-i18n="${COPY.send}" data-i18n-aria-label="${COPY.sparkAria}"></button></div><p class="discovery-feedback" aria-live="polite"></p>`
+  card.innerHTML = `<p class="discovery-name" data-i18n="${COPY.anonymousName}"></p><p class="discovery-label" data-i18n="${COPY.glimpseLabel}"></p><p class="discovery-quote">${glimpse?.reflection || ''}</p><p class="discovery-label" data-i18n="${COPY.reflectionLabel}"></p><p class="discovery-reflection">${glimpse?.prompt || ''}</p><p class="discovery-label" data-i18n="${COPY.layersLabel}"></p><ul class="discovery-tags"></ul><p class="discovery-hint" data-i18n="${COPY.layerHint}"></p><div class="discovery-actions"><button class="button button--ghost" type="button" data-action="pass" data-i18n="${COPY.pass}" data-i18n-aria-label="${COPY.notNowAria}"></button><button class="button" type="button" data-action="spark" data-i18n="${COPY.send}" data-i18n-aria-label="${COPY.sparkAria}"></button></div><p class="discovery-feedback" aria-live="polite"></p>`
   const tags = card.querySelector('.discovery-tags')
   interestTokens.forEach((token) => tags?.append(createTag(token)))
   card.querySelector('[data-action="spark"]')?.addEventListener('click', onSpark)
