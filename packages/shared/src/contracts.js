@@ -38,7 +38,8 @@ export const INTERNAL_ID_STRATEGY = Object.freeze({
   API_GLIMPS_ID_PREFIX: 'glp_',
   API_SPARK_ID_PREFIX: 'spk_',
   API_CONVERSATION_ID_PREFIX: 'cnv_',
-  API_MESSAGE_ID_PREFIX: 'msg_'
+  API_MESSAGE_ID_PREFIX: 'msg_',
+  API_APP_SESSION_ID_PREFIX: 'aps_'
 })
 
 export const GLIMPS_STATE = Object.freeze({ DRAFT: 'draft', PUBLISHED: 'published', EXPIRED: 'expired', ARCHIVED: 'archived' })
@@ -112,7 +113,9 @@ export const MESSAGE_DELIVERY_STATE = Object.freeze({ QUEUED: 'queued', SENT: 's
 
 export const PLAYING_NOW_MEDIA_TYPE = Object.freeze({ SONG: 'song', MOVIE: 'movie', TV_SERIES: 'tv_series' })
 
-export const APP_INVITE_APP_ID = Object.freeze({ MATCH_CARDS: 'match_cards', GUESS_ME: 'guess_me', SNUGGLE: 'snuggle' })
+export const APP_ID = Object.freeze({ MATCH_CARDS: 'match_cards', GUESS_ME: 'guess_me', SNUGGLE: 'snuggle', PLAYING_NOW: 'playing_now' })
+export const APP_INVITE_APP_ID = Object.freeze({ MATCH_CARDS: APP_ID.MATCH_CARDS, GUESS_ME: APP_ID.GUESS_ME, SNUGGLE: APP_ID.SNUGGLE })
+export const APP_LIFECYCLE_STATE = Object.freeze({ INVITE: 'invite', ACCEPT: 'accept', ACTIVE: 'active', COMPLETE: 'complete', DISMISSED: 'dismissed' })
 export const LAYER_LEVEL = Object.freeze({ DISCOVERY: 0, MUTUAL_SPARK: 1, MEANINGFUL_CONVERSATION: 2, DEEPER_TRUST: 3 })
 
 export const MESSAGE_PAYLOAD_KIND = Object.freeze({
