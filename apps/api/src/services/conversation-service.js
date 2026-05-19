@@ -2,6 +2,7 @@ import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
 import { APP_INVITE_APP_ID, CONVERSATION_PARTICIPANT_ROLE, CONVERSATION_STATE, DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, MESSAGE_DELIVERY_STATE, MESSAGE_TYPE, MESSAGE_VISIBILITY, PLAYING_NOW_MEDIA_TYPE, REASON_CODES, SPARK_STATE, isSupportedMessageType } from '../../../../packages/shared/src/contracts.js'
 import { syncLayerAfterMessage } from './layer-service.js'
+import { getVisibleProfileForRelationship } from './profile-visibility-service.js'
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
 const toExternalConversationId = (id) => `${INTERNAL_ID_STRATEGY.API_CONVERSATION_ID_PREFIX}${id}`
@@ -20,7 +21,7 @@ const requireViewerId = (viewer) => {
   if (!userId) throw new ApiError({ message: 'Authentication required', kind: DOMAIN_ERROR_KIND.AUTH, reasonCode: REASON_CODES.AUTH.REQUIRES_AUTH, statusCode: 401 })
   return userId
 }
-const toConversationDto = (row) => ({ conversationId: toExternalConversationId(row.id), sparkId: toExternalSparkId(row.sparkId), state: row.state, participantIds: row.participants.map((p) => toExternalUserId(p.userId)), createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })
+const toConversationDto = (row, visibleProfile = null) => ({ conversationId: toExternalConversationId(row.id), sparkId: toExternalSparkId(row.sparkId), state: row.state, participantIds: row.participants.map((p) => toExternalUserId(p.userId)), visibleProfile, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })
 const toMessageDto = (row) => ({ messageId: toExternalMessageId(row.id), conversationId: toExternalConversationId(row.conversationId), senderUserId: row.senderUserId ? toExternalUserId(row.senderUserId) : null, type: row.type, visibility: row.visibility, deliveryState: row.deliveryState, content: row.content, metadata: row.metadata ?? null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })
 
 const includeConversation = { participants: { select: { userId: true, role: true, joinedAt: true } } }
@@ -48,7 +49,12 @@ export const listViewerConversations = async ({ viewer, dbClient }) => {
   const userId = requireViewerId(viewer)
   const db = dbClient || await getDbClient()
   const rows = await db.conversation.findMany({ where: { participants: { some: { userId } } }, include: includeConversation, orderBy: { updatedAt: 'desc' } })
-  return rows.map(toConversationDto)
+  const dtoRows = await Promise.all(rows.map(async (row) => {
+    const counterpart = row.participants.find((p) => p.userId !== userId)
+    const visibleProfile = counterpart ? await getVisibleProfileForRelationship({ viewerUserId: userId, targetUserId: counterpart.userId, dbClient: db }) : null
+    return toConversationDto(row, visibleProfile)
+  }))
+  return dtoRows
 }
 
 export const getViewerConversationById = async ({ viewer, conversationId, dbClient }) => {
@@ -57,7 +63,9 @@ export const getViewerConversationById = async ({ viewer, conversationId, dbClie
   const id = stripPrefixId(conversationId, INTERNAL_ID_STRATEGY.API_CONVERSATION_ID_PREFIX, 'conversationId')
   const row = await db.conversation.findFirst({ where: { id, participants: { some: { userId } } }, include: includeConversation })
   if (!row) throw new ApiError({ message: 'Conversation not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
-  return toConversationDto(row)
+  const counterpart = row.participants.find((p) => p.userId !== userId)
+  const visibleProfile = counterpart ? await getVisibleProfileForRelationship({ viewerUserId: userId, targetUserId: counterpart.userId, dbClient: db }) : null
+  return toConversationDto(row, visibleProfile)
 }
 
 export const createConversationFromSpark = async ({ viewer, payload, dbClient }) => {

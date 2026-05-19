@@ -195,3 +195,10 @@ Required MVP sections:
 - Pair-specific layer state is server-authoritative and never globalized across all relationships.
 - Internal thresholds may unlock deeper layers, but UI must stay gentle and non-urgent.
 - Unlock communication should be subtle timeline system copy.
+
+
+## Run 10.1 visibility philosophy
+- People unfold slowly: curiosity first, identity later, trust gradually.
+- Profile field reveal policy is backend authoritative via relationship-layer visibility resolver.
+- Frontend is a renderer of projected visibility state, not a decision-maker of what is hidden/revealed.
+- Hidden states should feel calm and human, never punitive or gamified.

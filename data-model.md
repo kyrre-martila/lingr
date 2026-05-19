@@ -164,3 +164,15 @@ Suggested records:
   - Layer 2: additional profile details + selected interests/preferences.
   - Layer 3: fuller profile/emotional context.
 - Unlock thresholds remain server-internal to preserve calm pacing and avoid pressure UX.
+
+
+## Run 10.1 progressive profile reveal (implemented)
+- Server-authoritative resolver: `getVisibleProfileForRelationship(viewerUserId, targetUserId)`.
+- Relationship layer is now the single source of truth for profile field visibility across relationship surfaces.
+- Reveal matrix (MVP):
+  - Layer 0: glimpses + reflection text + emotional tone + energy tags only.
+  - Layer 1: first name + broad region + short intro + selected glimpse context.
+  - Layer 2: expanded interests/preferences + more personal glimpse context.
+  - Layer 3: fuller profile projection + richer emotional context.
+- Hidden state behavior remains calm and non-gamified (e.g., “You'll discover more with time.”).
+- Frontend must consume projected profile visibility payloads and must not invent visibility logic.
