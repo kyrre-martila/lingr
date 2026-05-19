@@ -189,3 +189,9 @@ Required MVP sections:
 - Auth failures remain canonical: expired session → `auth.session_expired`; missing/revoked session → `auth.requires_auth`.
 - Mobile auth is deferred: future native apps may use secure native storage + bearer token flow, but this is not implemented in web MVP.
 - Layer 0 conformance: discovery payloads (API and web mocks) must exclude name, location, timestamps, and activity/urgency metadata.
+
+## Run 10 implementation guardrail — Layers
+- Layers are trust progression, not reward mechanics.
+- Pair-specific layer state is server-authoritative and never globalized across all relationships.
+- Internal thresholds may unlock deeper layers, but UI must stay gentle and non-urgent.
+- Unlock communication should be subtle timeline system copy.

@@ -139,3 +139,9 @@ Copy tone should be guided/calm/intentional, never punitive.
 - Do not render personal names or region labels at Layer 0.
 - Primary action label is `Spark` (not transactional variants).
 - Empty-state language must remain calm and non-urgent.
+
+## Run 10 wireframe policy — Layers
+- Layer unlock moments should render as subtle system rows in chat.
+- Tone example: "You've come to know a little more about them."
+- Do not use celebratory or gamified UI (no level-up language, no confetti, no bars, no percentages).
+- Layer 0 anonymity remains mandatory in discovery and intro surfaces.

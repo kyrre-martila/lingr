@@ -289,3 +289,13 @@ Deferred from this run:
 - Hardened API auth semantics to preserve canonical reason codes for expired vs missing/revoked sessions.
 - Removed Layer 0 leakage from discovery mock payloads and added conformance tests for API DTO + web mock transport.
 - Deferred mobile bearer-token secure-storage strategy to post-MVP native flow design.
+
+
+## Run 10 — Layers MVP (implemented)
+- Layers are relationship-owned (pair-specific), server-authoritative, and calm by design.
+- No gamification mechanics: no streaks, no percentages, no progress bars, no urgency prompts.
+- Unlock semantics:
+  - Layer 1: mutual spark.
+  - Layer 2: meaningful reciprocal conversation (internal reciprocal-turn threshold).
+  - Layer 3: deeper trust (higher reciprocal-turn threshold).
+- Unlocks emit subtle system timeline messages (`layer_unlock`) instead of celebratory mechanics.

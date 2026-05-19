@@ -153,3 +153,14 @@ Suggested records:
 
 ## Run 9.5.1 Layer 0 discovery conformance
 - Layer 0 discovery DTOs (API + mock transport) must not include direct identity (`name`, `displayName`), exact/region location, timestamps, or activity/urgency metadata.
+
+
+## Run 10 Layers policy (MVP)
+- Layer ownership is per relationship pair, not global profile state.
+- Layer 0 remains anonymous-first and unchanged.
+- Reveal progression policy:
+  - Layer 0: anonymous introduction only.
+  - Layer 1: first name + broad area (optional) + more context.
+  - Layer 2: additional profile details + selected interests/preferences.
+  - Layer 3: fuller profile/emotional context.
+- Unlock thresholds remain server-internal to preserve calm pacing and avoid pressure UX.

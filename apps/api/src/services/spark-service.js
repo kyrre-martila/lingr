@@ -1,6 +1,7 @@
 import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
 import { DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, REASON_CODES, SPARK_ACTION, SPARK_ACTIVE_STATES, SPARK_STATE, SPARK_TERMINAL_STATES, SPARK_TRANSITIONS } from '../../../../packages/shared/src/contracts.js'
+import { syncLayerAfterMutualSpark } from './layer-service.js'
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
 const toExternalSparkId = (id) => `${INTERNAL_ID_STRATEGY.API_SPARK_ID_PREFIX}${id}`
@@ -112,6 +113,9 @@ const updateSparkStatus = async ({ viewer, sparkId, nextStatus, action, dbClient
   if (nextStatus === SPARK_STATE.PAUSED) data.pausedAt = now
   if (nextStatus === SPARK_STATE.DECLINED) data.declinedAt = now
   const updated = await db.spark.update({ where: { id }, data })
+  if (nextStatus === SPARK_STATE.ACCEPTED) {
+    await syncLayerAfterMutualSpark({ spark: updated, dbClient: db })
+  }
   return toClientSpark(updated)
 }
 
