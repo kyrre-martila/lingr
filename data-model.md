@@ -176,3 +176,10 @@ Suggested records:
   - Layer 3: fuller profile projection + richer emotional context.
 - Hidden state behavior remains calm and non-gamified (e.g., “You'll discover more with time.”).
 - Frontend must consume projected profile visibility payloads and must not invent visibility logic.
+
+## Run 10.2 Layers UI integration contract notes
+- Discovery contract remains strict Layer 0 projection and must not include identity, location, timestamp, or activity metadata.
+- Conversation `layer_unlock` messages are informational system moments; optional CTA routes are only rendered when actionable.
+- Profile projections continue to be relationship-layer scoped and must preserve calm hidden-state placeholders.
+- Frontend localization requirement: all newly introduced layer copy must exist in both `en` and `nb-NO` translation packs.
+- Accessibility requirement: hidden-state messaging must be semantic text (non-link, non-button) unless an actual route action exists.

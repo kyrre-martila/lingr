@@ -202,3 +202,20 @@ Required MVP sections:
 - Profile field reveal policy is backend authoritative via relationship-layer visibility resolver.
 - Frontend is a renderer of projected visibility state, not a decision-maker of what is hidden/revealed.
 - Hidden states should feel calm and human, never punitive or gamified.
+
+## Run 10.2 Layers in active surfaces
+When integrating Layers into discovery/chat/profile, keep visibility subtle and calm.
+
+Required integration behavior:
+- Discovery is always Layer 0 and anonymous-first.
+- Chat may include subtle `layer_unlock` system messages.
+- Profile surfaces must be relationship-layer aware and render calm placeholders for hidden fields.
+
+Forbidden layer UI patterns:
+- lock/padlock-heavy framing
+- gamified progression framing
+- pressure copy (“send more”, countdowns, quotas, or next-layer timers)
+
+Localization and accessibility:
+- New copy must use translation keys and ship in `en` + `nb-NO`.
+- Hidden state communication must be explicit for screen readers and non-interactive unless actionable routes exist.

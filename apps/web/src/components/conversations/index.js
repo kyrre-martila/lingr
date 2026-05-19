@@ -34,7 +34,7 @@ const createBubble = (message) => {
   if (message.type === 'layer_unlock') {
     const card = document.createElement('article')
     card.className = 'message-system-banner layer-unlock-banner'
-    const title = String(message.content?.title || 'You unlocked a new layer').trim()
+    const title = String(message.content?.title || 'chat.layer_unlock.title').trim()
     const subtitle = String(message.content?.subtitle || '').trim()
     const ctaLabel = String(message.content?.ctaLabel || '').trim()
     const ctaRoute = String(message.content?.ctaRoute || '').trim()
@@ -45,7 +45,7 @@ const createBubble = (message) => {
         ${subtitle ? `<p class="layer-unlock-banner__subtitle">${subtitle}</p>` : ''}
       </div>
       ${ctaLabel && ctaRoute ? `<a class="layer-unlock-banner__cta" href="${ctaRoute}">${ctaLabel}</a>` : ''}
-      ${ctaLabel && !ctaRoute ? `<p class="layer-unlock-banner__cta">${ctaLabel}</p>` : ''}
+      ${ctaLabel && !ctaRoute ? `<p class="layer-unlock-banner__cta" role="status">${ctaLabel}</p>` : ''}
     `
     return card
   }
