@@ -16,6 +16,7 @@ test('Layer 0 keeps profile anonymous', async () => {
   assert.equal(visible.profile.firstName, null)
   assert.equal(visible.profile.exactRegion, null)
   assert.equal(visible.profile.intro, null)
+  assert.equal(visible.hiddenHint, 'Getting to know someone takes time.')
 })
 
 test('Layer 1 reveals first name and broad region', async () => {

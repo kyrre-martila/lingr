@@ -219,3 +219,19 @@ Forbidden layer UI patterns:
 Localization and accessibility:
 - New copy must use translation keys and ship in `en` + `nb-NO`.
 - Hidden state communication must be explicit for screen readers and non-interactive unless actionable routes exist.
+
+## Run 10.3 emotional tone guardrails — Layers polish
+- Layer unlock moments must feel warm, gentle, and slightly meaningful; never dramatic.
+- Prefer language like: “You have come to know a little more about them.” / “Something new is now visible.”
+- Hidden profile states should invite curiosity without frustration (example: “Getting to know someone takes time.”).
+
+Forbidden Layer framing:
+- reward framing (`reward`, `bonus`, `achievement`, `congratulations`)
+- game framing (`XP`, `level up`, `streak`, `badge`, progress percentages)
+- pressure framing (`next layer in`, quotas, countdowns, urgency prompts)
+- paywall framing (`upgrade`, `premium unlock`, `unavailable until`)
+
+Accessibility and truthfulness constraints:
+- `layer_unlock` is always system-authored (`senderUserId = null`).
+- CTA text should be interactive only when a real route exists.
+- If no route exists, render informational copy only (no fake links/buttons).

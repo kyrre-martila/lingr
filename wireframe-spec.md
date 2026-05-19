@@ -170,3 +170,26 @@ Copy tone should be guided/calm/intentional, never punitive.
 - All new user-visible copy must use i18n keys (`en`, `nb-NO`).
 - Hidden sections must expose clear non-interactive text indicating intentional unavailability.
 - Do not style hidden placeholders as interactive controls.
+
+## Run 10.3 emotional polish and consistency
+- Layer unlock rows should read as calm system moments, not milestones.
+- Keep visual treatment subtle and timeline-native; no celebration effects.
+- Example unlock microcopy:
+  - “You have come to know a little more about them.”
+  - “Something new is now visible.”
+  - “See a little more” (only when route is actionable)
+- Example hidden-state microcopy:
+  - “Getting to know someone takes time.”
+  - “Some things unfold naturally.”
+
+### Anti-gamification conformance checks
+Layer UI must not include:
+- progress percentages or bars
+- XP, streak, badge, achievement language
+- reward framing or congratulatory framing
+- urgency/counter/quota framing
+
+### Accessibility conformance
+- System rows should remain screen-reader legible as informative content.
+- Hidden placeholders must be non-interactive text.
+- CTA affordance must match real navigation availability.
