@@ -241,3 +241,11 @@ Accessibility and truthfulness constraints:
 - Count only reciprocal, minimally substantive turns with light pacing checks.
 - Use explicit structured reveal fields for interests/values/region broadness; do not parse free-text summary fields for reveal state.
 - Keep default user-facing layer/discovery/chat surfaces timestamp-free.
+
+
+## Run 11 chat apps foundation
+- Chat apps are conversation helpers, not winner/loser games or retention loops.
+- Canonical app IDs: `match_cards`, `guess_me`, `snuggle`, `playing_now`.
+- App lifecycle (MVP): `invite -> accept -> active -> complete` with optional `dismissed`.
+- Persistence ownership: app sessions are relationship-scoped through conversation ownership and must not leak globally.
+- Forbidden mechanics: streaks, scores, timers, reminders, badges, leaderboards, urgency prompts, reward loops.

@@ -199,3 +199,11 @@ Suggested records:
   - Layer 1: `broadRegion` only
   - Layer 3: `locationRegion` exact field
 - Timestamp philosophy guardrail: default user-facing discovery/chat rendering paths must not show timestamps.
+
+
+## Run 11 chat apps foundation
+- Chat apps are conversation helpers, not winner/loser games or retention loops.
+- Canonical app IDs: `match_cards`, `guess_me`, `snuggle`, `playing_now`.
+- App lifecycle (MVP): `invite -> accept -> active -> complete` with optional `dismissed`.
+- Persistence ownership: app sessions are relationship-scoped through conversation ownership and must not leak globally.
+- Forbidden mechanics: streaks, scores, timers, reminders, badges, leaderboards, urgency prompts, reward loops.

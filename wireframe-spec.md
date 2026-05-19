@@ -198,3 +198,11 @@ Layer UI must not include:
 - Layer progression remains invisible and non-instrumentalized to users (no “X messages away” framing).
 - Layer 1 reveals intentional broad region field only; no string-derived location slicing behavior.
 - Discovery/chat default rendering remains timestamp-free.
+
+
+## Run 11 chat apps foundation
+- Chat apps are conversation helpers, not winner/loser games or retention loops.
+- Canonical app IDs: `match_cards`, `guess_me`, `snuggle`, `playing_now`.
+- App lifecycle (MVP): `invite -> accept -> active -> complete` with optional `dismissed`.
+- Persistence ownership: app sessions are relationship-scoped through conversation ownership and must not leak globally.
+- Forbidden mechanics: streaks, scores, timers, reminders, badges, leaderboards, urgency prompts, reward loops.
