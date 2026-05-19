@@ -14,7 +14,7 @@ test('register/login/logout operations are mapped and include bearer token when 
     getSessionToken: () => 'sess_abc'
   })
 
-  await transport.request({ operation: 'auth.register', payload: { email: 'a@b.com', password: 'password123' } })
+  await transport.request({ operation: 'auth.register', payload: { email: 'a@b.com', password: 'password123', countryCode: 'NO', regionSlug: 'trondelag' } })
   await transport.request({ operation: 'auth.login', payload: { email: 'a@b.com', password: 'password123' } })
   await transport.request({ operation: 'auth.logout', payload: {} })
   assert.equal(calls.length, 3)
@@ -85,4 +85,13 @@ test('session state resolves from onboarding and profile completion flags', () =
   assert.equal(resolveSessionStateFromFlags({ isAuthenticated: true, onboardingComplete: false, profileComplete: false }), SESSION_STATES.ONBOARDING)
   assert.equal(resolveSessionStateFromFlags({ isAuthenticated: true, onboardingComplete: true, profileComplete: false }), SESSION_STATES.INCOMPLETE_PROFILE)
   assert.equal(resolveSessionStateFromFlags({ isAuthenticated: true, onboardingComplete: true, profileComplete: true }), SESSION_STATES.SIGNED_IN)
+})
+
+
+test('register operation includes region gating payload', async () => {
+  const calls = []
+  const transport = createHttpTransport({ fetchImpl: async (url, options) => { calls.push(JSON.parse(options.body)); return { json: async () => ({ status: 'success', data: {} }) } } })
+  await transport.request({ operation: 'auth.register', payload: { email: 'a@b.com', password: 'password123', countryCode: 'NO', regionSlug: 'trondelag' } })
+  assert.equal(calls[0].countryCode, 'NO')
+  assert.equal(calls[0].regionSlug, 'trondelag')
 })

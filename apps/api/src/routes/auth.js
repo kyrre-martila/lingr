@@ -2,6 +2,7 @@ import { ok } from '../http/envelope.js'
 import { ApiError } from '../http/errors.js'
 import { DOMAIN_ERROR_KIND, REASON_CODES } from '../../../../packages/shared/src/contracts.js'
 import { authenticateWithEmailPassword, createSession, invalidateSession, registerWithEmailPassword } from '../auth/session-store.js'
+import { checkRegionAvailability } from '../services/region-service.js'
 import { viewerMeta } from '../http/auth-safe.js'
 
 const write = (res, status, body) => {
@@ -10,8 +11,10 @@ const write = (res, status, body) => {
 }
 
 export const registerRoute = async (req, res) => {
-  const { email, password } = req.body || {}
-  if (!email || !password || String(password).length < 8) throw new ApiError({ message: 'Invalid registration payload', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
+  const { email, password, countryCode, regionSlug } = req.body || {}
+  if (!email || !password || !countryCode || !regionSlug || String(password).length < 8) throw new ApiError({ message: 'Invalid registration payload', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
+  const availability = await checkRegionAvailability({ countryCode, regionSlug })
+  if (!availability.canRegister) throw new ApiError({ message: 'Region not open for registration', kind: DOMAIN_ERROR_KIND.PERMISSION, reasonCode: availability.reasonCode, statusCode: 403 })
   const user = await registerWithEmailPassword({ email, password })
   if (!user) throw new ApiError({ message: 'Email already in use', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 409 })
   const session = await createSession({ userId: user.userId })
@@ -19,7 +22,7 @@ export const registerRoute = async (req, res) => {
 }
 
 export const loginRoute = async (req, res) => {
-  const { email, password } = req.body || {}
+  const { email, password, countryCode, regionSlug } = req.body || {}
   const user = await authenticateWithEmailPassword({ email, password })
   if (!user) throw new ApiError({ message: 'Invalid credentials', kind: DOMAIN_ERROR_KIND.AUTH, reasonCode: REASON_CODES.AUTH.INVALID_CREDENTIALS, statusCode: 401 })
   const session = await createSession({ userId: user.userId })

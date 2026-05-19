@@ -39,3 +39,13 @@ test('vote persistence supports dedupe key and locale-safe region loading', asyn
   assert.equal(list.locale, 'nb-NO')
   assert.equal(list.regions[0].slug, 'trondelag')
 })
+
+
+test('vote upsert prevents duplicate waitlist entries by region/email key', async () => {
+  let upserts = 0
+  const db = mockDb()
+  db.regionInterestVote.upsert = async () => { upserts += 1; return { id: 'v1' } }
+  await voteForRegion({ countryCode: 'NO', regionSlug: 'trondelag', email: 'person@example.com', dbClient: db })
+  await voteForRegion({ countryCode: 'NO', regionSlug: 'trondelag', email: 'person@example.com', dbClient: db })
+  assert.equal(upserts, 2)
+})
