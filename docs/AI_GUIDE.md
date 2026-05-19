@@ -196,6 +196,44 @@ Required MVP sections:
 - Internal thresholds may unlock deeper layers, but UI must stay gentle and non-urgent.
 - Unlock communication should be subtle timeline system copy.
 
+## Run 11.6 layer trust progression guardrail
+Layer progression must be modeled as trust + time, not message-count farming.
+
+MVP rules:
+- Layer 1 is created by mutual Spark.
+- Layer 1 -> Layer 2 requires minimum 4 hours elapsed and trust score >= 20.
+- Layer 2 -> Layer 3 requires minimum 16 hours elapsed and trust score >= 55.
+
+MVP trust signals:
+- `quality_message_turn`: +2
+- `match_cards_completed`: +8
+- `guess_me_completed`: +6
+- `snuggle_shared`: +5
+- `playing_now_shared`: +2
+
+Trust score policy:
+- trust score is strictly internal and never shown to users
+- users should experience unfolding, not optimization targets
+- no user-facing progress math, percentages, XP, or point requirements
+
+MVP exclusions:
+- cooldown rules
+- daily caps
+- anti-farming complexity
+- admin UI
+
+Future direction (deferred):
+- persist/configure layer rules and trust-signal rules so admin controls can tune thresholds and points later.
+
+Forbidden progression framing in copy/UI:
+- progress bars
+- score displays
+- “you need X more points”
+- streaks
+- farming language
+- “complete actions to unlock” tasks
+- urgency mechanics
+
 
 ## Run 10.1 visibility philosophy
 - People unfold slowly: curiosity first, identity later, trust gradually.

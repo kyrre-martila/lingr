@@ -58,6 +58,30 @@ Window is a later-stage relationship mode that should happen only after:
 - multiple Glimps
 - Layer unlock progression
 
+Layer progression direction (MVP):
+- Layer 1 starts at mutual Spark.
+- Layer 1 -> Layer 2 requires minimum 4 hours and internal trust score 20.
+- Layer 2 -> Layer 3 requires minimum 16 hours and internal trust score 55.
+
+Trust score is internal only (not user-visible) and is used to reward relationship investment quality, not engagement volume.
+
+MVP trust signal defaults:
+- `quality_message_turn`: +2
+- `match_cards_completed`: +8
+- `guess_me_completed`: +6
+- `snuggle_shared`: +5
+- `playing_now_shared`: +2
+
+Forbidden progression UX patterns:
+- progress bars
+- visible score/progress counters
+- XP/streak/badge language
+- “you need X more points” prompts
+- “complete actions to unlock” mechanics
+- urgency countdown framing
+
+Deferred (not in MVP): cooldowns, daily caps, anti-farming complexity, and admin UI.
+
 ## Auth strategy (MVP)
 MVP authentication is Lingr-native only:
 - email/password

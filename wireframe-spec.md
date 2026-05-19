@@ -45,6 +45,26 @@ Chat timeline supports subtle system rows for:
 
 System rows should be informative and gentle, never urgency-driven.
 
+## Layer progression UX philosophy (Run 11.6)
+Layer progression is internal trust progression, not a visible game loop.
+
+Required UX behavior:
+- users should feel that “something naturally unfolded”
+- unlock pacing should be subtle and emotionally calm
+- no explicit score/progress instrumentation appears in UI
+
+Progression logic remains server-authoritative and combines minimum elapsed time + internal trust score.
+
+Forbidden layer/progression UI patterns:
+- progress bars
+- score displays
+- “you need X more points” copy
+- XP language
+- streak mechanics
+- layer farming language
+- “complete actions to unlock” task framing
+- urgency mechanics (countdowns, timers, pressure prompts)
+
 ## Window placement in journey
 Window is removed from early chat framing.
 
