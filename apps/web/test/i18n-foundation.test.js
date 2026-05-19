@@ -11,7 +11,7 @@ test('loads configured namespaces for both locales', () => {
 })
 
 test('resolves translation keys for supported locales', () => {
-  assert.equal(t('discovery.send_spark', { locale: 'en' }), 'Send spark')
+  assert.equal(t('discovery.spark', { locale: 'en' }), 'Spark')
   assert.equal(t('discovery.not_now', { locale: 'nb-NO' }), 'Ikke nå')
 })
 

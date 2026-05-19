@@ -138,3 +138,9 @@ Suggested records:
   - `expired`: returns `auth.session_expired`
   - `revoked`: treated as unauthenticated (`auth.requires_auth` guard behavior)
 - MVP expiration policy is fixed 30-day session TTL.
+
+## Layer 0 identity progression guardrail (Run 9.5)
+- Discovery Layer 0 public DTO excludes direct identity fields (for example `displayName`, `locationRegion`).
+- Layer 0 data is intentionally atmosphere-first: `glimpses`, reflection context, and non-identifying energy descriptors.
+- Identity progression occurs after reciprocal intent pathways; discovery is not profile browsing.
+- Public discovery DTO omits timestamp fields to reduce urgency pressure patterns.

@@ -2,16 +2,21 @@ import { getDailyDiscovery, sendDiscoveryNotNow, sendDiscoverySpark } from '../s
 import { DISCOVERY_REASON_CODES, DISCOVERY_STATE } from '../domain/contracts.js'
 
 const COPY = Object.freeze({
+  eyebrow: 'discovery.eyebrow',
   title: 'discovery.title',
   subtitle: 'discovery.subtitle',
   loading: 'discovery.loading',
   sent: 'discovery.spark_sent',
-  send: 'discovery.send_spark',
+  send: 'discovery.spark',
   pass: 'discovery.not_now',
   unavailableCta: 'discovery.unavailable.cta',
   glimpseLabel: 'discovery.glimpse',
   reflectionLabel: 'discovery.reflection',
-  layersLabel: 'discovery.layers'
+  layersLabel: 'discovery.layers',
+  anonymousName: 'discovery.introduction.anonymous_name',
+  sparkAria: 'discovery.aria.spark',
+  notNowAria: 'discovery.aria.not_now',
+  waitlistAria: 'discovery.aria.waitlist'
 })
 
 const EMPTY_REASON_COPY = Object.freeze({
@@ -44,7 +49,7 @@ const renderEmpty = (host, reasonCode) => {
     cta.className = 'button button--ghost discovery-empty__cta'
     cta.type = 'button'
     cta.dataset.i18n = COPY.unavailableCta
-    cta.setAttribute('aria-label', 'Join waitlist updates')
+    cta.setAttribute('data-i18n-aria-label', COPY.waitlistAria)
     panel.append(cta)
   }
   host.replaceChildren(panel)
@@ -56,7 +61,7 @@ const introCard = (intro, onSpark, onPass) => {
   card.tabIndex = 0
   const glimpse = intro.glimpses?.[0]
   const interestTokens = String(intro.layersSummary || '').split(/[•,]/).map((v) => v.trim()).filter(Boolean).slice(0, 3)
-  card.innerHTML = `<p class="discovery-name">${intro.displayName}</p><p class="discovery-region">${intro.locationRegion || ''}</p><p class="discovery-label" data-i18n="${COPY.glimpseLabel}"></p><p class="discovery-quote">${glimpse?.reflection || ''}</p><p class="discovery-label" data-i18n="${COPY.reflectionLabel}"></p><p class="discovery-reflection">${glimpse?.prompt || ''}</p><p class="discovery-label" data-i18n="${COPY.layersLabel}"></p><ul class="discovery-tags"></ul><div class="discovery-actions"><button class="button button--ghost" type="button" data-action="pass" data-i18n="${COPY.pass}" aria-label="Not now"></button><button class="button" type="button" data-action="spark" data-i18n="${COPY.send}" aria-label="Send spark"></button></div><p class="discovery-feedback" aria-live="polite"></p>`
+  card.innerHTML = `<p class="discovery-name" data-i18n="${COPY.anonymousName}"></p><p class="discovery-label" data-i18n="${COPY.glimpseLabel}"></p><p class="discovery-quote">${glimpse?.reflection || ''}</p><p class="discovery-label" data-i18n="${COPY.reflectionLabel}"></p><p class="discovery-reflection">${glimpse?.prompt || ''}</p><p class="discovery-label" data-i18n="${COPY.layersLabel}"></p><ul class="discovery-tags"></ul><div class="discovery-actions"><button class="button button--ghost" type="button" data-action="pass" data-i18n="${COPY.pass}" data-i18n-aria-label="${COPY.notNowAria}"></button><button class="button" type="button" data-action="spark" data-i18n="${COPY.send}" data-i18n-aria-label="${COPY.sparkAria}"></button></div><p class="discovery-feedback" aria-live="polite"></p>`
   const tags = card.querySelector('.discovery-tags')
   interestTokens.forEach((token) => tags?.append(createTag(token)))
   card.querySelector('[data-action="spark"]')?.addEventListener('click', onSpark)
@@ -68,7 +73,7 @@ export const createDiscoverySection = () => {
   const section = document.createElement('section')
   section.id = 'discovery'
   section.className = 'section section--paper'
-  section.innerHTML = `<div class="container discovery-shell flow"><p class="eyebrow">Discovery</p><h2 data-i18n="${COPY.title}"></h2><p class="lead" data-i18n="${COPY.subtitle}"></p><div class="daily-connections" aria-live="polite"></div></div>`
+  section.innerHTML = `<div class="container discovery-shell flow"><p class="eyebrow" data-i18n="${COPY.eyebrow}"></p><h2 data-i18n="${COPY.title}"></h2><p class="lead" data-i18n="${COPY.subtitle}"></p><div class="daily-connections" aria-live="polite"></div></div>`
 
   const host = section.querySelector('.daily-connections')
   const dismissed = readDismissed()

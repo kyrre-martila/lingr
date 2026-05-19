@@ -71,7 +71,7 @@ This supports density-first local launch, not global day-one availability.
 - Primary content order: Glimps snippets, emotional rhythm hints, reflective prompt cues.
 - Quiet actions only:
   - `Pass quietly`
-  - `Send Spark`
+  - `Spark`
 - Calm empty states:
   - limit reached: “You’ve explored today’s introductions.”
   - no available people: “Nothing new for now. Some connections are worth waiting for.”
@@ -89,7 +89,7 @@ This supports density-first local launch, not global day-one availability.
 
 ## Run 9 calm interaction vocabulary update
 - Discovery action labels are now:
-  - `Send spark`
+  - `Spark`
   - `Not now`
 - `Not now` is framed as temporary pacing, never as permanent rejection.
 - Discovery states include loading, unavailable region, daily limit reached, empty, and subtle spark confirmation.
@@ -99,7 +99,7 @@ This supports density-first local launch, not global day-one availability.
 - Discovery is an **introduction**, not a profile browsing feed.
 - Show one person at a time with spacious, low-contrast, calm composition.
 - Prioritize Glimps first (moment, reflection, emotional tone), then supporting context.
-- Action language stays gentle: `Send spark` and `Not now` only.
+- Action language stays gentle: `Spark` and `Not now` only.
 - Empty and unavailable states should feel warm and open-ended, never punitive.
 - Region unavailable copy: “Lingr has not opened in your area yet.” with a soft waitlist/vote placeholder CTA.
 - Spark success is subtle and quiet: no confetti, no “match” celebration patterns.
@@ -133,3 +133,9 @@ This supports density-first local launch, not global day-one availability.
    - closed/waitlist: warm unavailable copy + notify CTA
 
 Copy tone should be guided/calm/intentional, never punitive.
+
+## Layer 0 philosophy hardening (Run 9.5)
+- Discovery cards should read as quiet introductions, not profile marketplace tiles.
+- Do not render personal names or region labels at Layer 0.
+- Primary action label is `Spark` (not transactional variants).
+- Empty-state language must remain calm and non-urgent.
