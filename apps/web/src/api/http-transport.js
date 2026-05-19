@@ -17,7 +17,7 @@ const operationMap = Object.freeze({
   'spark.create': { method: 'POST', path: '/v1/sparks', body: ({ recipientUserId, sourceGlimpsId, softResonanceContext }) => ({ recipientUserId, ...(sourceGlimpsId ? { sourceGlimpsId } : {}), ...(softResonanceContext ? { softResonanceContext } : {}) }) },
   'conversations.viewer.list': { method: 'GET', path: '/v1/conversations/viewer' },
   'conversations.messages.list': { method: 'GET', path: ({ conversationId }) => `/v1/conversations/${encodeURIComponent(conversationId)}/messages` },
-  'conversations.messages.send': { method: 'POST', path: ({ conversationId }) => `/v1/conversations/${encodeURIComponent(conversationId)}/messages`, body: ({ conversationId, text, ...rest }) => ({
+  'conversations.messages.send': { method: 'POST', path: ({ conversationId }) => `/v1/conversations/${encodeURIComponent(conversationId)}/messages`, body: ({ text, ...rest }) => ({
     ...(rest.type ? { type: rest.type } : { type: 'text' }),
     ...(rest.content ? { content: rest.content } : { content: { text } }),
     ...(rest.metadata ? { metadata: rest.metadata } : {})
@@ -31,7 +31,7 @@ const createUnknownRouteFailure = (operation) => createFailure({
   retryable: false
 })
 
-export const createHttpTransport = ({ baseUrl = DEFAULT_BASE_URL, fetchImpl = globalThis.fetch, getSessionToken = () => null } = {}) => ({
+export const createHttpTransport = ({ baseUrl = DEFAULT_BASE_URL, fetchImpl = globalThis.fetch } = {}) => ({
   requestSync: ({ operation }) => createUnknownRouteFailure(operation),
   request: async ({ operation, payload }) => {
     const route = operationMap[operation]
@@ -45,8 +45,7 @@ export const createHttpTransport = ({ baseUrl = DEFAULT_BASE_URL, fetchImpl = gl
     const body = route.body ? JSON.stringify(route.body(payload || {})) : null
 
     try {
-      const token = getSessionToken()
-      const response = await fetchImpl(url, { method: route.method, headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, ...(body ? { body } : {}) })
+      const response = await fetchImpl(url, { method: route.method, credentials: 'include', headers: { 'content-type': 'application/json' }, ...(body ? { body } : {}) })
       const envelope = await response.json()
       if (!envelope || (envelope.status !== 'success' && envelope.status !== 'error')) {
         return createFailure({ code: 'transport.http_invalid_envelope', message: 'Invalid envelope from API.', kind: DOMAIN_ERROR_KIND.DOMAIN, retryable: true })

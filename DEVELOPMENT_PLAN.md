@@ -283,3 +283,9 @@ Deferred from this run:
 - Replaced SHA-256 password hashing with bcrypt (12 rounds).
 - Session lifecycle now uses DB-backed status transitions: `active`, `expired`, `revoked`.
 - Preserved auth API contracts (`register`, `login`, `logout`) and reason-code semantics.
+
+### Run 9.5.1 pre-Run-10 hardening (completed)
+- Switched web auth transport to cookie-session MVP (HttpOnly cookie, no localStorage token dependency).
+- Hardened API auth semantics to preserve canonical reason codes for expired vs missing/revoked sessions.
+- Removed Layer 0 leakage from discovery mock payloads and added conformance tests for API DTO + web mock transport.
+- Deferred mobile bearer-token secure-storage strategy to post-MVP native flow design.

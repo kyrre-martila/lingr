@@ -182,3 +182,10 @@ Required MVP sections:
 - Discovery is an introduction moment, not profile browsing; avoid marketplace language.
 - CTA vocabulary stays calm: `Spark` and `Not now`.
 - Public discovery DTOs should not expose timestamps unless absolutely required for product function.
+
+## Run 9.5.1 pre-Run-10 hardening (May 19, 2026)
+- Web auth transport uses HttpOnly session cookie (`lingr_session`) as MVP default; web runtime must not store session tokens in `localStorage`.
+- Cookie policy: `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` in production.
+- Auth failures remain canonical: expired session → `auth.session_expired`; missing/revoked session → `auth.requires_auth`.
+- Mobile auth is deferred: future native apps may use secure native storage + bearer token flow, but this is not implemented in web MVP.
+- Layer 0 conformance: discovery payloads (API and web mocks) must exclude name, location, timestamps, and activity/urgency metadata.

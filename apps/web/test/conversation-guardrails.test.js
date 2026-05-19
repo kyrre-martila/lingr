@@ -35,3 +35,17 @@ test('layer unlock CTA affordance is rendered as an actionable link when route e
   const source = fs.readFileSync(new URL('../src/components/conversations/index.js', import.meta.url), 'utf8')
   assert.equal(source.includes('layer-unlock-banner__cta" href="${ctaRoute}"'), true)
 })
+
+test('mock discovery Layer 0 payload excludes identity, location, timestamps, and activity urgency metadata', async () => {
+  const transport = createMockTransport()
+  const response = await transport.request({ operation: 'discovery.get', payload: {} })
+  assert.equal(response.status, 'success')
+  const intro = response.data.introductions[0]
+  assert.equal(Object.hasOwn(intro, 'displayName'), false)
+  assert.equal(Object.hasOwn(intro, 'name'), false)
+  assert.equal(Object.hasOwn(intro, 'locationRegion'), false)
+  assert.equal(Object.hasOwn(intro, 'createdAt'), false)
+  assert.equal(Object.hasOwn(intro, 'updatedAt'), false)
+  assert.equal(Object.hasOwn(intro, 'urgency'), false)
+  assert.equal(Object.hasOwn(intro, 'activity'), false)
+})
