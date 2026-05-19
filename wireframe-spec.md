@@ -145,3 +145,10 @@ Copy tone should be guided/calm/intentional, never punitive.
 - Tone example: "You've come to know a little more about them."
 - Do not use celebratory or gamified UI (no level-up language, no confetti, no bars, no percentages).
 - Layer 0 anonymity remains mandatory in discovery and intro surfaces.
+
+
+## Run 10.1 layer-aware profile rendering
+- Profile, chat header/context cards, and conversation list surfaces must render from backend visibility projection, not local reveal logic.
+- Hidden fields should render calm placeholders (example: “You'll discover more with time.”).
+- Avoid lock/premium/game metaphors; no padlock, no progress bars, no reveal percentages.
+- Same relationship must render same visible state across discovery/chat/profile/conversation surfaces.
