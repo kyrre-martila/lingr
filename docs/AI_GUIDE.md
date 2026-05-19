@@ -365,3 +365,20 @@ Forbidden mechanics:
 - Keep Snuggle copy neutral and aggregate-only; avoid partner-presence phrasing.
 - Do not use completion as a proxy for decline; use dismiss/decline semantics.
 - Reveal states for Match Cards and Guess Me must wait for both participants to submit required input.
+
+## Run 11.6 Prompt 2 implementation note (trust persistence foundation)
+- Additive persistence foundation is now in place for trust-based progression tuning:
+  - `relationship_layers.trustScore` (default `0`)
+  - `layer_rules` config table (`fromLayer`, `toLayer`, `minElapsedMinutes`, `requiredTrustScore`, `enabled`)
+  - `trust_signal_rules` config table (`signalType`, `points`, `enabled`)
+- Canonical trust signals are centralized contract constants and must be reused (no ad-hoc string duplication).
+- MVP defaults are bootstrapped idempotently at API startup (upsert-only, non-destructive):
+  - Layer 1 -> 2: 240 minutes + trust 20
+  - Layer 2 -> 3: 960 minutes + trust 55
+  - Signals: quality message turn 2, match cards completed 8, guess me completed 6, snuggle shared 5, playing now shared 2.
+- This run does **not** change active unlock logic yet:
+  - reciprocal-turn progression remains temporarily in place
+  - trust scoring accumulation behavior is deferred to Prompt 3
+- Invisible scoring philosophy remains mandatory:
+  - never expose trust score, points, or progress math to users
+  - never add progress bars, XP framing, or urgency mechanics.

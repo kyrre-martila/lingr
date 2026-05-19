@@ -300,3 +300,21 @@ No admin UI is included in MVP.
 - `SnuggleSession` is a persisted table linked 1:1 to `AppSession`.
 - Chat Apps lifecycle uses explicit invite/active/dismissed/complete transitions.
 - Snuggle state remains neutral and aggregate-only (`quiet`, `together`, `passed`).
+
+## Run 11.6 trust foundation persistence (Prompt 2 implemented)
+- `relationship_layers` now persists `trustScore` (`Int`, default `0`) while preserving existing reciprocal-turn fields for migration-safe coexistence until unlock-logic replacement.
+- New configurable transition rules persistence via `layer_rules`:
+  - `fromLayer`, `toLayer`, `minElapsedMinutes`, `requiredTrustScore`, `enabled`, timestamps.
+- New configurable trust-signal persistence via `trust_signal_rules`:
+  - `signalType`, `points`, `enabled`, timestamps.
+- Canonical trust signal contract values:
+  - `quality_message_turn`
+  - `match_cards_completed`
+  - `guess_me_completed`
+  - `snuggle_shared`
+  - `playing_now_shared`
+- Bootstrap defaults (idempotent upsert on API boot):
+  - Layer 1 -> 2: `240` minutes, trust `20`
+  - Layer 2 -> 3: `960` minutes, trust `55`
+  - Signal points: `2/8/6/5/2` per canonical order above.
+- Philosophy guardrail remains unchanged: trust scoring is strictly internal and must not appear in user-facing UI, copy, progress bars, or urgency framing.

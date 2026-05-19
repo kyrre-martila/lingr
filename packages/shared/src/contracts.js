@@ -117,6 +117,13 @@ export const APP_ID = Object.freeze({ MATCH_CARDS: 'match_cards', GUESS_ME: 'gue
 export const APP_INVITE_APP_ID = Object.freeze({ MATCH_CARDS: APP_ID.MATCH_CARDS, GUESS_ME: APP_ID.GUESS_ME, SNUGGLE: APP_ID.SNUGGLE })
 export const APP_LIFECYCLE_STATE = Object.freeze({ INVITE: 'invite', ACCEPT: 'accept', ACTIVE: 'active', COMPLETE: 'complete', DISMISSED: 'dismissed' })
 export const LAYER_LEVEL = Object.freeze({ DISCOVERY: 0, MUTUAL_SPARK: 1, MEANINGFUL_CONVERSATION: 2, DEEPER_TRUST: 3 })
+export const TRUST_SIGNAL_TYPE = Object.freeze({
+  QUALITY_MESSAGE_TURN: 'quality_message_turn',
+  MATCH_CARDS_COMPLETED: 'match_cards_completed',
+  GUESS_ME_COMPLETED: 'guess_me_completed',
+  SNUGGLE_SHARED: 'snuggle_shared',
+  PLAYING_NOW_SHARED: 'playing_now_shared'
+})
 
 export const MESSAGE_PAYLOAD_KIND = Object.freeze({
   TEXT: 'text_payload',
