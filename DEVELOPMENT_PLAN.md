@@ -172,6 +172,39 @@ Planned scope:
 Exit criteria:
 - apps are optional and conversational, never required
 
+## Run 11.6 — Layer trust progression documentation alignment
+Goal: align progression documentation to trust-based layer advancement.
+
+Planned scope:
+- document server-authoritative relationship trust model for Layers 1-3
+- replace message-count-only unlock framing with trust + minimum elapsed time framing
+- document trust signal defaults and rule configurability
+- preserve calm, invisible progression UX constraints
+
+MVP Layer rules:
+- Layer 1: created by mutual Spark
+- Layer 1 → Layer 2: minimum 4 hours and requiredTrustScore `20`
+- Layer 2 → Layer 3: minimum 16 hours and requiredTrustScore `55`
+
+MVP trust signal defaults:
+- `quality_message_turn`: `+2`
+- `match_cards_completed`: `+8`
+- `guess_me_completed`: `+6`
+- `snuggle_shared`: `+5`
+- `playing_now_shared`: `+2`
+
+Out of scope for MVP:
+- cooldowns
+- daily caps
+- anti-farming complexity
+- user-facing progress/score surfaces
+- admin UI
+
+Exit criteria:
+- progression documentation consistently describes trust + time gating
+- trust score is explicitly internal-only and never user-visible
+- forbidden gamified/progress UI patterns are documented across planning docs
+
 ## Run 12 — Safety/moderation MVP
 Goal: establish minimum trust and safety systems.
 

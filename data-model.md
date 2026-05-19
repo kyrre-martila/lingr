@@ -200,6 +200,58 @@ Suggested records:
   - Layer 3: `locationRegion` exact field
 - Timestamp philosophy guardrail: default user-facing discovery/chat rendering paths must not show timestamps.
 
+## Run 11.6 trust-based layer progression direction
+Layer progression is no longer modeled as reciprocal message volume plus simple time thresholds.
+MVP progression now combines:
+- minimum elapsed time
+- internal relationship trust score
+
+The trust score is server-internal only and must never be user-visible.
+
+### Planned relationship layer state shape
+`relationship_layers` (pair-scoped):
+- `currentLayer`
+- `trustScore`
+- `layer1UnlockedAt`
+- `layer2UnlockedAt`
+- `layer3UnlockedAt`
+
+### Planned layer rule shape
+`layer_rules`:
+- `fromLayer`
+- `toLayer`
+- `minElapsedMinutes`
+- `requiredTrustScore`
+- `enabled`
+
+MVP defaults:
+- Layer 1 -> Layer 2: `minElapsedMinutes = 240`, `requiredTrustScore = 20`
+- Layer 2 -> Layer 3: `minElapsedMinutes = 960`, `requiredTrustScore = 55`
+
+### Planned trust signal rule shape
+`trust_signal_rules`:
+- `signalType`
+- `points`
+- `enabled`
+
+MVP signal defaults:
+- `quality_message_turn`: `2`
+- `match_cards_completed`: `8`
+- `guess_me_completed`: `6`
+- `snuggle_shared`: `5`
+- `playing_now_shared`: `2`
+
+MVP excludes cooldowns, daily caps, and anti-farming complexity.
+
+### Future admin tuning direction (deferred)
+Rule values should be persisted/configurable for future admin control-panel editing:
+- required trust score per layer transition
+- minimum elapsed minutes per layer transition
+- points per trust signal type
+- enabled/disabled status for layer/trust rules
+
+No admin UI is included in MVP.
+
 
 ## Run 11 chat apps foundation
 - Chat apps are conversation helpers, not winner/loser games or retention loops.
