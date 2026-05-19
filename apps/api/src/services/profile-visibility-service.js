@@ -4,7 +4,7 @@ import { INTERNAL_ID_STRATEGY } from '../../../../packages/shared/src/contracts.
 const toExternalUserId = (internalId) => `${INTERNAL_ID_STRATEGY.API_USER_ID_PREFIX}${internalId}`
 const canonicalPairFor = (leftUserId, rightUserId) => (leftUserId < rightUserId ? [leftUserId, rightUserId] : [rightUserId, leftUserId])
 
-const HIDDEN_TEXT = 'You\'ll discover more with time.'
+const HIDDEN_TEXT = 'Getting to know someone takes time.'
 
 const buildVisibleProfile = ({ userId, profile, glimpses, layerLevel }) => {
   const base = {

@@ -7,8 +7,8 @@ const canonicalPairFor = (leftUserId, rightUserId) => (leftUserId < rightUserId 
 
 const buildSystemMessage = (layerLevel, profileName = 'this person') => {
   if (layerLevel === LAYER_LEVEL.MUTUAL_SPARK) return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { title: `You've come to know a little more about ${profileName}.`, subtitle: 'Something new is now visible.' } }
-  if (layerLevel === LAYER_LEVEL.MEANINGFUL_CONVERSATION) return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { title: `A new layer has opened with ${profileName}.`, subtitle: 'You can now see a little more context and interests.' } }
-  return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { title: `Trust has deepened with ${profileName}.`, subtitle: 'Richer profile context is now visible.' } }
+  if (layerLevel === LAYER_LEVEL.MEANINGFUL_CONVERSATION) return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { title: `You're slowly getting to know ${profileName}.`, subtitle: 'A little more context is now visible.' } }
+  return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { title: `Another layer is now visible with ${profileName}.`, subtitle: 'Some things unfold naturally.' } }
 }
 
 export const syncLayerAfterMutualSpark = async ({ spark, dbClient }) => {

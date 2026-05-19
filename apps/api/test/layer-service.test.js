@@ -36,6 +36,8 @@ test('message progression unlocks layer 2 and creates system message', async () 
   await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'hello' } }, dbClient: db })
   assert.equal(relationshipState.currentLayer, 2)
   assert.equal(createdSystemMessage.type, 'layer_unlock')
+  assert.equal(createdSystemMessage.senderUserId, null)
+  assert.match((createdSystemMessage.content?.title || '').toLowerCase(), /little more|slowly getting to know|another layer/)
 })
 
 test('layers are relationship-owned and not global across pairs', async () => {

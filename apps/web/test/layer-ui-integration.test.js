@@ -21,7 +21,7 @@ test('chat layer unlock renders calm fallback text and cta link only when action
 
 test('layer UI avoids gamified language', () => {
   const aggregate = JSON.stringify({ discoveryEn, discoveryNb, chatEn, chatNb }).toLowerCase()
-  for (const banned of ['locked', 'unlock profile', 'reach next layer', 'xp', 'streak', 'badge', 'achievement', 'progress bar', 'next layer in']) {
+  for (const banned of ['locked', 'upgrade', 'level up', 'unlock profile', 'reach next layer', 'xp', 'streak', 'badge', 'achievement', 'progress bar', 'next layer in', 'maximize connection', 'improve matches', 'unlock rewards']) {
     assert.equal(aggregate.includes(banned), false)
   }
 })
@@ -31,4 +31,8 @@ test('layer hint localization keys exist in en and nb-NO', () => {
   assert.equal(typeof discoveryNb.layer_hint, 'string')
   assert.equal(typeof chatEn.layer_unlock.title, 'string')
   assert.equal(typeof chatNb.layer_unlock.title, 'string')
+  assert.equal(typeof chatEn.layer_unlock.subtitle, 'string')
+  assert.equal(typeof chatNb.layer_unlock.subtitle, 'string')
+  assert.equal(typeof chatEn.layer_unlock.cta, 'string')
+  assert.equal(typeof chatNb.layer_unlock.cta, 'string')
 })

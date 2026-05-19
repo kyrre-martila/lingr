@@ -20,3 +20,22 @@
 - Some legacy conversation/profile copy remains non-keyed and should be localized in a broader pass.
 - If upstream message payloads send direct string copy instead of keys, chat fallback localization may diverge.
 - Future routes must continue to use relationship projection to avoid accidental field leakage.
+
+## Emotional tone decisions (Run 10 Prompt 4)
+- Tightened unlock copy to calm, human language with low emotional amplitude.
+- Standardized hidden-state hint to “Getting to know someone takes time.” for safety and curiosity.
+- Kept unlock moments meaningful but non-celebratory and non-transactional.
+
+## Copy decisions
+- Unlock title/subtitle/CTA wording now favors gentle curiosity over progression mechanics.
+- Added explicit forbidden-vocabulary tests for gamified and marketplace drift.
+- Expanded localization key expectations to include unlock subtitle and CTA fields.
+
+## Anti-gamification guardrails
+- Added test assertions to block `level up`, `upgrade`, `unlock rewards`, `xp`, `streak`, and similar drift.
+- Reinforced sender-null system-message assertions for layer unlock events.
+- Preserved truthful CTA rule: link only when actionable route exists.
+
+## Deferred polish
+- Full i18n migration for all legacy conversation shell copy remains deferred to broader localization pass.
+- Potential per-layer aria-description nuance for hidden segments can be expanded later.

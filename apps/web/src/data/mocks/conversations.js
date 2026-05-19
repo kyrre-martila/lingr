@@ -11,7 +11,7 @@ export const conversationStarters = [
 const conversationTemplate = [
   { id: 'c1', name: 'Maya', mood: 'Soft curiosity', paused: false, windowState: WINDOW_STATES.OPEN, windowRhythm: WINDOW_RHYTHMS.GENTLE, emotionalSpaceLevel: 'steady', mutualParticipationReady: true, preview: 'I have been thinking about your question from yesterday.', messages: [
     { id: 'm1', sender: 'them', text: 'I appreciate how unrushed this space feels.' },
-    { id: 'm1b', sender: 'system', type: 'layer_unlock', content: { title: 'You unlocked a new layer', subtitle: 'A little more of this profile is now visible', ctaLabel: 'See more about Maja', ctaRoute: '/profiles/maja' }, text: 'Layer unlocked' },
+    { id: 'm1b', sender: 'system', type: 'layer_unlock', content: { title: 'You have come to know a little more about them.', subtitle: 'Something new is now visible.', ctaLabel: 'See a little more', ctaRoute: '/profiles/maja' }, text: 'A new layer is now visible.' },
     { id: 'm2', sender: 'me', text: 'Same. It helps me answer more honestly.' },
     { id: 'm3', sender: 'them', text: 'What kind of silence feels comfortable to you?' }
   ], compatibilityProfile: createCompatibilityProfile({ communicationPreference: 'reflective', emotionalPace: 'steady', conversationStyle: 'curious', valuesAlignment: ['care', 'honesty', 'growth'], socialEnergy: 'balanced', relationshipIntention: 'intentional_connection', emotionalSafetyPreference: 'gentle_clarity' }) },
