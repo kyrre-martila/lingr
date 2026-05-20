@@ -96,14 +96,14 @@ const createErrorBlock = (error, onRetry) => {
     ? 'Please check your message and try again.'
     : kind === DOMAIN_ERROR_KIND.PERMISSION
       ? 'This conversation is unavailable for your account right now.'
-      : 'Something temporary went wrong. Please retry.'
+      : 'Something temporary went wrong. Please try again in a moment.'
 
-  wrapper.innerHTML = `<h3>Unable to continue</h3><p>${message}</p>`
+  wrapper.innerHTML = `<h3>Unable to continue right now</h3><p>${message}</p>`
   if (error?.retryable) {
     const retry = document.createElement('button')
     retry.type = 'button'
     retry.className = 'button button--ghost'
-    retry.textContent = 'Retry'
+    retry.textContent = 'Try again'
     retry.addEventListener('click', onRetry)
     wrapper.append(retry)
   }
@@ -150,7 +150,7 @@ const createInputArea = ({ canCompose, onSubmit, error }) => {
     <label for="message-input" class="sr-only">Write a message</label>
     <div class="composer-shell">
       <button id="composer-plus-trigger" class="composer-shell__plus" type="button" aria-label="Open calm menu" aria-haspopup="dialog" aria-controls="composer-plus-sheet" aria-expanded="false" ${canCompose ? '' : 'disabled'}>+</button>
-      <textarea id="message-input" class="onboarding-input composer-shell__field" rows="1" placeholder="Write a message..." ${canCompose ? '' : 'disabled'}></textarea>
+      <textarea id="message-input" class="onboarding-input composer-shell__field" rows="1" placeholder="Write something gentle..." ${canCompose ? '' : 'disabled'}></textarea>
       <button class="composer-shell__send" type="submit" aria-label="Send message" ${canCompose ? '' : 'disabled'}>${canCompose ? 'Send' : 'Paused'}</button>
     </div>
     ${error ? `<p class="onboarding-form__error" role="status">${error}</p>` : ''}
@@ -222,7 +222,7 @@ export const createConversationsSection = () => {
     <div class="container">
       <p class="eyebrow">First conversations</p>
       <h2 id="conversations-title">A calmer way to begin talking.</h2>
-      <p class="lead">No urgency, no noisy indicators, and space to pause before replying.</p>
+      <p class="lead">No urgency, no noisy indicators, and room to pause before replying.</p>
       <div class="conversation-shell"><div class="conversation-shell__list" data-list></div><div class="conversation-shell__detail" data-detail></div></div>
     </div>
   `
@@ -231,6 +231,7 @@ export const createConversationsSection = () => {
   const detailHost = section.querySelector('[data-detail]')
 
   const state = { loading: true, conversations: [], activeId: '', messagesStatus: 'idle', messages: [], messagesError: null, submitError: '', sending: false }
+  let messageRequestToken = 0
 
   const render = () => {
     if (state.loading) {
@@ -256,7 +257,7 @@ export const createConversationsSection = () => {
 
     const stream = document.createElement('div')
     stream.className = 'message-stream'
-    if (state.messagesStatus === 'loading') stream.innerHTML = '<p>Loading timeline…</p>'
+    if (state.messagesStatus === 'loading') stream.innerHTML = '<p>Loading this conversation…</p>'
     else if (state.messagesStatus === 'error') stream.append(createErrorBlock(state.messagesError, async () => { await loadMessages(); render() }))
     else if (state.messages.length) state.messages.forEach((message) => stream.append(createBubble(message)))
     else {
@@ -290,8 +291,8 @@ export const createConversationsSection = () => {
               : response.error.kind === DOMAIN_ERROR_KIND.PERMISSION
                 ? 'You cannot send messages in this conversation right now.'
                 : response.error.retryable
-                  ? 'Temporary send issue. Please retry.'
-                  : 'Message could not be sent. Retry in a moment.'
+                  ? 'Temporary send issue. Please try again.'
+                  : 'Message could not be sent. Please try again in a moment.'
           render()
           return
         }
@@ -310,7 +311,10 @@ export const createConversationsSection = () => {
     state.messagesStatus = 'loading'
     state.messagesError = null
     render()
-    const response = await listConversationMessages({ conversationId: state.activeId })
+    const requestToken = ++messageRequestToken
+    const activeIdAtRequestStart = state.activeId
+    const response = await listConversationMessages({ conversationId: activeIdAtRequestStart })
+    if (requestToken !== messageRequestToken || activeIdAtRequestStart !== state.activeId) return
     if (response.status === 'error') {
       state.messagesStatus = 'error'
       state.messagesError = response.error
