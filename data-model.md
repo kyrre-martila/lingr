@@ -318,3 +318,15 @@ No admin UI is included in MVP.
   - Layer 2 -> 3: `960` minutes, trust `55`
   - Signal points: `2/8/6/5/2` per canonical order above.
 - Philosophy guardrail remains unchanged: trust scoring is strictly internal and must not appear in user-facing UI, copy, progress bars, or urgency framing.
+
+## Run 11.6 Prompt 3 implementation notes (trust logic live)
+- Layer unlock evaluation now reads from `layer_rules` in runtime service logic.
+- Trust accumulation for conversation turns now reads from `trust_signal_rules` using `quality_message_turn` only in this phase.
+- A message turn contributes trust only when all existing anti-gaming checks pass:
+  - reciprocal alternation
+  - minimum quality heuristic
+  - pacing guard
+- Layer transition requires both conditions:
+  - minimum elapsed minutes from `layer1UnlockedAt`
+  - required trust score
+- Progress remains invisible: trust score and thresholds are server-internal and not exposed in user-facing UI.
