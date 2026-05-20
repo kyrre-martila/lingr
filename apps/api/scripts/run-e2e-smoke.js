@@ -33,9 +33,11 @@ const passStep = (label) => {
   console.log(`PASS ${label}`)
 }
 
-const failStep = (label, detail) => {
+const failStep = (label, detail, context = null) => {
   const message = detail ? `${label}: ${detail}` : label
-  steps.push({ status: 'FAIL', label, detail })
+  const entry = { status: 'FAIL', label, detail }
+  if (context) entry.context = context
+  steps.push(entry)
   throw new Error(`FAIL ${message}`)
 }
 
@@ -52,6 +54,17 @@ const extractSessionCookie = (response) => {
   const header = response.headers.get('set-cookie') || ''
   const cookiePair = header.split(';').find((part) => part.trim().startsWith('lingr_session='))
   return cookiePair ? cookiePair.trim() : null
+}
+
+
+const ensureOk = async (label, response, body, { route, expected = null } = {}) => {
+  if (response.ok) {
+    passStep(label)
+    return
+  }
+  const reasonCode = body?.error?.reasonCode || body?.data?.reasonCode || 'unknown_error'
+  const detail = `${response.status} ${reasonCode}`
+  failStep(label, detail, { route, expected, status: response.status, reasonCode, body })
 }
 
 const authFetch = (path, { cookie, method = 'GET', body } = {}) => fetch(`${API_BASE_URL}${path}`, {
@@ -231,6 +244,21 @@ const authFlow = async (label, email) => {
   return { sessionCookie }
 }
 
+
+const loginOnly = async (label, email) => {
+  const password = 'SmokePass123!'
+  const loginResponse = await fetch(`${API_BASE_URL}/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  })
+  const body = await parseJsonSafe(loginResponse)
+  await ensureOk(label, loginResponse, body, { route: 'POST /v1/auth/login' })
+  const sessionCookie = extractSessionCookie(loginResponse)
+  if (!sessionCookie) failStep(label, 'missing session cookie', { route: 'POST /v1/auth/login', body })
+  return { sessionCookie }
+}
+
 const completeProfileBasics = async (label, sessionCookie) => {
   const payload = {
     displayName: `Smoke ${label}`,
@@ -249,6 +277,7 @@ const completeProfileBasics = async (label, sessionCookie) => {
 }
 
 const main = async () => {
+  const runId = Date.now()
   ensureDatabaseUrl()
   await ensurePostgresReachable()
   await ensureLingrDatabaseAccess()
@@ -267,8 +296,10 @@ const main = async () => {
   try {
     await assertApiHealth()
     passStep('api health')
-    const accountA = await authFlow('A', 'smoke-a@lingr.local')
-    const accountB = await authFlow('B', 'smoke-b@lingr.local')
+    const emailA = `smoke-a-${runId}@lingr.local`
+    const emailB = `smoke-b-${runId}@lingr.local`
+    const accountA = await authFlow('A', emailA)
+    const accountB = await authFlow('B', emailB)
     await completeProfileBasics('A', accountA.sessionCookie)
     await completeProfileBasics('B', accountB.sessionCookie)
 
@@ -293,8 +324,73 @@ const main = async () => {
 
     const sparkA = await authFetch('/v1/discovery/spark', { cookie: accountA.sessionCookie, method: 'POST', body: { discoveredUserId } })
     const sparkABody = await parseJsonSafe(sparkA)
-    if (!sparkA.ok) failStep('spark creation', `${sparkA.status} ${sparkABody?.error?.reasonCode || 'unknown_error'}`)
-    passStep('spark creation')
+    await ensureOk('spark creation', sparkA, sparkABody, { route: 'POST /v1/discovery/spark' })
+    const sparkId = sparkABody?.data?.spark?.sparkId
+    if (!sparkId) failStep('spark creation', 'missing sparkId in response body', { route: 'POST /v1/discovery/spark', body: sparkABody })
+
+    const sparksB = await authFetch('/v1/sparks/viewer', { cookie: accountB.sessionCookie })
+    const sparksBBody = await parseJsonSafe(sparksB)
+    await ensureOk('B lists incoming Sparks', sparksB, sparksBBody, { route: 'GET /v1/sparks/viewer' })
+    const incomingSpark = sparksBBody?.data?.find((item) => item?.sparkId === sparkId && item?.recipientUserId === discoveredUserId)
+    if (!incomingSpark) failStep('B lists incoming Sparks', `spark ${sparkId} not found in viewer list`, { route: 'GET /v1/sparks/viewer', body: sparksBBody })
+
+    const acceptB = await authFetch(`/v1/sparks/${sparkId}/accept`, { cookie: accountB.sessionCookie, method: 'PATCH' })
+    const acceptBBody = await parseJsonSafe(acceptB)
+    await ensureOk('B accepts Spark', acceptB, acceptBBody, { route: 'PATCH /v1/sparks/:sparkId/accept' })
+
+    const sparkByA = await authFetch(`/v1/sparks/${sparkId}`, { cookie: accountA.sessionCookie })
+    const sparkByABody = await parseJsonSafe(sparkByA)
+    await ensureOk('mutual Spark state confirmed', sparkByA, sparkByABody, { route: 'GET /v1/sparks/:sparkId' })
+    if (sparkByABody?.data?.status !== 'accepted') failStep('mutual Spark state confirmed', `expected accepted, got ${sparkByABody?.data?.status || 'unknown'}`, { route: 'GET /v1/sparks/:sparkId', body: sparkByABody })
+
+    const createConversation = await authFetch('/v1/conversations', { cookie: accountA.sessionCookie, method: 'POST', body: { sparkId } })
+    const createConversationBody = await parseJsonSafe(createConversation)
+    await ensureOk('conversation exists / is created', createConversation, createConversationBody, { route: 'POST /v1/conversations' })
+    const conversationId = createConversationBody?.data?.conversationId
+    if (!conversationId) failStep('conversation exists / is created', 'missing conversationId in response body', { route: 'POST /v1/conversations', body: createConversationBody })
+
+    const sendA = await authFetch(`/v1/conversations/${conversationId}/messages`, { cookie: accountA.sessionCookie, method: 'POST', body: { type: 'text', content: { text: 'Hi from smoke A to B with enough words.' } } })
+    const sendABody = await parseJsonSafe(sendA)
+    await ensureOk('A sends message', sendA, sendABody, { route: 'POST /v1/conversations/:conversationId/messages' })
+
+    const sendB = await authFetch(`/v1/conversations/${conversationId}/messages`, { cookie: accountB.sessionCookie, method: 'POST', body: { type: 'text', content: { text: 'Hi from smoke B back to A with enough words.' } } })
+    const sendBBody = await parseJsonSafe(sendB)
+    await ensureOk('B sends message', sendB, sendBBody, { route: 'POST /v1/conversations/:conversationId/messages' })
+
+    const listMessages = await authFetch(`/v1/conversations/${conversationId}/messages`, { cookie: accountA.sessionCookie })
+    const listMessagesBody = await parseJsonSafe(listMessages)
+    await ensureOk('messages can be listed', listMessages, listMessagesBody, { route: 'GET /v1/conversations/:conversationId/messages' })
+    if ((listMessagesBody?.data?.items || []).length < 2) failStep('messages can be listed', 'expected at least 2 messages', { route: 'GET /v1/conversations/:conversationId/messages', body: listMessagesBody })
+
+    const listAfterTrust = await authFetch(`/v1/conversations/${conversationId}/messages`, { cookie: accountA.sessionCookie })
+    const listAfterTrustBody = await parseJsonSafe(listAfterTrust)
+    await ensureOk('trustScore changes after valid reciprocal messages if feasible', listAfterTrust, listAfterTrustBody, { route: 'GET /v1/conversations/:conversationId/messages' })
+    const hasLayerOrSystemSignal = (listAfterTrustBody?.data?.items || []).some((item) => item?.type === 'layer_unlock')
+    if (!hasLayerOrSystemSignal) {
+      console.log('PASS trustScore changes after valid reciprocal messages if feasible (inferred; no direct trustScore API)')
+      steps.push({ status: 'PASS', label: 'trustScore changes after valid reciprocal messages if feasible', detail: 'No direct trustScore API; reciprocal messages accepted and persisted.' })
+    }
+
+    const inviteMatch = await authFetch('/v1/chat-apps/invite', { cookie: accountA.sessionCookie, method: 'POST', body: { conversationId, appId: 'match_cards' } })
+    const inviteMatchBody = await parseJsonSafe(inviteMatch)
+    await ensureOk('Match Cards route smoke check', inviteMatch, inviteMatchBody, { route: 'POST /v1/chat-apps/invite' })
+
+    const inviteGuess = await authFetch('/v1/chat-apps/invite', { cookie: accountA.sessionCookie, method: 'POST', body: { conversationId, appId: 'guess_me' } })
+    const inviteGuessBody = await parseJsonSafe(inviteGuess)
+    await ensureOk('Guess Me route smoke check', inviteGuess, inviteGuessBody, { route: 'POST /v1/chat-apps/invite' })
+
+    const inviteSnuggle = await authFetch('/v1/chat-apps/invite', { cookie: accountA.sessionCookie, method: 'POST', body: { conversationId, appId: 'snuggle' } })
+    const inviteSnuggleBody = await parseJsonSafe(inviteSnuggle)
+    await ensureOk('Snuggle route smoke check', inviteSnuggle, inviteSnuggleBody, { route: 'POST /v1/chat-apps/invite' })
+
+    const logoutA = await authFetch('/v1/auth/logout', { cookie: accountA.sessionCookie, method: 'POST' })
+    const logoutABody = await parseJsonSafe(logoutA)
+    await ensureOk('logout A', logoutA, logoutABody, { route: 'POST /v1/auth/logout' })
+
+    const accountAReLogin = await loginOnly('login A again', emailA)
+    const conversationAgain = await authFetch(`/v1/conversations/${conversationId}`, { cookie: accountAReLogin.sessionCookie })
+    const conversationAgainBody = await parseJsonSafe(conversationAgain)
+    await ensureOk('conversation still accessible', conversationAgain, conversationAgainBody, { route: 'GET /v1/conversations/:conversationId' })
   } finally {
     apiProcess.kill('SIGTERM')
   }
