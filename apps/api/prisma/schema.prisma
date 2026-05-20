@@ -254,6 +254,9 @@ model Conversation {
   participants    ConversationParticipant[]
   messages        Message[]
   appSessions     AppSession[]
+  matchCardsSessions MatchCardsSession[]
+  guessMeSessions    GuessMeSession[]
+  snuggleSessions    SnuggleSession[]
 
   @@index([state, updatedAt])
   @@map("conversations")
