@@ -9,7 +9,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed:dev-e2e": "node scripts/seed-dev-e2e.js"
+    "db:seed:dev-e2e": "node scripts/seed-dev-e2e.js",
+    "e2e:smoke": "node scripts/run-e2e-smoke.js"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
