@@ -2,6 +2,7 @@ import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
 import { CONVERSATION_PARTICIPANT_ROLE, CONVERSATION_STATE, DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, REASON_CODES, SPARK_ACTION, SPARK_ACTIVE_STATES, SPARK_STATE, SPARK_TERMINAL_STATES, SPARK_TRANSITIONS } from '../../../../packages/shared/src/contracts.js'
 import { syncLayerAfterMutualSpark } from './layer-service.js'
+import { assertNoUserInteractionBlock } from './safety-service.js'
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
 const toExternalSparkId = (id) => `${INTERNAL_ID_STRATEGY.API_SPARK_ID_PREFIX}${id}`
@@ -77,6 +78,7 @@ export const createSparkInvitation = async ({ viewer, payload, dbClient }) => {
   const recipientUserId = parseInternalUserId(payload.recipientUserId)
   if (recipientUserId === initiatorUserId) throw new ApiError({ message: 'Cannot create Spark with self', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.SPARK.INVALID_SELF_SPARK, statusCode: 400 })
 
+  await assertNoUserInteractionBlock({ db, actorUserId: initiatorUserId, targetUserId: recipientUserId })
   const recipient = await db.user.findUnique({ where: { id: recipientUserId }, select: { id: true } })
   if (!recipient) throw new ApiError({ message: 'Recipient not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.INVALID_RECIPIENT_REFERENCE, statusCode: 404 })
 
@@ -127,6 +129,7 @@ const updateSparkStatus = async ({ viewer, sparkId, nextStatus, action, dbClient
   const row = await db.spark.findFirst({ where: { id, OR: [{ initiatorUserId: userId }, { recipientUserId: userId }] } })
   if (!row) throw new ApiError({ message: 'Spark not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.NOT_FOUND, statusCode: 404 })
   assertActionPermission({ action, row, actorUserId: userId })
+  await assertNoUserInteractionBlock({ db, actorUserId: row.initiatorUserId, targetUserId: row.recipientUserId })
   if (row.status === nextStatus) return toClientSpark(row)
   assertTransitionAllowed(row.status, nextStatus)
 

@@ -21,6 +21,7 @@ export const REASON_CODES = Object.freeze({
   AUTH: Object.freeze({ REQUIRES_AUTH: 'auth.requires_auth', SESSION_EXPIRED: 'auth.session_expired', INVALID_SESSION: 'auth.invalid_session', INVALID_CREDENTIALS: 'auth.invalid_credentials' }),
   ROUTE: Object.freeze({ UNKNOWN_ROUTE: 'route.unknown_route', REQUIRES_ONBOARDING: 'route.requires_onboarding', REQUIRES_PROFILE_COMPLETION: 'route.requires_profile_completion', REQUIRES_APP_SESSION: 'route.requires_app_session' }),
   SAFETY: Object.freeze({ PAUSED_FOR_SAFETY: 'safety.paused_for_safety', RESTRICTED_ACCOUNT: 'safety.restricted_account' }),
+  BLOCK: Object.freeze({ USER_BLOCKED: 'safety.user_blocked' }),
   MODERATION: Object.freeze({ CONTENT_REVIEW: 'moderation.content_review', CONTENT_RESTRICTED: 'moderation.content_restricted' }),
   VALIDATION: Object.freeze({ INVALID_ID: 'validation.invalid_id', INVALID_TIMESTAMP: 'validation.invalid_timestamp', INVALID_PAYLOAD: 'validation.invalid_payload' }),
   PERMISSION: Object.freeze({ NOT_ALLOWED: 'permission.not_allowed', FEATURE_DISABLED: 'permission.feature_disabled' }),
@@ -123,6 +124,25 @@ export const TRUST_SIGNAL_TYPE = Object.freeze({
   GUESS_ME_COMPLETED: 'guess_me_completed',
   SNUGGLE_SHARED: 'snuggle_shared',
   PLAYING_NOW_SHARED: 'playing_now_shared'
+})
+
+export const USER_REPORT_CATEGORY = Object.freeze({
+  UNCOMFORTABLE: 'uncomfortable',
+  INAPPROPRIATE: 'inappropriate',
+  FAKE_PROFILE: 'fake_profile',
+  HARASSMENT: 'harassment',
+  OTHER: 'other'
+})
+
+export const CONVERSATION_SAFETY_REASON = Object.freeze({
+  USER_PAUSED: 'user_paused',
+  BLOCKED_USER: 'blocked_user'
+})
+
+export const MODERATION_EVENT_TYPE = Object.freeze({
+  USER_BLOCKED: 'user_blocked',
+  USER_REPORTED: 'user_reported',
+  CONVERSATION_PAUSED: 'conversation_paused'
 })
 
 export const MESSAGE_PAYLOAD_KIND = Object.freeze({
