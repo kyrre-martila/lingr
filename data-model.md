@@ -347,3 +347,9 @@ No admin UI is included in MVP.
 - Rule safety guardrails:
   - Ignore invalid runtime rules/signals (negative points, negative thresholds/minutes, invalid layer jumps).
   - Keep trust/layer progression resilient if DB config contains invalid entries.
+
+## Run 11.7 session token hashing security update
+- `sessions.tokenHash` remains the persisted token identity field, but token hashing strategy is now HMAC-SHA256 with a server-side secret.
+- Why this changed: plain SHA-256 hashing was deterministic and not keyed, which weakens protection against offline token-guessing workflows.
+- `LINGR_SESSION_SECRET` is required in production; non-production environments may use a controlled fallback secret for local stability.
+- Migration implication: existing pre-Run-11.7 sessions may not validate and can require re-login; no schema change or destructive migration is needed.

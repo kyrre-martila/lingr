@@ -405,3 +405,10 @@ Forbidden mechanics:
 - Message-turn pacing floor for counted trust turns is `60s` (not 20s).
 - Config validation must reject or safely ignore negative trust points, negative required scores, negative elapsed minutes, and invalid from/to layer combinations.
 - Deferred by design: no visible trust UI, no analytics dashboards, no anti-farming complexity beyond simple pacing and quality checks.
+
+## Run 11.7 auth hardening guardrail — HMAC session token hashing
+- Keep current MVP auth architecture: Prisma sessions + HttpOnly cookie transport + bearer fallback compatibility.
+- Session token hashing must use keyed HMAC-SHA256 with `LINGR_SESSION_SECRET`, not unkeyed SHA-256 hashing.
+- Production must fail fast without `LINGR_SESSION_SECRET`; development may use a non-production fallback to prevent local workflow breakage.
+- Deployment note: existing sessions from legacy hash strategy may require user re-login. No destructive schema migration is required.
+- Deferred by design: no JWT migration, no refresh-token redesign, no auth-architecture expansion in this run.

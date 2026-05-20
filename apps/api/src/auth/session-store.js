@@ -9,10 +9,26 @@ export const __setDbClientForTest = (client) => { dbClientOverride = client }
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30
 const BCRYPT_ROUNDS = 12
+const DEV_SESSION_SECRET = 'lingr-dev-session-secret'
 
 const nowDate = () => new Date()
 const futureDate = (ms) => new Date(Date.now() + ms)
-const hashToken = (token) => crypto.createHash('sha256').update(String(token)).digest('hex')
+
+const resolveSessionSecret = () => {
+  const secret = process.env.LINGR_SESSION_SECRET
+  if (secret && secret.trim().length > 0) return secret
+  if (process.env.NODE_ENV === 'production') throw new Error('LINGR_SESSION_SECRET is required in production')
+  return DEV_SESSION_SECRET
+}
+
+const hashToken = (token) => crypto.createHmac('sha256', resolveSessionSecret()).update(String(token)).digest('hex')
+
+const safeHashEquals = (left, right) => {
+  const a = Buffer.from(String(left || ''), 'utf8')
+  const b = Buffer.from(String(right || ''), 'utf8')
+  if (a.length !== b.length) return false
+  return crypto.timingSafeEqual(a, b)
+}
 
 export const hashPassword = async (password) => bcrypt.hash(String(password), BCRYPT_ROUNDS)
 export const verifyPassword = async (password, passwordHash) => bcrypt.compare(String(password), String(passwordHash || ''))
@@ -68,18 +84,22 @@ export const createSession = async ({ userId }) => {
 export const invalidateSession = async ({ sessionToken }) => {
   if (!sessionToken) return false
   const db = await dbClient()
-  const res = await db.session.updateMany({ where: { tokenHash: hashToken(sessionToken), status: 'active' }, data: { status: 'revoked' } })
-  return res.count > 0
+  const tokenHash = hashToken(sessionToken)
+  const session = await db.session.findUnique({ where: { tokenHash }, select: { id: true, tokenHash: true, status: true } })
+  if (!session || !safeHashEquals(session.tokenHash, tokenHash) || session.status !== 'active') return false
+  await db.session.update({ where: { id: session.id }, data: { status: 'revoked' } })
+  return true
 }
 
 export const lookupSession = async ({ sessionToken }) => {
   if (!sessionToken) return null
   const db = await dbClient()
+  const tokenHash = hashToken(sessionToken)
   const session = await db.session.findUnique({
-    where: { tokenHash: hashToken(sessionToken) },
-    select: { id: true, userId: true, status: true, expiresAt: true, user: { select: { status: true, profile: { select: { profileCompleteness: true } } } } }
+    where: { tokenHash },
+    select: { id: true, userId: true, tokenHash: true, status: true, expiresAt: true, user: { select: { status: true, profile: { select: { profileCompleteness: true } } } } }
   })
-  if (!session) return null
+  if (!session || !safeHashEquals(session.tokenHash, tokenHash)) return null
   if (session.status === 'revoked') return { revoked: true }
   if (session.status === 'expired') return { expired: true }
   if (session.expiresAt && session.expiresAt.getTime() <= Date.now()) {

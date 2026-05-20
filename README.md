@@ -198,3 +198,9 @@ Final order should be determined by waitlist demand.
 - Canonical auth behavior: expired sessions return `auth.session_expired`; missing/revoked sessions return `auth.requires_auth`.
 - Mobile bearer-token strategy remains deferred to a future native secure-storage implementation.
 - Layer 0 discovery conformance: no names, no location metadata, no timestamps, no activity/urgency fields in discovery introduction payloads.
+
+## Run 11.7 session-token hashing hardening
+- Session token hashing now uses HMAC-SHA256 (`createHmac`) with a server secret (`LINGR_SESSION_SECRET`) instead of raw SHA-256 hashing.
+- Production requires `LINGR_SESSION_SECRET`; local development/test uses a safe fallback secret to avoid workflow breakage.
+- Existing persisted sessions created with legacy SHA-256 token hashes will no longer validate after deploy and may require users to sign in again.
+- No destructive DB migration is required; `sessions.tokenHash` storage model remains unchanged.
