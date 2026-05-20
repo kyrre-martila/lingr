@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { authenticateWithEmailPassword, createSession, hashPassword, invalidateSession, lookupSession, registerWithEmailPassword, __setDbClientForTest } from '../src/auth/session-store.js'
+import { authenticateWithEmailPassword, createSession, invalidateSession, lookupSession, registerWithEmailPassword, __setDbClientForTest } from '../src/auth/session-store.js'
 
 const createFakeDb = () => {
   const users = []
@@ -46,4 +46,42 @@ test('session lifecycle covers active expired and revoked', async () => {
   await invalidateSession({ sessionToken: session2.token })
   const revoked = await lookupSession({ sessionToken: session2.token })
   assert.equal(revoked.revoked, true)
+})
+
+
+test('session token hashing uses HMAC secret and requires prod secret', async () => {
+  const prevNodeEnv = process.env.NODE_ENV
+  const prevSecret = process.env.LINGR_SESSION_SECRET
+  const db = createFakeDb(); __setDbClientForTest(db)
+  await registerWithEmailPassword({ email: 'h@mac.com', password: 'password123' })
+
+  process.env.NODE_ENV = 'test'
+  process.env.LINGR_SESSION_SECRET = 'secret-a'
+  const first = await createSession({ userId: 'usr_1' })
+  const firstHash = db._sessions[db._sessions.length - 1].tokenHash
+
+  process.env.LINGR_SESSION_SECRET = 'secret-b'
+  const second = await createSession({ userId: 'usr_1' })
+  const secondHash = db._sessions[db._sessions.length - 1].tokenHash
+
+  assert.notEqual(firstHash, secondHash)
+  assert.equal(await lookupSession({ sessionToken: first.token })?.then(Boolean), false)
+  assert.equal(await lookupSession({ sessionToken: second.token })?.then(Boolean), true)
+
+  process.env.NODE_ENV = 'production'
+  delete process.env.LINGR_SESSION_SECRET
+  await assert.rejects(() => createSession({ userId: 'usr_1' }), /LINGR_SESSION_SECRET is required in production/)
+
+  process.env.NODE_ENV = prevNodeEnv
+  if (prevSecret === undefined) delete process.env.LINGR_SESSION_SECRET
+  else process.env.LINGR_SESSION_SECRET = prevSecret
+})
+
+test('invalid session tokens fail cleanly', async () => {
+  const db = createFakeDb(); __setDbClientForTest(db)
+  process.env.LINGR_SESSION_SECRET = 'secret-clean-fail'
+  await registerWithEmailPassword({ email: 'invalid@token.com', password: 'password123' })
+  const session = await createSession({ userId: 'usr_1' })
+  assert.equal(await lookupSession({ sessionToken: `${session.token}_wrong` }), null)
+  assert.equal(await invalidateSession({ sessionToken: `${session.token}_wrong` }), false)
 })
