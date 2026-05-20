@@ -8,7 +8,8 @@
     "start": "node src/server.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy"
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:seed:dev-e2e": "node scripts/seed-dev-e2e.js"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
