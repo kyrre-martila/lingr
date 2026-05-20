@@ -275,3 +275,9 @@ Layer UI must not include:
   - 60-second minimum counted message-turn pacing
   - safe handling of invalid `layer_rules` / `trust_signal_rules` values
 - Advanced anti-farming systems remain intentionally deferred.
+
+## Run 11.7 layer unlock localization flow
+- Unlock system rows are rendered from backend-provided message keys, not backend-authored English strings.
+- Backend payload contract for layer unlock rows: `messageKey` + optional `messageParams`.
+- Frontend resolves copy through localization packs (`en`, `nb-NO`) and applies locale fallback to English when needed.
+- Copy style remains gentle and understated (no celebration, no gamification, no pressure language).

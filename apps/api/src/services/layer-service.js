@@ -6,9 +6,9 @@ const MIN_SECONDS_BETWEEN_COUNTED_TURNS = 60
 const canonicalPairFor = (leftUserId, rightUserId) => (leftUserId < rightUserId ? [leftUserId, rightUserId] : [rightUserId, leftUserId])
 
 const buildSystemMessage = (layerLevel, profileName = 'this person') => {
-  if (layerLevel === LAYER_LEVEL.MUTUAL_SPARK) return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { title: `You've come to know a little more about ${profileName}.`, subtitle: 'Something new is now visible.' } }
-  if (layerLevel === LAYER_LEVEL.MEANINGFUL_CONVERSATION) return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { title: `You're slowly getting to know ${profileName}.`, subtitle: 'A little more context is now visible.' } }
-  return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { title: `Another layer is now visible with ${profileName}.`, subtitle: 'Some things unfold naturally.' } }
+  if (layerLevel === LAYER_LEVEL.MEANINGFUL_CONVERSATION) return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { messageKey: 'layer.unlock.layer2', messageParams: { profileName } } }
+  if (layerLevel === LAYER_LEVEL.DEEPER_TRUST) return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { messageKey: 'layer.unlock.layer3', messageParams: { profileName } } }
+  return { type: MESSAGE_TYPE.LAYER_UNLOCK, content: { messageKey: 'layer.unlock.layer2', messageParams: { profileName } } }
 }
 const meetsQualityHeuristic = (messageText) => typeof messageText === 'string' && messageText.trim().length >= MIN_QUALITY_TEXT_LENGTH
 const hasMinimumPacingSinceLastCountedTurn = ({ now, lastCountedAt }) => !lastCountedAt || ((now.getTime() - lastCountedAt.getTime()) / 1000) >= MIN_SECONDS_BETWEEN_COUNTED_TURNS

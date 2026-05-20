@@ -412,3 +412,9 @@ Forbidden mechanics:
 - Production must fail fast without `LINGR_SESSION_SECRET`; development may use a non-production fallback to prevent local workflow breakage.
 - Deployment note: existing sessions from legacy hash strategy may require user re-login. No destructive schema migration is required.
 - Deferred by design: no JWT migration, no refresh-token redesign, no auth-architecture expansion in this run.
+
+## Run 11.7 localization ownership — layer unlock copy
+- Backend must never emit hardcoded user-facing unlock sentences.
+- Layer unlock system messages should carry stable payload keys (`messageKey`) and optional interpolation payload (`messageParams`).
+- Frontend owns human-language rendering via i18n lookup and fallback behavior.
+- Unlock copy tone remains calm, soft, relational, and subtle; avoid reward framing, achievement language, and urgency.
