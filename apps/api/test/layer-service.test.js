@@ -1,11 +1,32 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createAuthenticatedViewer } from '../src/auth/viewer.js'
-import { SPARK_STATE } from '../../../packages/shared/src/contracts.js'
+import { SPARK_STATE, TRUST_SIGNAL_TYPE } from '../../../packages/shared/src/contracts.js'
 import { acceptSpark } from '../src/services/spark-service.js'
 import { sendConversationMessage } from '../src/services/conversation-service.js'
 
 const now = new Date('2026-05-19T00:00:00.000Z')
+
+const makeDbForLayerSync = ({ relationshipState, trustSignalRule, layerRules, existingUnlockMessage = null }) => {
+  const state = { ...relationshipState }
+  let createdSystemMessage = null
+  const db = {
+    $transaction: async (cb) => cb(db),
+    conversation: { findFirst: async () => ({ id: 'c1' }), findUnique: async () => ({ id: 'c1', participants: [{ userId: 'u1' }, { userId: 'u2' }] }) },
+    trustSignalRule: { findUnique: async ({ where }) => (where.signalType === TRUST_SIGNAL_TYPE.QUALITY_MESSAGE_TURN ? trustSignalRule : null) },
+    layerRule: { findMany: async () => layerRules },
+    relationshipLayer: {
+      upsert: async () => state,
+      update: async ({ data }) => { Object.assign(state, data); return state }
+    },
+    message: {
+      findFirst: async () => existingUnlockMessage,
+      create: async ({ data }) => { if (data.senderUserId === null) createdSystemMessage = data; return { id: 'm1', ...data, createdAt: now, updatedAt: now } }
+    }
+  }
+
+  return { db, state, getCreatedSystemMessage: () => createdSystemMessage }
+}
 
 test('mutual spark acceptance unlocks relationship layer 1', async () => {
   let upsertInput
@@ -17,35 +38,92 @@ test('mutual spark acceptance unlocks relationship layer 1', async () => {
   assert.equal(upsertInput.create.currentLayer, 1)
 })
 
-test('low-effort ping-pong does not advance reciprocal progression', async () => {
-  let relationshipState = { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null }
-  const db = {
-    conversation: { findFirst: async () => ({ id: 'c1' }), findUnique: async () => ({ id: 'c1', participants: [{ userId: 'u1' }, { userId: 'u2' }] }) },
-    message: { create: async ({ data }) => ({ id: 'm1', ...data, createdAt: now, updatedAt: now }) },
-    relationshipLayer: { upsert: async () => relationshipState, update: async ({ data }) => { relationshipState = { ...relationshipState, ...data }; return relationshipState } }
-  }
-  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'ok' } }, dbClient: db })
-  assert.equal(relationshipState.currentLayer, 1)
-  assert.equal(relationshipState.reciprocalMessageCount, 5)
+test('reciprocal quality turns add trust score from trust signal rule', async () => {
+  const { db, state } = makeDbForLayerSync({
+    relationshipState: { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, trustScore: 10, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null },
+    trustSignalRule: { signalType: TRUST_SIGNAL_TYPE.QUALITY_MESSAGE_TURN, points: 3, enabled: true },
+    layerRules: [{ fromLayer: 1, toLayer: 2, minElapsedMinutes: 240, requiredTrustScore: 20, enabled: true }]
+  })
+
+  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'I appreciated what you shared earlier.' } }, dbClient: db })
+  assert.equal(state.trustScore, 13)
+  assert.equal(state.reciprocalMessageCount, 6)
 })
 
-test('reciprocal quality + pacing unlocks layer 2', async () => {
-  let relationshipState = { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null }
-  let createdSystemMessage = null
-  const db = {
-    conversation: { findFirst: async () => ({ id: 'c1' }), findUnique: async () => ({ id: 'c1', participants: [{ userId: 'u1' }, { userId: 'u2' }] }) },
-    message: {
-      create: async ({ data }) => {
-        if (data.senderUserId === null) createdSystemMessage = data
-        return { id: 'm1', conversationId: 'c1', senderUserId: data.senderUserId, type: data.type, visibility: data.visibility, deliveryState: data.deliveryState, content: data.content, metadata: data.metadata, createdAt: now, updatedAt: now }
-      }
-    },
-    relationshipLayer: {
-      upsert: async () => relationshipState,
-      update: async ({ data }) => { relationshipState = { ...relationshipState, ...data }; return relationshipState }
-    }
-  }
+test('invalid turns do not add trust score', async () => {
+  const { db, state } = makeDbForLayerSync({
+    relationshipState: { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, trustScore: 10, lastMessageSenderId: 'u2', lastCountedMessageAt: new Date(Date.now() - 5_000), layer1UnlockedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null },
+    trustSignalRule: { signalType: TRUST_SIGNAL_TYPE.QUALITY_MESSAGE_TURN, points: 3, enabled: true },
+    layerRules: [{ fromLayer: 1, toLayer: 2, minElapsedMinutes: 240, requiredTrustScore: 20, enabled: true }]
+  })
+
+  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'ok' } }, dbClient: db })
+  assert.equal(state.trustScore, 10)
+  assert.equal(state.reciprocalMessageCount, 5)
+})
+
+test('layer 2 unlocks only when score and time are both satisfied', async () => {
+  const { db, state, getCreatedSystemMessage } = makeDbForLayerSync({
+    relationshipState: { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, trustScore: 18, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null },
+    trustSignalRule: { signalType: TRUST_SIGNAL_TYPE.QUALITY_MESSAGE_TURN, points: 2, enabled: true },
+    layerRules: [{ fromLayer: 1, toLayer: 2, minElapsedMinutes: 240, requiredTrustScore: 20, enabled: true }]
+  })
+
   await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'I appreciated what you shared earlier.' } }, dbClient: db })
-  assert.equal(relationshipState.currentLayer, 2)
-  assert.equal(createdSystemMessage.type, 'layer_unlock')
+  assert.equal(state.currentLayer, 2)
+  assert.equal(getCreatedSystemMessage()?.type, 'layer_unlock')
+})
+
+test('layer 3 unlocks only when score and time are both satisfied', async () => {
+  const { db, state } = makeDbForLayerSync({
+    relationshipState: { id: 'rl1', currentLayer: 2, reciprocalMessageCount: 30, trustScore: 54, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 20 * 60 * 60 * 1000), layer2UnlockedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), layer3UnlockedAt: null },
+    trustSignalRule: { signalType: TRUST_SIGNAL_TYPE.QUALITY_MESSAGE_TURN, points: 2, enabled: true },
+    layerRules: [{ fromLayer: 2, toLayer: 3, minElapsedMinutes: 960, requiredTrustScore: 55, enabled: true }]
+  })
+
+  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'I appreciated what you shared earlier.' } }, dbClient: db })
+  assert.equal(state.currentLayer, 3)
+})
+
+test('insufficient score prevents unlock even when time satisfied', async () => {
+  const { db, state } = makeDbForLayerSync({
+    relationshipState: { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, trustScore: 10, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null },
+    trustSignalRule: { signalType: TRUST_SIGNAL_TYPE.QUALITY_MESSAGE_TURN, points: 1, enabled: true },
+    layerRules: [{ fromLayer: 1, toLayer: 2, minElapsedMinutes: 240, requiredTrustScore: 20, enabled: true }]
+  })
+  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'I appreciated what you shared earlier.' } }, dbClient: db })
+  assert.equal(state.currentLayer, 1)
+})
+
+test('insufficient elapsed time prevents unlock even when score satisfied', async () => {
+  const { db, state } = makeDbForLayerSync({
+    relationshipState: { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, trustScore: 19, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null },
+    trustSignalRule: { signalType: TRUST_SIGNAL_TYPE.QUALITY_MESSAGE_TURN, points: 2, enabled: true },
+    layerRules: [{ fromLayer: 1, toLayer: 2, minElapsedMinutes: 240, requiredTrustScore: 20, enabled: true }]
+  })
+  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'I appreciated what you shared earlier.' } }, dbClient: db })
+  assert.equal(state.currentLayer, 1)
+})
+
+test('db config changes affect unlock behavior', async () => {
+  const { db, state } = makeDbForLayerSync({
+    relationshipState: { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, trustScore: 12, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null },
+    trustSignalRule: { signalType: TRUST_SIGNAL_TYPE.QUALITY_MESSAGE_TURN, points: 3, enabled: true },
+    layerRules: [{ fromLayer: 1, toLayer: 2, minElapsedMinutes: 60, requiredTrustScore: 15, enabled: true }]
+  })
+  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'I appreciated what you shared earlier.' } }, dbClient: db })
+  assert.equal(state.currentLayer, 2)
+})
+
+test('transaction safety prevents duplicate unlock messages when one already exists', async () => {
+  const { db, state, getCreatedSystemMessage } = makeDbForLayerSync({
+    relationshipState: { id: 'rl1', currentLayer: 1, reciprocalMessageCount: 5, trustScore: 18, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null },
+    trustSignalRule: { signalType: TRUST_SIGNAL_TYPE.QUALITY_MESSAGE_TURN, points: 2, enabled: true },
+    layerRules: [{ fromLayer: 1, toLayer: 2, minElapsedMinutes: 240, requiredTrustScore: 20, enabled: true }],
+    existingUnlockMessage: { id: 'm_existing' }
+  })
+
+  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'I appreciated what you shared earlier.' } }, dbClient: db })
+  assert.equal(state.currentLayer, 2)
+  assert.equal(getCreatedSystemMessage(), null)
 })

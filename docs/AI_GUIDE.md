@@ -382,3 +382,10 @@ Forbidden mechanics:
 - Invisible scoring philosophy remains mandatory:
   - never expose trust score, points, or progress math to users
   - never add progress bars, XP framing, or urgency mechanics.
+
+## Run 11.6 Prompt 3 implementation guardrail (trust logic live)
+- Layer progression logic is now DB-config driven (no hardcoded unlock thresholds in service logic).
+- Runtime unlock checks must always require both time + trust conditions from `layer_rules`.
+- Runtime trust accumulation for this phase is limited to `quality_message_turn` from reciprocal, quality, paced turns.
+- Trust points must always come from `trust_signal_rules` and remain fully invisible to users.
+- Preserve subtle unlock tone in system messages; never reveal score math or progress state.
