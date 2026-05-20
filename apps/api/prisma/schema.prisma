@@ -81,6 +81,25 @@ enum AppSessionLifecycle {
   dismissed
 }
 
+enum UserReportCategory {
+  uncomfortable
+  inappropriate
+  fake_profile
+  harassment
+  other
+}
+
+enum ConversationSafetyReason {
+  user_paused
+  blocked_user
+}
+
+enum ModerationEventType {
+  user_blocked
+  user_reported
+  conversation_paused
+}
+
 
 model User {
   id                 String     @id @default(cuid())
@@ -294,6 +313,47 @@ model Message {
 
   @@index([conversationId, createdAt(sort: Desc)])
   @@map("messages")
+}
+
+model UserReport {
+  id             String             @id @default(cuid())
+  reporterUserId String
+  reportedUserId String
+  conversationId String?
+  category       UserReportCategory
+  note           String?
+  createdAt      DateTime           @default(now())
+
+  @@index([reporterUserId, createdAt])
+  @@index([reportedUserId, createdAt])
+  @@map("user_reports")
+}
+
+model ConversationSafetyState {
+  conversationId    String                   @id
+  isPaused          Boolean                  @default(false)
+  initiatedByUserId String?
+  reason            ConversationSafetyReason?
+  pausedAt          DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@map("conversation_safety_states")
+}
+
+model ModerationEvent {
+  id             String              @id @default(cuid())
+  type           ModerationEventType
+  actorUserId    String
+  targetUserId   String?
+  conversationId String?
+  metadata       Json?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([type, createdAt])
+  @@index([targetUserId, createdAt])
+  @@map("moderation_events")
 }
 
 
