@@ -37,7 +37,7 @@ export const createStepFlowController = ({
     const step = steps[stepIndex]
     title.textContent = step.title
     subtitle.textContent = step.description
-    progress.textContent = `Step ${stepIndex + 1} of ${steps.length}`
+    progress.textContent = `Part ${stepIndex + 1} of ${steps.length}`
     backBtn.disabled = stepIndex === 0
     nextBtn.textContent = getNextLabel(stepIndex, steps.length)
     clearError()
