@@ -4,6 +4,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 const DEFAULT_DATABASE_URL = 'postgresql://lingr:lingr@localhost:5432/lingr?schema=public'
 const API_BASE_URL = process.env.E2E_API_BASE_URL || 'http://127.0.0.1:4000'
 const PORT = process.env.PORT || '4000'
+const steps = []
 
 const isTruthy = (value) => ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase())
 const allowDefaultDatabaseUrl = process.env.NODE_ENV !== 'production' || isTruthy(process.env.LINGR_SMOKE)
@@ -25,6 +26,41 @@ const runCapture = (command, args) => new Promise((resolve, reject) => {
   child.stderr.on('data', (chunk) => { stderr += chunk.toString() })
   child.on('error', (error) => resolve({ code: -1, stdout, stderr, error }))
   child.on('exit', (code) => resolve({ code, stdout, stderr }))
+})
+
+const passStep = (label) => {
+  steps.push({ status: 'PASS', label })
+  console.log(`PASS ${label}`)
+}
+
+const failStep = (label, detail) => {
+  const message = detail ? `${label}: ${detail}` : label
+  steps.push({ status: 'FAIL', label, detail })
+  throw new Error(`FAIL ${message}`)
+}
+
+const parseJsonSafe = async (response) => {
+  const text = await response.text()
+  try {
+    return text ? JSON.parse(text) : null
+  } catch {
+    return null
+  }
+}
+
+const extractSessionCookie = (response) => {
+  const header = response.headers.get('set-cookie') || ''
+  const cookiePair = header.split(';').find((part) => part.trim().startsWith('lingr_session='))
+  return cookiePair ? cookiePair.trim() : null
+}
+
+const authFetch = (path, { cookie, method = 'GET', body } = {}) => fetch(`${API_BASE_URL}${path}`, {
+  method,
+  headers: {
+    ...(body ? { 'content-type': 'application/json' } : {}),
+    ...(cookie ? { cookie } : {})
+  },
+  ...(body ? { body: JSON.stringify(body) } : {})
 })
 
 const commandExists = async (command) => {
@@ -177,9 +213,8 @@ const authFlow = async (label, email) => {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email, password, countryCode: 'NO', regionSlug: 'trondelag' })
   })
-  if (![201, 409].includes(registerResponse.status)) {
-    throw new Error(`[smoke] ${label} register failed with ${registerResponse.status}`)
-  }
+  if (![201, 409].includes(registerResponse.status)) failStep(`register ${label}`, `status ${registerResponse.status}`)
+  passStep(`register ${label}`)
 
   const loginResponse = await fetch(`${API_BASE_URL}/v1/auth/login`, {
     method: 'POST',
@@ -188,10 +223,12 @@ const authFlow = async (label, email) => {
   })
   if (!loginResponse.ok) {
     const body = await loginResponse.text()
-    throw new Error(`[smoke] ${label} login failed: ${loginResponse.status} ${body}`)
+    failStep(`login/session ${label}`, `${loginResponse.status} ${body}`)
   }
-
-  console.log(`[smoke] ${label} register/login passed.`)
+  const sessionCookie = extractSessionCookie(loginResponse)
+  if (!sessionCookie) failStep(`login/session ${label}`, 'missing session cookie')
+  passStep(`login/session ${label}`)
+  return { sessionCookie }
 }
 
 const main = async () => {
@@ -201,7 +238,9 @@ const main = async () => {
 
   await runCommand('npm', ['run', 'db:generate', '--workspace', '@lingr/api'])
   await runCommand('npm', ['run', 'db:migrate:deploy', '--workspace', '@lingr/api'])
+  passStep('db migrate')
   await runCommand('npm', ['run', 'db:seed:dev-e2e', '--workspace', '@lingr/api'])
+  passStep('seed region')
 
   const apiProcess = spawn('npm', ['run', 'start', '--workspace', '@lingr/api'], {
     stdio: 'inherit',
@@ -210,10 +249,33 @@ const main = async () => {
 
   try {
     await assertApiHealth()
-    console.log('[smoke] API health check passed.')
-    await authFlow('Account A', 'smoke-a@lingr.local')
-    await authFlow('Account B', 'smoke-b@lingr.local')
-    console.log('[smoke] Smoke run complete.')
+    passStep('api health')
+    const accountA = await authFlow('A', 'smoke-a@lingr.local')
+    const accountB = await authFlow('B', 'smoke-b@lingr.local')
+
+    const profileCompletenessA = await authFetch('/v1/profile/completeness', { cookie: accountA.sessionCookie })
+    const profileA = await parseJsonSafe(profileCompletenessA)
+    if (!profileCompletenessA.ok) failStep('profile readiness A', `${profileCompletenessA.status} ${profileA?.error?.reasonCode || 'unknown_error'}`)
+    passStep('profile readiness A')
+
+    const profileCompletenessB = await authFetch('/v1/profile/completeness', { cookie: accountB.sessionCookie })
+    const profileB = await parseJsonSafe(profileCompletenessB)
+    if (!profileCompletenessB.ok) failStep('profile readiness B', `${profileCompletenessB.status} ${profileB?.error?.reasonCode || 'unknown_error'}`)
+    passStep('profile readiness B')
+
+    const discoveryA = await authFetch('/v1/discovery/daily', { cookie: accountA.sessionCookie })
+    const discoveryABody = await parseJsonSafe(discoveryA)
+    if (!discoveryA.ok) {
+      failStep('discovery A', `${discoveryA.status} ${discoveryABody?.error?.reasonCode || 'unknown_error'}`)
+    }
+    passStep('discovery A')
+    const discoveredUserId = discoveryABody?.data?.introductions?.[0]?.userId
+    if (!discoveredUserId) failStep('discovery A', `state=${discoveryABody?.data?.state || 'unknown'} reasonCode=${discoveryABody?.data?.reasonCode || 'none'} introductions=0`)
+
+    const sparkA = await authFetch('/v1/discovery/spark', { cookie: accountA.sessionCookie, method: 'POST', body: { discoveredUserId } })
+    const sparkABody = await parseJsonSafe(sparkA)
+    if (!sparkA.ok) failStep('spark creation', `${sparkA.status} ${sparkABody?.error?.reasonCode || 'unknown_error'}`)
+    passStep('spark creation')
   } finally {
     apiProcess.kill('SIGTERM')
   }
