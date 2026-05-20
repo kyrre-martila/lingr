@@ -45,6 +45,56 @@ test('accept requires recipient actor', async () => {
   await assert.rejects(acceptSpark({ viewer: createAuthenticatedViewer({ userId: 'u1' }), sparkId: 'spk_s1', dbClient: db }), (e) => e.reasonCode === REASON_CODES.PERMISSION.NOT_ALLOWED)
 })
 
+test('recipient can accept incoming spark and gets valid dto', async () => {
+  const acceptedAt = new Date('2026-05-15T00:01:00.000Z')
+  const accepted = { ...row(SPARK_STATE.ACCEPTED), updatedAt: acceptedAt, respondedAt: acceptedAt }
+  const db = {
+    spark: { findFirst: async () => row(), update: async () => accepted },
+    relationshipLayer: { upsert: async () => ({ id: 'rl_1' }) },
+    conversation: { findUnique: async () => null, create: async () => ({ id: 'c1', sparkId: 's1' }) }
+  }
+  const result = await acceptSpark({ viewer: createAuthenticatedViewer({ userId: 'u2' }), sparkId: 'spk_s1', dbClient: db })
+  assert.equal(result.sparkId, 'spk_s1')
+  assert.equal(result.initiatorUserId, 'usr_u1')
+  assert.equal(result.recipientUserId, 'usr_u2')
+  assert.equal(result.status, SPARK_STATE.ACCEPTED)
+  assert.equal(result.respondedAt, acceptedAt.toISOString())
+})
+
+test('accept creates conversation when missing', async () => {
+  let createCalls = 0
+  const db = {
+    spark: { findFirst: async () => row(), update: async () => row(SPARK_STATE.ACCEPTED) },
+    relationshipLayer: { upsert: async () => ({ id: 'rl_1' }) },
+    conversation: {
+      findUnique: async () => null,
+      create: async () => { createCalls += 1; return { id: 'c1', sparkId: 's1' } }
+    }
+  }
+  await acceptSpark({ viewer: createAuthenticatedViewer({ userId: 'u2' }), sparkId: 'spk_s1', dbClient: db })
+  assert.equal(createCalls, 1)
+})
+
+test('accept reuses conversation when present', async () => {
+  let createCalls = 0
+  const db = {
+    spark: { findFirst: async () => row(), update: async () => row(SPARK_STATE.ACCEPTED) },
+    relationshipLayer: { upsert: async () => ({ id: 'rl_1' }) },
+    conversation: {
+      findUnique: async () => ({ id: 'c1', sparkId: 's1' }),
+      create: async () => { createCalls += 1; return { id: 'c1', sparkId: 's1' } }
+    }
+  }
+  await acceptSpark({ viewer: createAuthenticatedViewer({ userId: 'u2' }), sparkId: 'spk_s1', dbClient: db })
+  assert.equal(createCalls, 0)
+})
+
+test('duplicate accept is idempotent', async () => {
+  const db = { spark: { findFirst: async () => row(SPARK_STATE.ACCEPTED) } }
+  const result = await acceptSpark({ viewer: createAuthenticatedViewer({ userId: 'u2' }), sparkId: 'spk_s1', dbClient: db })
+  assert.equal(result.status, SPARK_STATE.ACCEPTED)
+})
+
 test('pause allows participant actors', async () => {
   const db = { spark: { findFirst: async () => row(SPARK_STATE.ACCEPTED), update: async () => row(SPARK_STATE.PAUSED) } }
   const result = await pauseSpark({ viewer: createAuthenticatedViewer({ userId: 'u2' }), sparkId: 'spk_s1', dbClient: db })
