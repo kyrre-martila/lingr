@@ -72,7 +72,7 @@ const getRelationshipStateForConversation = async ({ tx, conversationId }) => {
 export const syncLayerAfterMutualSpark = async ({ spark, dbClient }) => {
   const [primaryUserId, secondaryUserId] = canonicalPairFor(spark.initiatorUserId, spark.recipientUserId)
   const now = new Date()
-  await dbClient.relationshipLayer.upsert({ where: { primaryUserId_secondaryUserId: { primaryUserId, secondaryUserId } }, create: { primaryUserId, secondaryUserId, currentLayer: LAYER_LEVEL.MUTUAL_SPARK, reciprocalMessageCount: 0, layer1UnlockedAt: now }, update: { currentLayer: { set: LAYER_LEVEL.MUTUAL_SPARK }, layer1UnlockedAt: now } })
+  await dbClient.relationshipLayer.upsert({ where: { primaryUserId_secondaryUserId: { primaryUserId, secondaryUserId } }, create: { primaryUserId, secondaryUserId, currentLayer: LAYER_LEVEL.MUTUAL_SPARK, reciprocalMessageCount: 0, layer1UnlockedAt: now }, update: { currentLayer: LAYER_LEVEL.MUTUAL_SPARK, layer1UnlockedAt: now } })
 }
 
 export const syncLayerAfterMessage = async ({ conversationId, senderUserId, messageText, dbClient }) => dbClient.$transaction(async (tx) => {

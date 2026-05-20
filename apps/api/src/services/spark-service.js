@@ -1,6 +1,6 @@
 import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
-import { DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, REASON_CODES, SPARK_ACTION, SPARK_ACTIVE_STATES, SPARK_STATE, SPARK_TERMINAL_STATES, SPARK_TRANSITIONS } from '../../../../packages/shared/src/contracts.js'
+import { CONVERSATION_PARTICIPANT_ROLE, CONVERSATION_STATE, DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, REASON_CODES, SPARK_ACTION, SPARK_ACTIVE_STATES, SPARK_STATE, SPARK_TERMINAL_STATES, SPARK_TRANSITIONS } from '../../../../packages/shared/src/contracts.js'
 import { syncLayerAfterMutualSpark } from './layer-service.js'
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
@@ -46,6 +46,29 @@ const assertTransitionAllowed = (currentStatus, nextStatus) => {
 const toClientSpark = (row) => ({ sparkId: toExternalSparkId(row.id), initiatorUserId: `${INTERNAL_ID_STRATEGY.API_USER_ID_PREFIX}${row.initiatorUserId}`, recipientUserId: `${INTERNAL_ID_STRATEGY.API_USER_ID_PREFIX}${row.recipientUserId}`, status: row.status, sourceGlimpsId: row.sourceGlimpsId ? `${INTERNAL_ID_STRATEGY.API_GLIMPS_ID_PREFIX}${row.sourceGlimpsId}` : null, softResonanceContext: row.softResonanceContext || null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), respondedAt: row.respondedAt ? row.respondedAt.toISOString() : null, pausedAt: row.pausedAt ? row.pausedAt.toISOString() : null, declinedAt: row.declinedAt ? row.declinedAt.toISOString() : null, expiredAt: row.expiredAt ? row.expiredAt.toISOString() : null })
 
 const canonicalPairFor = (leftUserId, rightUserId) => (leftUserId < rightUserId ? [leftUserId, rightUserId] : [rightUserId, leftUserId])
+
+const createOrGetConversationForSpark = async ({ tx, spark }) => {
+  if (!tx?.conversation?.findUnique || !tx?.conversation?.create) return null
+  const existing = await tx.conversation.findUnique({ where: { sparkId: spark.id } })
+  if (existing) return existing
+  try {
+    return await tx.conversation.create({
+      data: {
+        sparkId: spark.id,
+        state: spark.status === SPARK_STATE.PAUSED ? CONVERSATION_STATE.PAUSED : CONVERSATION_STATE.ACTIVE,
+        participants: {
+          create: [
+            { userId: spark.initiatorUserId, role: CONVERSATION_PARTICIPANT_ROLE.MEMBER },
+            { userId: spark.recipientUserId, role: CONVERSATION_PARTICIPANT_ROLE.MEMBER }
+          ]
+        }
+      }
+    })
+  } catch (error) {
+    if (error?.code === 'P2002') return tx.conversation.findUnique({ where: { sparkId: spark.id } })
+    throw error
+  }
+}
 
 export const createSparkInvitation = async ({ viewer, payload, dbClient }) => {
   const initiatorUserId = requireAuthenticatedViewer(viewer)
@@ -115,6 +138,7 @@ const updateSparkStatus = async ({ viewer, sparkId, nextStatus, action, dbClient
   const updated = await db.spark.update({ where: { id }, data })
   if (nextStatus === SPARK_STATE.ACCEPTED) {
     await syncLayerAfterMutualSpark({ spark: updated, dbClient: db })
+    await createOrGetConversationForSpark({ tx: db, spark: updated })
   }
   return toClientSpark(updated)
 }
