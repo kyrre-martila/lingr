@@ -107,19 +107,19 @@ model User {
 }
 
 model RelationshipLayer {
-  id                  String   @id @default(cuid())
-  primaryUserId       String
-  secondaryUserId     String
-  currentLayer        Int      @default(0)
-  trustScore          Int      @default(0)
-  reciprocalMessageCount Int   @default(0)
-  lastMessageSenderId String?
-  lastCountedMessageAt DateTime?
-  layer1UnlockedAt    DateTime?
-  layer2UnlockedAt    DateTime?
-  layer3UnlockedAt    DateTime?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  primaryUserId         String   @map("primary_user_id")
+  secondaryUserId       String   @map("secondary_user_id")
+  currentLayer          Int      @default(0) @map("current_layer")
+  trustScore            Int      @default(0) @map("trust_score")
+  reciprocalMessageCount Int     @default(0) @map("reciprocal_message_count")
+  lastMessageSenderId   String?  @map("last_message_sender_id")
+  lastCountedMessageAt  DateTime? @map("last_counted_message_at")
+  layer1UnlockedAt      DateTime? @map("layer1_unlocked_at")
+  layer2UnlockedAt      DateTime? @map("layer2_unlocked_at")
+  layer3UnlockedAt      DateTime? @map("layer3_unlocked_at")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
 
   primaryUser         User     @relation("RelationshipLayerPrimary", fields: [primaryUserId], references: [id], onDelete: Cascade)
   secondaryUser       User     @relation("RelationshipLayerSecondary", fields: [secondaryUserId], references: [id], onDelete: Cascade)
