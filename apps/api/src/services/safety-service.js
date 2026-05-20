@@ -16,12 +16,12 @@ const requireViewerId = (viewer) => {
 export const assertNoUserInteractionBlock = async ({ db, actorUserId, targetUserId }) => {
   if (!db?.blockRelation?.findFirst) return
   const blocked = await db.blockRelation.findFirst({ where: { OR: [{ blockerUserId: actorUserId, blockedUserId: targetUserId }, { blockerUserId: targetUserId, blockedUserId: actorUserId }] }, select: { id: true } })
-  if (blocked) throw new ApiError({ message: 'Interaction unavailable', kind: DOMAIN_ERROR_KIND.SAFETY, reasonCode: REASON_CODES.BLOCK.USER_BLOCKED, statusCode: 403 })
+  if (blocked) throw new ApiError({ message: 'User unavailable', kind: DOMAIN_ERROR_KIND.SAFETY, reasonCode: REASON_CODES.SAFETY.INTERACTION_RESTRICTED, statusCode: 403 })
 }
 export const assertConversationInteractive = async ({ db, conversationId }) => {
   if (!db?.conversationSafetyState?.findUnique) return
   const state = await db.conversationSafetyState.findUnique({ where: { conversationId } })
-  if (state?.isPaused) throw new ApiError({ message: 'Conversation is paused', kind: DOMAIN_ERROR_KIND.SAFETY, reasonCode: REASON_CODES.SAFETY.PAUSED_FOR_SAFETY, statusCode: 403 })
+  if (state?.isPaused) throw new ApiError({ message: 'Conversation unavailable', kind: DOMAIN_ERROR_KIND.SAFETY, reasonCode: REASON_CODES.SAFETY.CONVERSATION_PAUSED, statusCode: 403 })
 }
 
 export const blockUser = async ({ viewer, payload, dbClient }) => {

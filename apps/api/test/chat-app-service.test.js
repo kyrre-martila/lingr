@@ -15,7 +15,8 @@ const makeDb = () => {
   }
   const db = {
     conversationParticipant: {
-      findFirst: async ({ where }) => (conversations[where.conversationId]?.includes(where.userId) ? { id: `cp_${where.conversationId}_${where.userId}` } : null)
+      findFirst: async ({ where }) => (conversations[where.conversationId]?.includes(where.userId) ? { id: `cp_${where.conversationId}_${where.userId}` } : null),
+      findMany: async ({ where }) => (conversations[where.conversationId] || []).map((userId) => ({ userId }))
     },
     appSession: {
       create: async ({ data }) => {
@@ -146,6 +147,12 @@ test('app sessions cannot leak across conversations', async () => {
   const db = makeDb()
   const invited = await inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'match_cards' }, dbClient: db })
   await assert.rejects(acceptChatAppInvite({ viewer: createAuthenticatedViewer({ userId: 'u3' }), appSessionId: invited.appSessionId, dbClient: db }), (e) => e.reasonCode === REASON_CODES.CONVERSATION.NOT_FOUND)
+})
+
+test('block prevents chat app actions', async () => {
+  const db = makeDb()
+  db.blockRelation = { findFirst: async () => ({ id: 'b1' }) }
+  await assert.rejects(inviteChatApp({ viewer: createAuthenticatedViewer({ userId: 'u1' }), payload: { conversationId: 'cnv_c1', appId: 'match_cards' }, dbClient: db }), (e) => e.reasonCode === REASON_CODES.SAFETY.INTERACTION_RESTRICTED)
 })
 
 test('match cards invite flow starts a single-question session', async () => {

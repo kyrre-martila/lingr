@@ -20,8 +20,14 @@ export const ROUTE_OUTCOME = Object.freeze({ ALLOW: 'allow', SOFT_BLOCK: 'soft_b
 export const REASON_CODES = Object.freeze({
   AUTH: Object.freeze({ REQUIRES_AUTH: 'auth.requires_auth', SESSION_EXPIRED: 'auth.session_expired', INVALID_SESSION: 'auth.invalid_session', INVALID_CREDENTIALS: 'auth.invalid_credentials' }),
   ROUTE: Object.freeze({ UNKNOWN_ROUTE: 'route.unknown_route', REQUIRES_ONBOARDING: 'route.requires_onboarding', REQUIRES_PROFILE_COMPLETION: 'route.requires_profile_completion', REQUIRES_APP_SESSION: 'route.requires_app_session' }),
-  SAFETY: Object.freeze({ PAUSED_FOR_SAFETY: 'safety.paused_for_safety', RESTRICTED_ACCOUNT: 'safety.restricted_account' }),
-  BLOCK: Object.freeze({ USER_BLOCKED: 'safety.user_blocked' }),
+  SAFETY: Object.freeze({
+    PAUSED_FOR_SAFETY: 'safety.paused_for_safety',
+    RESTRICTED_ACCOUNT: 'safety.restricted_account',
+    INTERACTION_RESTRICTED: 'safety.interaction_restricted',
+    CONVERSATION_PAUSED: 'safety.conversation_paused',
+    USER_UNAVAILABLE: 'safety.user_unavailable'
+  }),
+  BLOCK: Object.freeze({ USER_BLOCKED: 'safety.interaction_restricted' }),
   MODERATION: Object.freeze({ CONTENT_REVIEW: 'moderation.content_review', CONTENT_RESTRICTED: 'moderation.content_restricted' }),
   VALIDATION: Object.freeze({ INVALID_ID: 'validation.invalid_id', INVALID_TIMESTAMP: 'validation.invalid_timestamp', INVALID_PAYLOAD: 'validation.invalid_payload' }),
   PERMISSION: Object.freeze({ NOT_ALLOWED: 'permission.not_allowed', FEATURE_DISABLED: 'permission.feature_disabled' }),

@@ -45,6 +45,32 @@ test('send persists participant message as dto', async () => {
   assert.equal(result.type, 'playing_now')
 })
 
+test('block prevents message sending', async () => {
+  const db = {
+    conversation: { findFirst: async () => ({ id: 'c1' }) },
+    conversationParticipant: { findMany: async () => [{ userId: 'u1' }, { userId: 'u2' }] },
+    blockRelation: { findFirst: async () => ({ id: 'b1' }) }
+  }
+  await assert.rejects(sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u1' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'hi' } }, dbClient: db }), (e) => e.reasonCode === REASON_CODES.SAFETY.INTERACTION_RESTRICTED)
+})
+
+test('paused conversation still allows message history retrieval', async () => {
+  const db = {
+    conversation: { findFirst: async () => ({ id: 'c1' }) },
+    message: { findMany: async () => [] }
+  }
+  const out = await listConversationMessages({ viewer: createAuthenticatedViewer({ userId: 'u1' }), conversationId: 'cnv_c1', dbClient: db })
+  assert.equal(Array.isArray(out.items), true)
+})
+
+test('pause prevents message sending', async () => {
+  const db = {
+    conversation: { findFirst: async () => ({ id: 'c1' }) },
+    conversationSafetyState: { findUnique: async () => ({ isPaused: true }) }
+  }
+  await assert.rejects(sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u1' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'hi' } }, dbClient: db }), (e) => e.reasonCode === REASON_CODES.SAFETY.CONVERSATION_PAUSED)
+})
+
 test('list messages returns pagination-ready structure', async () => {
   let query
   const db = {
