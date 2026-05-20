@@ -319,11 +319,14 @@ const buildSparkInboxDiagnostics = async ({ sparkId, discoveredUserId, viewerAId
   const createdSpark = createdSparkId
     ? await prisma.spark.findUnique({ where: { id: createdSparkId }, select: { id: true, status: true, initiatorUserId: true, recipientUserId: true, createdAt: true, updatedAt: true } })
     : null
-  const sparkRowsForAB = await prisma.spark.findMany({
-    where: { OR: [{ initiatorUserId: { in: [viewerAId, viewerBId] } }, { recipientUserId: { in: [viewerAId, viewerBId] } }] },
-    select: { id: true, status: true, initiatorUserId: true, recipientUserId: true, createdAt: true, updatedAt: true },
-    orderBy: { createdAt: 'desc' }
-  })
+  const actorIds = [viewerAId, viewerBId].filter((value) => typeof value === 'string' && value)
+  const sparkRowsForAB = actorIds.length === 0
+    ? []
+    : await prisma.spark.findMany({
+      where: { OR: [{ initiatorUserId: { in: actorIds } }, { recipientUserId: { in: actorIds } }] },
+      select: { id: true, status: true, initiatorUserId: true, recipientUserId: true, createdAt: true, updatedAt: true },
+      orderBy: { createdAt: 'desc' }
+    })
   const viewerBProfileResponse = await authFetch('/v1/profile/viewer', { cookie: accountBSessionCookie })
   const viewerBProfileBody = await parseJsonSafe(viewerBProfileResponse)
   return {

@@ -21,11 +21,30 @@ export const notFound = (path) => new ApiError({
 
 export const toApiError = (error) => {
   if (error instanceof ApiError) return error
+  if (error?.name === 'PrismaClientValidationError' || error?.name === 'PrismaClientKnownRequestError') {
+    return new ApiError({
+      message: 'Database query failed',
+      kind: DOMAIN_ERROR_KIND.DOMAIN,
+      reasonCode: 'domain.invalid_query',
+      statusCode: 500,
+      details: { prisma: { name: error.name, message: error.message } }
+    })
+  }
   return new ApiError({ message: 'Unexpected server error', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: 'domain.unexpected', statusCode: 500 })
 }
 
 export const errorHandler = (err, req, res) => {
   const normalized = toApiError(err)
+  if (!(err instanceof ApiError)) {
+    console.error('[lingr-api] unhandled error', {
+      requestId: req.requestId,
+      method: req.method,
+      url: req.url,
+      errorName: err?.name,
+      errorMessage: err?.message,
+      stack: err?.stack
+    })
+  }
 
   res.writeHead(normalized.statusCode, { 'content-type': 'application/json; charset=utf-8' })
   res.end(JSON.stringify(fail({
