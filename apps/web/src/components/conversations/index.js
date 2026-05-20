@@ -1,4 +1,5 @@
 import { getConversationStarters, listConversationMessages, listViewerConversations, sendConversationMessage } from '../../services/conversations-service.js'
+import { t } from '../../i18n/index.js'
 import { DOMAIN_ERROR_KIND, PLAYING_NOW_MEDIA_TYPE } from '../../domain/contracts.js'
 
 const PLUS_MENU = Object.freeze({
@@ -30,14 +31,28 @@ const createConversationList = (items, activeId, onSelect) => {
   return list
 }
 
+
+const interpolate = (template, params = {}) => String(template).replace(/\{(\w+)\}/g, (_, key) => String(params?.[key] ?? `{${key}}`))
+const resolveLayerUnlockCopy = (content = {}) => {
+  const keyMap = {
+    'layer.unlock.layer2': 'chat.layer_unlock.messages.layer2',
+    'layer.unlock.layer3': 'chat.layer_unlock.messages.layer3'
+  }
+  const mappedKey = keyMap[content?.messageKey] || ''
+  const title = mappedKey ? interpolate(t(mappedKey), content?.messageParams || {}) : String(content?.title || t('chat.layer_unlock.title')).trim()
+  return {
+    title: String(title).trim() || t('chat.layer_unlock.title'),
+    subtitle: String(content?.subtitle || t('chat.layer_unlock.subtitle')).trim(),
+    ctaLabel: String(content?.ctaLabel || t('chat.layer_unlock.cta')).trim(),
+    ctaRoute: String(content?.ctaRoute || '').trim()
+  }
+}
+
 const createBubble = (message) => {
   if (message.type === 'layer_unlock') {
     const card = document.createElement('article')
     card.className = 'message-system-banner layer-unlock-banner'
-    const title = String(message.content?.title || 'chat.layer_unlock.title').trim()
-    const subtitle = String(message.content?.subtitle || '').trim()
-    const ctaLabel = String(message.content?.ctaLabel || '').trim()
-    const ctaRoute = String(message.content?.ctaRoute || '').trim()
+    const { title, subtitle, ctaLabel, ctaRoute } = resolveLayerUnlockCopy(message.content)
     card.innerHTML = `
       <div class="layer-unlock-banner__icon" aria-hidden="true">✧</div>
       <div class="layer-unlock-banner__copy">

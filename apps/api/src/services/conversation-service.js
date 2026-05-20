@@ -33,7 +33,7 @@ const assertMessagePayload = (type, content) => {
     return
   }
   if (type === MESSAGE_TYPE.LAYER_UNLOCK) {
-    if (!content || typeof content.title !== 'string' || !content.title.trim()) throw new ApiError({ message: 'Invalid layer unlock payload', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.MESSAGE.INVALID_PAYLOAD_BY_TYPE, statusCode: 400 })
+    if (!content || typeof content.messageKey !== 'string' || !content.messageKey.trim()) throw new ApiError({ message: 'Invalid layer unlock payload', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.MESSAGE.INVALID_PAYLOAD_BY_TYPE, statusCode: 400 })
     return
   }
   if (type === MESSAGE_TYPE.PLAYING_NOW) {

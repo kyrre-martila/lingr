@@ -82,6 +82,8 @@ test('layer 2 unlocks only when score and time are both satisfied', async () => 
   await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'I appreciated what you shared earlier.' } }, dbClient: db })
   assert.equal(state.currentLayer, 2)
   assert.equal(getCreatedSystemMessage()?.type, 'layer_unlock')
+  assert.equal(getCreatedSystemMessage()?.content?.messageKey, 'layer.unlock.layer2')
+  assert.equal(typeof getCreatedSystemMessage()?.content?.title, 'undefined')
 })
 
 test('layer 3 unlocks only when score and time are both satisfied', async () => {
@@ -93,6 +95,17 @@ test('layer 3 unlocks only when score and time are both satisfied', async () => 
 
   await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'I appreciated what you shared earlier.' } }, dbClient: db })
   assert.equal(state.currentLayer, 3)
+})
+
+test('layer 3 unlock message uses message key payload', async () => {
+  const { db, getCreatedSystemMessage } = makeDbForLayerSync({
+    relationshipState: { id: 'rl1', currentLayer: 2, reciprocalMessageCount: 30, trustScore: 54, lastMessageSenderId: 'u1', lastCountedMessageAt: new Date(Date.now() - 60_000), layer1UnlockedAt: new Date(Date.now() - 20 * 60 * 60 * 1000), layer2UnlockedAt: new Date(Date.now() - 17 * 60 * 60 * 1000), layer3UnlockedAt: null },
+    trustSignalRule: { signalType: TRUST_SIGNAL_TYPE.QUALITY_MESSAGE_TURN, points: 2, enabled: true },
+    layerRules: [{ fromLayer: 2, toLayer: 3, minElapsedMinutes: 960, requiredTrustScore: 55, enabled: true }]
+  })
+
+  await sendConversationMessage({ viewer: createAuthenticatedViewer({ userId: 'u2' }), conversationId: 'cnv_c1', payload: { type: 'text', content: { text: 'I appreciated what you shared earlier.' } }, dbClient: db })
+  assert.equal(getCreatedSystemMessage()?.content?.messageKey, 'layer.unlock.layer3')
 })
 
 test('insufficient score prevents unlock even when time satisfied', async () => {

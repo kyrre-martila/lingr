@@ -14,7 +14,8 @@ test('discovery remains anonymous Layer 0 in UI', () => {
 
 test('chat layer unlock renders calm fallback text and cta link only when actionable', () => {
   const source = readFileSync(new URL('../src/components/conversations/index.js', import.meta.url), 'utf8')
-  assert.match(source, /chat\.layer_unlock\.title/)
+  assert.match(source, /chat\.layer_unlock\.messages\.layer2/)
+  assert.match(source, /layer\.unlock\.layer2/)
   assert.match(source, /ctaLabel && ctaRoute/)
   assert.match(source, /ctaLabel && !ctaRoute/)
 })
@@ -44,4 +45,22 @@ test('default discovery/chat rendering paths do not surface timestamps', () => {
   for (const source of [discoverySource, conversationSource]) {
     assert.doesNotMatch(source, /createdAt|updatedAt|timestamp|lastSeen|toLocale(Time|Date)String/i)
   }
+})
+
+
+test('layer unlock localized message keys exist in en and nb-NO', () => {
+  assert.equal(typeof chatEn.layer_unlock.messages.layer2, 'string')
+  assert.equal(typeof chatNb.layer_unlock.messages.layer2, 'string')
+  assert.equal(typeof chatEn.layer_unlock.messages.layer3, 'string')
+  assert.equal(typeof chatNb.layer_unlock.messages.layer3, 'string')
+})
+
+test('missing locale translation falls back to en for layer unlock copy', async () => {
+  const { t } = await import('../src/i18n/index.js')
+  assert.equal(t('chat.layer_unlock.messages.layer2', { locale: 'fr-FR' }), chatEn.layer_unlock.messages.layer2)
+})
+
+test('unknown message key falls back to key output', async () => {
+  const { t } = await import('../src/i18n/index.js')
+  assert.equal(t('chat.layer_unlock.messages.layer9', { locale: 'en' }), 'chat.layer_unlock.messages.layer9')
 })
