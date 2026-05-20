@@ -2,17 +2,15 @@ import { createMockTransport } from './mock-transport.js'
 import { createHttpTransport } from './http-transport.js'
 import { toAsyncError, toAsyncSuccess } from './envelope.js'
 
-const preferHttpTransport = () => typeof globalThis !== 'undefined' && globalThis.location && globalThis.location.hostname !== 'localhost-mock'
-
 const isProductionLikeBuild = () => {
   const env = String(globalThis?.process?.env?.NODE_ENV || '').toLowerCase()
   const host = String(globalThis?.location?.hostname || '').toLowerCase()
   return env === 'production' || env === 'staging' || host.endsWith('.vercel.app') || host.endsWith('.netlify.app')
 }
 
-const shouldAllowMockFallback = () => {
+const shouldUseMockTransport = () => {
   if (isProductionLikeBuild()) return false
-  return globalThis?.__LINGR_DEV_MOCK_FALLBACK__ === true
+  return globalThis?.__LINGR_DEV_USE_MOCK__ === true
 }
 
 export const createDefaultTransport = () => {
@@ -22,12 +20,8 @@ export const createDefaultTransport = () => {
   return {
     requestSync: (input) => mock.requestSync(input),
     request: async (input) => {
-      const isConversationOperation = String(input?.operation || '').startsWith('conversations.')
-      if (!preferHttpTransport()) return mock.request(input)
-      const envelope = await http.request(input)
-      if (envelope.ok) return envelope
-      if (isConversationOperation && shouldAllowMockFallback()) return mock.request(input)
-      return envelope
+      if (shouldUseMockTransport()) return mock.request(input)
+      return http.request(input)
     }
   }
 }

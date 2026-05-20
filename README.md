@@ -204,3 +204,56 @@ Final order should be determined by waitlist demand.
 - Production requires `LINGR_SESSION_SECRET`; local development/test uses a safe fallback secret to avoid workflow breakage.
 - Existing persisted sessions created with legacy SHA-256 token hashes will no longer validate after deploy and may require users to sign in again.
 - No destructive DB migration is required; `sessions.tokenHash` storage model remains unchanged.
+
+## Local manual testing flow (Run 11.7 Prompt 3)
+
+This flow is optimized for a real two-account manual E2E run against Prisma + PostgreSQL.
+
+### Required environment variables
+
+API (`apps/api/.env`):
+- `DATABASE_URL` (required): PostgreSQL connection string for Prisma.
+- `LINGR_SESSION_SECRET` (recommended local, required in production): HMAC secret for session-token hashing.
+- `PORT` (optional, default `4000`).
+- `DB_HEALTHCHECK_ENABLED` (optional, default `true`).
+
+Web (`apps/web` runtime):
+- `__LINGR_API_BASE_URL` should point at your local API (default in web client is `http://localhost:3000`; set this to your API port if different).
+- Mock transport is now **opt-in only** using `window.__LINGR_DEV_USE_MOCK__ = true` in local dev tools.
+
+### Startup + migration + seed order
+
+1. Start PostgreSQL locally.
+2. Install dependencies from repo root:
+   - `npm install`
+3. Generate Prisma client:
+   - `npm run db:generate --workspace @lingr/api`
+4. Apply Prisma migrations:
+   - `npm run db:migrate --workspace @lingr/api`
+5. Seed local E2E region defaults (open region for registration):
+   - `npm run db:seed:dev-e2e --workspace @lingr/api`
+6. Start API:
+   - `npm run dev:api`
+7. Start web app (in a second terminal):
+   - run your existing web dev command
+
+### Two-account manual test checklist
+
+1. Create Account A with:
+   - country: `NO`
+   - region: `trondelag`
+2. Create Account B with:
+   - country: `NO`
+   - region: `trondelag`
+3. Complete onboarding/profile for both so discovery is available.
+4. From Account A discovery, send Spark to Account B.
+5. In Account B, accept Spark.
+6. Open/create conversation from accepted Spark.
+7. Send messages both ways and verify they persist after refresh.
+8. Use chat apps in the conversation:
+   - Match Cards
+   - Guess Me
+   - Snuggle
+   - Playing now
+9. Verify trust/layer progression behavior appears as calm system unlock messaging.
+10. Log out and log back in for both accounts; verify conversation/session persistence.
