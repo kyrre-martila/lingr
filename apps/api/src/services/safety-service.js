@@ -24,6 +24,21 @@ export const assertConversationInteractive = async ({ db, conversationId }) => {
   if (state?.isPaused) throw new ApiError({ message: 'Conversation unavailable', kind: DOMAIN_ERROR_KIND.SAFETY, reasonCode: REASON_CODES.SAFETY.CONVERSATION_PAUSED, statusCode: 403 })
 }
 
+export const assertConversationInteractionAllowed = async ({ db, conversationId, actorUserId }) => {
+  if (db?.conversation?.findFirst) {
+    const conversation = await db.conversation.findFirst({ where: { id: conversationId, participants: { some: { userId: actorUserId } } }, select: { id: true } })
+    if (!conversation) throw new ApiError({ message: 'Conversation not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  } else if (db?.conversationParticipant?.findFirst) {
+    const participant = await db.conversationParticipant.findFirst({ where: { conversationId, userId: actorUserId }, select: { id: true } })
+    if (!participant) throw new ApiError({ message: 'Conversation not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+  }
+  await assertConversationInteractive({ db, conversationId })
+  if (db?.conversationParticipant?.findMany) {
+    const participants = await db.conversationParticipant.findMany({ where: { conversationId }, select: { userId: true }, take: 2 })
+    if (participants.length === 2) await assertNoUserInteractionBlock({ db, actorUserId: participants[0].userId, targetUserId: participants[1].userId })
+  }
+}
+
 export const blockUser = async ({ viewer, payload, dbClient }) => {
   const actorUserId = requireViewerId(viewer)
   const db = dbClient || await getDbClient()

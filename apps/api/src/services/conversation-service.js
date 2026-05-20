@@ -3,7 +3,7 @@ import { ApiError } from '../http/errors.js'
 import { APP_INVITE_APP_ID, CONVERSATION_PARTICIPANT_ROLE, CONVERSATION_STATE, DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, MESSAGE_DELIVERY_STATE, MESSAGE_TYPE, MESSAGE_VISIBILITY, PLAYING_NOW_MEDIA_TYPE, REASON_CODES, SPARK_STATE, TRUST_SIGNAL_TYPE, isSupportedMessageType } from '../../../../packages/shared/src/contracts.js'
 import { syncLayerAfterMessage, syncLayerAfterTrustSignal } from './layer-service.js'
 import { getVisibleProfileForRelationship } from './profile-visibility-service.js'
-import { assertConversationInteractive, assertNoUserInteractionBlock } from './safety-service.js'
+import { assertConversationInteractionAllowed, assertNoUserInteractionBlock } from './safety-service.js'
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
 const toExternalConversationId = (id) => `${INTERNAL_ID_STRATEGY.API_CONVERSATION_ID_PREFIX}${id}`
@@ -111,13 +111,7 @@ export const sendConversationMessage = async ({ viewer, conversationId, payload,
   const userId = requireViewerId(viewer)
   const db = dbClient || await getDbClient()
   const id = stripPrefixId(conversationId, INTERNAL_ID_STRATEGY.API_CONVERSATION_ID_PREFIX, 'conversationId')
-  const convo = await db.conversation.findFirst({ where: { id, participants: { some: { userId } } }, select: { id: true } })
-  await assertConversationInteractive({ db, conversationId: id })
-  if (!convo) throw new ApiError({ message: 'Conversation not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
-  if (db?.conversationParticipant?.findMany) {
-    const participants = await db.conversationParticipant.findMany({ where: { conversationId: id }, select: { userId: true }, take: 2 })
-    if (participants.length === 2) await assertNoUserInteractionBlock({ db, actorUserId: participants[0].userId, targetUserId: participants[1].userId })
-  }
+  await assertConversationInteractionAllowed({ db, conversationId: id, actorUserId: userId })
   const type = normalize(payload?.type)
   if (!isSupportedMessageType(type)) throw new ApiError({ message: 'Invalid message type', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.MESSAGE.INVALID_TYPE, statusCode: 400 })
   if (SYSTEM_ORIGIN_MESSAGE_TYPES.has(type)) throw new ApiError({ message: 'System message types are service-origin only', kind: DOMAIN_ERROR_KIND.PERMISSION, reasonCode: REASON_CODES.PERMISSION.NOT_ALLOWED, statusCode: 403 })
