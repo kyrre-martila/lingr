@@ -389,3 +389,9 @@ Forbidden mechanics:
 - Runtime trust accumulation for this phase is limited to `quality_message_turn` from reciprocal, quality, paced turns.
 - Trust points must always come from `trust_signal_rules` and remain fully invisible to users.
 - Preserve subtle unlock tone in system messages; never reveal score math or progress state.
+
+
+## Run 11.6 Prompt 4 trust accumulation
+- Chat apps contribute to trust only on meaningful completions, not opens/invites/partials.
+- Layer unlocks still require both elapsed-time and trust thresholds; app signals only contribute trust.
+- Idempotent semantics: one reward per completion event/session transition.

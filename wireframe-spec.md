@@ -259,3 +259,10 @@ Layer UI must not include:
 ## Run 11.5 cleanup updates
 - Added route-level Chat Apps endpoints for invite, accept, dismiss, complete, and app interaction actions.
 - Invalid lifecycle transitions are rejected with conflict semantics.
+
+
+## Run 11.6 Prompt 4 trust semantics
+- Internal trust signals represent relationship investment; no visible points/progression UI.
+- Match Cards and Guess Me trust fires on reveal completion only.
+- Snuggle trust fires once per session at first shared together moment.
+- Playing now trust is low-weight and tied to meaningful share creation.

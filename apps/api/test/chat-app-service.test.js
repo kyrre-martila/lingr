@@ -8,7 +8,8 @@ const now = new Date('2026-05-19T00:00:00.000Z')
 
 const makeDb = () => {
   const store = new Map()
-  return {
+  const trust = { score: 0 }
+  const db = {
     conversationParticipant: { findFirst: async ({ where }) => (where.conversationId === 'c1' && ['u1', 'u2'].includes(where.userId) ? { id: 'cp1' } : null) },
     appSession: {
       create: async ({ data }) => {
@@ -64,8 +65,19 @@ const makeDb = () => {
         store.set(key, row)
         return row
       }
-    }
+    },
+    $transaction: async (cb) => cb(db),
+    conversation: { findUnique: async ({ where }) => (where.id === 'c1' ? { id: 'c1', participants: [{ userId: 'u1' }, { userId: 'u2' }] } : null) },
+    relationshipLayer: {
+      upsert: async () => ({ id: 'rl1', currentLayer: 1, trustScore: trust.score, reciprocalMessageCount: 0, layer1UnlockedAt: new Date(Date.now() - 5 * 60 * 60 * 1000), layer2UnlockedAt: null, layer3UnlockedAt: null }),
+      update: async ({ data }) => { if (typeof data.trustScore === 'number') trust.score = data.trustScore; return data }
+    },
+    trustSignalRule: { findUnique: async ({ where }) => ({ signalType: where.signalType, points: where.signalType === 'match_cards_completed' ? 8 : where.signalType === 'guess_me_completed' ? 6 : where.signalType === 'snuggle_shared' ? 5 : 2, enabled: true }) },
+    layerRule: { findMany: async () => [{ fromLayer: 1, toLayer: 2, minElapsedMinutes: 240, requiredTrustScore: 20, enabled: true }] },
+    message: { findFirst: async () => null, create: async () => ({ id: 'm1' }) },
+    __trust: trust
   }
+  return db
 }
 
 test('invite requires auth', async () => {
@@ -120,6 +132,7 @@ test('match cards reveals only after both answers and persists answers', async (
   assert.equal(both.state, 'revealed')
   assert.equal(both.completed, true)
   assert.equal(both.answerByInvitee, 'A warm shower.')
+  assert.equal(db.__trust.score, 8)
 })
 
 test('match cards no unilateral reveal for non-participant', async () => {
@@ -155,6 +168,7 @@ test('guess me persists own answers and guesses then reveals only after both gue
   assert.equal(second.completed, true)
   assert.equal(second.ownAnswerByInvitee, 'apps.guess_me.options.fresh_air')
   assert.equal(second.guessByInvitee, 'apps.guess_me.options.music')
+  assert.equal(db.__trust.score, 6)
 })
 
 test('guess me no unilateral reveal and relationship isolation', async () => {
@@ -187,6 +201,10 @@ test('snuggle shared state appears only when both hold', async () => {
   assert.equal(one.sharedMomentState, 'quiet')
   const both = await setSnuggleHoldState({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, hold: true, dbClient: db })
   assert.equal(both.sharedMomentState, 'together')
+  assert.equal(db.__trust.score, 5)
+  await setSnuggleHoldState({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, hold: false, dbClient: db })
+  await setSnuggleHoldState({ viewer: createAuthenticatedViewer({ userId: 'u2' }), appSessionId: invited.appSessionId, hold: true, dbClient: db })
+  assert.equal(db.__trust.score, 5)
 })
 
 test('snuggle decline and neutral ending semantics', async () => {
