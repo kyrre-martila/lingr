@@ -71,9 +71,8 @@ const renderApp = () => {
   applyTranslations(document)
 }
 
-window.addEventListener('popstate', renderApp)
-renderApp()
-
 const locale = getLocale()
 setLocale(locale)
-applyTranslations(document)
+
+window.addEventListener('popstate', renderApp)
+renderApp()
