@@ -336,3 +336,14 @@ No admin UI is included in MVP.
 - Relationship-investment signals are emitted for meaningful app completion moments only (Match Cards reveal, Guess Me reveal, first shared Snuggle together moment, Playing now share).
 - Signals are internal and invisible; there is no score UI or progression copy.
 - Signal points are DB-configured via `trust_signal_rules`, and trust remains relationship-scoped.
+
+## Run 11.6.1 cleanup notes
+- Trust score increments are now applied atomically in transactions (`increment`) to avoid lost updates under near-simultaneous trust signals.
+- Layer unlock transitions are guarded with conditional update semantics so only one transaction can perform a given layer transition, preventing duplicate unlock messages.
+- Per-layer elapsed anchors are explicit:
+  - Layer 1 -> 2 checks elapsed time from `layer1UnlockedAt`.
+  - Layer 2 -> 3 checks elapsed time from `layer2UnlockedAt`.
+- Message-turn trust pacing minimum is now `60` seconds between counted reciprocal turns.
+- Rule safety guardrails:
+  - Ignore invalid runtime rules/signals (negative points, negative thresholds/minutes, invalid layer jumps).
+  - Keep trust/layer progression resilient if DB config contains invalid entries.

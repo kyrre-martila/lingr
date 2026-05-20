@@ -266,3 +266,12 @@ Layer UI must not include:
 - Match Cards and Guess Me trust fires on reveal completion only.
 - Snuggle trust fires once per session at first shared together moment.
 - Playing now trust is low-weight and tied to meaningful share creation.
+
+## Run 11.6.1 cleanup constraints
+- No trust score/progress visuals are introduced.
+- Internal progression hardening only:
+  - atomic trust increments
+  - per-layer elapsed anchors (1->2 from layer1 timestamp, 2->3 from layer2 timestamp)
+  - 60-second minimum counted message-turn pacing
+  - safe handling of invalid `layer_rules` / `trust_signal_rules` values
+- Advanced anti-farming systems remain intentionally deferred.
