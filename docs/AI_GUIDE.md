@@ -395,3 +395,13 @@ Forbidden mechanics:
 - Chat apps contribute to trust only on meaningful completions, not opens/invites/partials.
 - Layer unlocks still require both elapsed-time and trust thresholds; app signals only contribute trust.
 - Idempotent semantics: one reward per completion event/session transition.
+
+## Run 11.6.1 cleanup guardrails (stabilization before Run 12)
+- Concurrency safety: trust accumulation must use atomic increments inside transactions; avoid read-modify-write trust updates.
+- Duplicate unlock prevention: layer transition writes should be conditional so near-simultaneous signals cannot emit repeated unlock system messages.
+- Elapsed-time semantics are per transition anchor:
+  - 1 -> 2 uses `layer1UnlockedAt`.
+  - 2 -> 3 uses `layer2UnlockedAt`.
+- Message-turn pacing floor for counted trust turns is `60s` (not 20s).
+- Config validation must reject or safely ignore negative trust points, negative required scores, negative elapsed minutes, and invalid from/to layer combinations.
+- Deferred by design: no visible trust UI, no analytics dashboards, no anti-farming complexity beyond simple pacing and quality checks.

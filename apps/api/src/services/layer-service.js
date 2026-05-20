@@ -1,7 +1,7 @@
 import { LAYER_LEVEL, MESSAGE_DELIVERY_STATE, MESSAGE_TYPE, MESSAGE_VISIBILITY, TRUST_SIGNAL_TYPE } from '../../../../packages/shared/src/contracts.js'
 
 const MIN_QUALITY_TEXT_LENGTH = 12
-const MIN_SECONDS_BETWEEN_COUNTED_TURNS = 20
+const MIN_SECONDS_BETWEEN_COUNTED_TURNS = 60
 
 const canonicalPairFor = (leftUserId, rightUserId) => (leftUserId < rightUserId ? [leftUserId, rightUserId] : [rightUserId, leftUserId])
 
@@ -12,23 +12,45 @@ const buildSystemMessage = (layerLevel, profileName = 'this person') => {
 }
 const meetsQualityHeuristic = (messageText) => typeof messageText === 'string' && messageText.trim().length >= MIN_QUALITY_TEXT_LENGTH
 const hasMinimumPacingSinceLastCountedTurn = ({ now, lastCountedAt }) => !lastCountedAt || ((now.getTime() - lastCountedAt.getTime()) / 1000) >= MIN_SECONDS_BETWEEN_COUNTED_TURNS
-const hasMinimumRelationshipAgeForRule = ({ now, layer1UnlockedAt, minElapsedMinutes }) => !!layer1UnlockedAt && ((now.getTime() - layer1UnlockedAt.getTime()) / (60 * 1000)) >= minElapsedMinutes
-const nextLayerFor = ({ currentLayer, trustScore, now, layer1UnlockedAt, layerRules }) => {
+const hasMinimumRelationshipAgeForRule = ({ now, unlockedAt, minElapsedMinutes }) => !!unlockedAt && ((now.getTime() - unlockedAt.getTime()) / (60 * 1000)) >= minElapsedMinutes
+const anchorUnlockedAtForRule = ({ state, fromLayer }) => {
+  if (fromLayer === LAYER_LEVEL.MUTUAL_SPARK) return state.layer1UnlockedAt
+  if (fromLayer === LAYER_LEVEL.MEANINGFUL_CONVERSATION) return state.layer2UnlockedAt
+  return null
+}
+const nextLayerFor = ({ state, trustScore, now, layerRules }) => {
+  const { currentLayer } = state
   const matchingRule = layerRules.find((rule) => rule.fromLayer === currentLayer && rule.enabled)
   if (!matchingRule) return null
-  if (!hasMinimumRelationshipAgeForRule({ now, layer1UnlockedAt, minElapsedMinutes: matchingRule.minElapsedMinutes })) return null
+  const unlockedAt = anchorUnlockedAtForRule({ state, fromLayer: matchingRule.fromLayer })
+  if (!hasMinimumRelationshipAgeForRule({ now, unlockedAt, minElapsedMinutes: matchingRule.minElapsedMinutes })) return null
   if (trustScore < matchingRule.requiredTrustScore) return null
   return matchingRule.toLayer
 }
 
+const isValidLayerRule = (rule) => Number.isInteger(rule.fromLayer) && Number.isInteger(rule.toLayer) && Number.isInteger(rule.minElapsedMinutes) && Number.isInteger(rule.requiredTrustScore) && rule.fromLayer >= LAYER_LEVEL.MUTUAL_SPARK && rule.toLayer <= LAYER_LEVEL.DEEPER_TRUST && rule.toLayer === rule.fromLayer + 1 && rule.minElapsedMinutes >= 0 && rule.requiredTrustScore >= 0
+const isValidSignalRule = (rule) => rule && Number.isInteger(rule.points) && rule.points >= 0
+
 const maybeApplyTrustSignal = async ({ tx, conversationId, state, trustDelta }) => {
   if (!trustDelta) return null
   const now = new Date()
-  const trustScore = state.trustScore + trustDelta
-  const layerRules = await tx.layerRule.findMany({ where: { enabled: true }, orderBy: [{ fromLayer: 'asc' }, { toLayer: 'asc' }] })
-  const unlockedLayer = nextLayerFor({ currentLayer: state.currentLayer, trustScore, now, layer1UnlockedAt: state.layer1UnlockedAt, layerRules })
-  await tx.relationshipLayer.update({ where: { id: state.id }, data: { trustScore, currentLayer: unlockedLayer || state.currentLayer, layer2UnlockedAt: unlockedLayer === LAYER_LEVEL.MEANINGFUL_CONVERSATION ? now : state.layer2UnlockedAt, layer3UnlockedAt: unlockedLayer === LAYER_LEVEL.DEEPER_TRUST ? now : state.layer3UnlockedAt } })
-  if (!unlockedLayer) return null
+  const layerRulesRaw = await tx.layerRule.findMany({ where: { enabled: true }, orderBy: [{ fromLayer: 'asc' }, { toLayer: 'asc' }] })
+  const layerRules = layerRulesRaw.filter(isValidLayerRule)
+  const updatedState = await tx.relationshipLayer.update({ where: { id: state.id }, data: { trustScore: { increment: trustDelta } } })
+  const unlockedLayer = nextLayerFor({ state: updatedState, trustScore: updatedState.trustScore, now, layerRules })
+  let unlockTransitionCount = 0
+  if (unlockedLayer) {
+    const transitionResult = await tx.relationshipLayer.updateMany({
+      where: { id: state.id, currentLayer: state.currentLayer },
+      data: {
+        currentLayer: unlockedLayer,
+        layer2UnlockedAt: unlockedLayer === LAYER_LEVEL.MEANINGFUL_CONVERSATION ? now : updatedState.layer2UnlockedAt,
+        layer3UnlockedAt: unlockedLayer === LAYER_LEVEL.DEEPER_TRUST ? now : updatedState.layer3UnlockedAt
+      }
+    })
+    unlockTransitionCount = transitionResult.count
+  }
+  if (!unlockedLayer || unlockTransitionCount === 0) return null
   const existingUnlockMessage = await tx.message.findFirst({ where: { conversationId, senderUserId: null, type: MESSAGE_TYPE.LAYER_UNLOCK, metadata: { path: ['layerLevel'], equals: unlockedLayer } } })
   if (!existingUnlockMessage) {
     const systemMessage = buildSystemMessage(unlockedLayer)
@@ -61,7 +83,7 @@ export const syncLayerAfterMessage = async ({ conversationId, senderUserId, mess
   await tx.relationshipLayer.update({ where: { id: state.id }, data: { reciprocalMessageCount: state.reciprocalMessageCount + (shouldCountTurn ? 1 : 0), lastMessageSenderId: senderUserId, lastCountedMessageAt: shouldCountTurn ? now : state.lastCountedMessageAt } })
   if (!shouldCountTurn) return null
   const signalRule = await tx.trustSignalRule.findUnique({ where: { signalType: TRUST_SIGNAL_TYPE.QUALITY_MESSAGE_TURN } })
-  const trustDelta = signalRule && signalRule.enabled ? signalRule.points : 0
+  const trustDelta = signalRule && signalRule.enabled && isValidSignalRule(signalRule) ? signalRule.points : 0
   return maybeApplyTrustSignal({ tx, conversationId, state, trustDelta })
 })
 
@@ -69,6 +91,6 @@ export const syncLayerAfterTrustSignal = async ({ conversationId, signalType, db
   const state = await getRelationshipStateForConversation({ tx, conversationId })
   if (!state) return null
   const signalRule = await tx.trustSignalRule.findUnique({ where: { signalType } })
-  const trustDelta = signalRule && signalRule.enabled ? signalRule.points : 0
+  const trustDelta = signalRule && signalRule.enabled && isValidSignalRule(signalRule) ? signalRule.points : 0
   return maybeApplyTrustSignal({ tx, conversationId, state, trustDelta })
 })

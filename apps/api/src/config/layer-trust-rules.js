@@ -13,12 +13,29 @@ export const DEFAULT_TRUST_SIGNAL_RULES = Object.freeze([
   Object.freeze({ signalType: TRUST_SIGNAL_TYPE.PLAYING_NOW_SHARED, points: 2, enabled: true })
 ])
 
+const isValidDefaultLayerRule = (rule) => Number.isInteger(rule.fromLayer) && Number.isInteger(rule.toLayer) && Number.isInteger(rule.minElapsedMinutes) && Number.isInteger(rule.requiredTrustScore) && rule.minElapsedMinutes >= 0 && rule.requiredTrustScore >= 0 && rule.toLayer === rule.fromLayer + 1
+const isValidDefaultSignalRule = (rule) => Number.isInteger(rule.points) && rule.points >= 0
+
+const ensureDefaultRulesHealth = () => {
+  for (const rule of DEFAULT_LAYER_RULES) {
+    if (!isValidDefaultLayerRule(rule)) throw new Error(`Invalid default layer rule: ${JSON.stringify(rule)}`)
+  }
+  for (const rule of DEFAULT_TRUST_SIGNAL_RULES) {
+    if (!isValidDefaultSignalRule(rule)) throw new Error(`Invalid default trust signal rule: ${JSON.stringify(rule)}`)
+  }
+}
+
 export const ensureLayerTrustRules = async ({ dbClient }) => {
+  ensureDefaultRulesHealth()
+
   for (const rule of DEFAULT_LAYER_RULES) {
     await dbClient.layerRule.upsert({
       where: { fromLayer_toLayer: { fromLayer: rule.fromLayer, toLayer: rule.toLayer } },
       create: rule,
-      update: {}
+      update: {
+        minElapsedMinutes: rule.minElapsedMinutes < 0 ? 0 : undefined,
+        requiredTrustScore: rule.requiredTrustScore < 0 ? 0 : undefined
+      }
     })
   }
 
@@ -26,7 +43,9 @@ export const ensureLayerTrustRules = async ({ dbClient }) => {
     await dbClient.trustSignalRule.upsert({
       where: { signalType: signalRule.signalType },
       create: signalRule,
-      update: {}
+      update: {
+        points: signalRule.points < 0 ? 0 : undefined
+      }
     })
   }
 }
