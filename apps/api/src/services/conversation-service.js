@@ -1,7 +1,7 @@
 import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
-import { APP_INVITE_APP_ID, CONVERSATION_PARTICIPANT_ROLE, CONVERSATION_STATE, DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, MESSAGE_DELIVERY_STATE, MESSAGE_TYPE, MESSAGE_VISIBILITY, PLAYING_NOW_MEDIA_TYPE, REASON_CODES, SPARK_STATE, isSupportedMessageType } from '../../../../packages/shared/src/contracts.js'
-import { syncLayerAfterMessage } from './layer-service.js'
+import { APP_INVITE_APP_ID, CONVERSATION_PARTICIPANT_ROLE, CONVERSATION_STATE, DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, MESSAGE_DELIVERY_STATE, MESSAGE_TYPE, MESSAGE_VISIBILITY, PLAYING_NOW_MEDIA_TYPE, REASON_CODES, SPARK_STATE, TRUST_SIGNAL_TYPE, isSupportedMessageType } from '../../../../packages/shared/src/contracts.js'
+import { syncLayerAfterMessage, syncLayerAfterTrustSignal } from './layer-service.js'
 import { getVisibleProfileForRelationship } from './profile-visibility-service.js'
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
@@ -117,5 +117,6 @@ export const sendConversationMessage = async ({ viewer, conversationId, payload,
   assertMessagePayload(type, payload?.content)
   const row = await db.message.create({ data: { conversationId: id, senderUserId: userId, type, visibility: MESSAGE_VISIBILITY.CONVERSATION, deliveryState: MESSAGE_DELIVERY_STATE.SENT, content: payload.content, metadata: payload.metadata || null } })
   if (type === MESSAGE_TYPE.TEXT) await syncLayerAfterMessage({ conversationId: id, senderUserId: userId, messageText: payload?.content?.text, dbClient: db })
+  if (type === MESSAGE_TYPE.PLAYING_NOW && payload?.content?.title?.trim()) await syncLayerAfterTrustSignal({ conversationId: id, signalType: TRUST_SIGNAL_TYPE.PLAYING_NOW_SHARED, dbClient: db })
   return toMessageDto(row)
 }
