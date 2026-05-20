@@ -2,7 +2,8 @@ export const en = {
   common: {
     localeLabel: 'Language',
     chooseRegion: 'Choose your region',
-    continueInApp: 'Continue in app'
+    continueInApp: 'Continue in app',
+    inviteCode: 'Invite code (if you have one)'
   },
   hero: {
     title: 'Some people are worth taking time with.',
@@ -21,12 +22,12 @@ export const en = {
     body: 'Lingr opens one region at a time so local connections can grow in a healthy way. This is care, not artificial exclusivity.'
   },
   waitlist: {
-    title: 'Vote and join waitlist',
+    title: 'Early access',
     country: 'Country',
     region: 'Region',
     firstName: 'First name (optional)',
     email: 'Email',
-    submit: 'Vote for this region',
+    submit: 'Request early access',
     success: 'We’ll let you know when Lingr opens near you.',
     chooseCountry: 'Choose country',
     chooseRegion: 'Choose region',

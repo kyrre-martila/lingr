@@ -2,7 +2,8 @@ export const nbNO = {
   common: {
     localeLabel: 'Språk',
     chooseRegion: 'Velg din region',
-    continueInApp: 'Fortsett i appen'
+    continueInApp: 'Fortsett i appen',
+    inviteCode: 'Invitasjonskode (hvis du har en)'
   },
   hero: {
     title: 'Noen mennesker er verdt å bruke tid på.',
@@ -26,7 +27,7 @@ export const nbNO = {
     region: 'Region',
     firstName: 'Fornavn (valgfritt)',
     email: 'E-post',
-    submit: 'Stem på denne regionen',
+    submit: 'Be om tidlig tilgang',
     success: 'Vi gir deg beskjed når Lingr åpner nær deg.',
     chooseCountry: 'Velg land',
     chooseRegion: 'Velg region',
