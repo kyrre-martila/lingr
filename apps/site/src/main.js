@@ -35,9 +35,10 @@ const render = () => {
           <label>${t('waitlist.firstName')}<input id="firstName" type="text" maxlength="120" /></label>
           <label>${t('waitlist.email')}<input id="email" type="email" required autocomplete="email" /></label>
           <button class="button" type="submit">${t('waitlist.submit')}</button>
+          <p class="hint">${t('common.inviteCode')}</p>
         </form>
         <p id="region-status" aria-live="polite">${state.regionStatus}</p>
-        ${state.canContinueInApp ? `<p><a class="button" href="https://app.lingr.dating/onboarding?countryCode=${encodeURIComponent(state.selectedCountry)}&regionSlug=${encodeURIComponent(state.selectedRegion)}&locale=${encodeURIComponent(state.locale)}">${t('common.continueInApp')}</a></p>` : ''}
+        ${state.canContinueInApp ? `<label>${t('common.inviteCode')}<input id="inviteCode" type="text" maxlength="64" autocomplete="off" /></label><p><a id="continue-link" class="button" href="#">${t('common.continueInApp')}</a></p>` : ''}
       </section>
       <section><h2>${t('screenshots.title')}</h2><div class="shots">${t('screenshots.placeholders').map((s) => `<article class="shot" aria-label="${s}">${s}</article>`).join('')}</div></section>
     </div>`
@@ -49,6 +50,14 @@ const bindEvents = () => {
   document.getElementById('country').onchange = async (e) => { state.selectedCountry = e.target.value; state.selectedRegion = ''; state.regions = []; state.regionStatus = ''; state.canContinueInApp = false; render(); if (state.selectedCountry) await loadRegions() }
   document.getElementById('region').onchange = async (e) => { state.selectedRegion = e.target.value; await checkRegion() }
   document.getElementById('waitlist-form').onsubmit = submitVote
+  const continueLink = document.getElementById('continue-link')
+  if (continueLink) continueLink.onclick = (event) => {
+    event.preventDefault()
+    const inviteCode = document.getElementById('inviteCode')?.value || ''
+    const params = new URLSearchParams({ countryCode: state.selectedCountry, regionSlug: state.selectedRegion, locale: state.locale })
+    if (inviteCode.trim()) params.set('inviteCode', inviteCode.trim())
+    window.location.href = `https://app.lingr.dating/onboarding?${params.toString()}`
+  }
 }
 
 const loadCountries = async () => {
