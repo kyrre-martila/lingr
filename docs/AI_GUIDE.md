@@ -418,3 +418,18 @@ Forbidden mechanics:
 - Layer unlock system messages should carry stable payload keys (`messageKey`) and optional interpolation payload (`messageParams`).
 - Frontend owns human-language rendering via i18n lookup and fallback behavior.
 - Unlock copy tone remains calm, soft, relational, and subtle; avoid reward framing, achievement language, and urgency.
+
+## Run 11.6 Prompt 4 guardrail — Chat Apps trust integration
+Chat Apps can contribute trust only at meaningful reciprocal completion moments.
+
+Required signal triggers:
+- `match_cards_completed`: emit only when both participants completed answers and reveal occurs.
+- `guess_me_completed`: emit only when both participants completed own answer + partner guess and reveal occurs.
+- `snuggle_shared`: emit once per Snuggle session on first shared mutual hold moment.
+- `playing_now_shared`: emit only for meaningful shares (not empty activity).
+
+Trust policy constraints:
+- No hardcoded points in feature logic; always read trust weights from `TrustSignalRule`.
+- Trust is relationship-scoped and internal only.
+- No visible score/progress UI or progression framing.
+- Keep anti-gaming simple in MVP, but preserve idempotent signal semantics.
