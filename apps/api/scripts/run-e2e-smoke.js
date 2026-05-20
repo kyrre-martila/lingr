@@ -5,6 +5,7 @@ const DEFAULT_DATABASE_URL = 'postgresql://lingr:lingr@localhost:5432/lingr?sche
 const API_BASE_URL = process.env.E2E_API_BASE_URL || 'http://127.0.0.1:4000'
 const PORT = process.env.PORT || '4000'
 const steps = []
+let prisma = null
 
 const isTruthy = (value) => ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase())
 const allowDefaultDatabaseUrl = process.env.NODE_ENV !== 'production' || isTruthy(process.env.LINGR_SMOKE)
@@ -276,6 +277,41 @@ const completeProfileBasics = async (label, sessionCookie) => {
   passStep(`profile setup ${label}`)
 }
 
+const createPublishedGlimps = async (label, sessionCookie) => {
+  const payload = {
+    reflection: `Smoke ${label} values gentle pacing in connection.`,
+    mood: 'calm',
+    prompt: 'What helps you feel emotionally safe?',
+    emotionalTone: 'grounded',
+    privacy: 'visible_for_matching',
+    state: 'published'
+  }
+  const response = await authFetch('/v1/glimps', { cookie: sessionCookie, method: 'POST', body: payload })
+  const body = await parseJsonSafe(response)
+  if (!response.ok) failStep(`glimps setup ${label}`, `${response.status} ${body?.error?.reasonCode || 'unknown_error'}`)
+  passStep(`glimps setup ${label}`)
+}
+
+const buildDiscoveryEligibilityDiagnostics = async ({ viewerEmail, candidateEmail }) => {
+  const [viewer, candidate] = await Promise.all([
+    prisma.user.findUnique({ where: { email: viewerEmail }, include: { profile: true } }),
+    prisma.user.findUnique({ where: { email: candidateEmail }, include: { profile: true, glimpses: { where: { state: 'published' }, select: { id: true, createdAt: true }, orderBy: { createdAt: 'desc' } } } })
+  ])
+  if (!viewer || !candidate) return { error: 'viewer_or_candidate_missing' }
+  const [blocks, sparks, views, candidatesInRegion] = await Promise.all([
+    prisma.blockRelation.findMany({ where: { OR: [{ blockerUserId: viewer.id, blockedUserId: candidate.id }, { blockerUserId: candidate.id, blockedUserId: viewer.id }] } }),
+    prisma.spark.findMany({ where: { status: { in: ['pending', 'accepted'] }, OR: [{ initiatorUserId: viewer.id, recipientUserId: candidate.id }, { initiatorUserId: candidate.id, recipientUserId: viewer.id }] } }),
+    prisma.discoveryView.findMany({ where: { viewerUserId: viewer.id, discoveredUserId: candidate.id }, select: { createdAt: true, firstSeenDayKey: true } }),
+    prisma.user.count({ where: { id: { not: viewer.id }, status: 'active', profile: { is: { locationRegion: viewer.profile?.locationRegion || '' } } } })
+  ])
+  return {
+    viewer: { id: viewer.id, status: viewer.status, region: viewer.profile?.locationRegion || null, profileCompleteness: viewer.profile?.profileCompleteness || 0 },
+    candidate: { id: candidate.id, status: candidate.status, region: candidate.profile?.locationRegion || null, profileCompleteness: candidate.profile?.profileCompleteness || 0, publishedGlimpsCount: candidate.glimpses.length },
+    exclusions: { isSelf: viewer.id === candidate.id, blockedEitherDirection: blocks.length > 0, activeSparkExists: sparks.length > 0, seenWithinCooldown: views.map((v) => v.createdAt.toISOString()) },
+    pool: { activeSameRegionCandidateCountExcludingViewer: candidatesInRegion }
+  }
+}
+
 const main = async () => {
   const runId = Date.now()
   ensureDatabaseUrl()
@@ -283,6 +319,8 @@ const main = async () => {
   await ensureLingrDatabaseAccess()
 
   await runCommand('npm', ['run', 'db:generate', '--workspace', '@lingr/api'])
+  const { PrismaClient } = await import('@prisma/client')
+  prisma = new PrismaClient()
   await runCommand('npm', ['run', 'db:migrate:deploy', '--workspace', '@lingr/api'])
   passStep('db migrate')
   await runCommand('npm', ['run', 'db:seed:dev-e2e', '--workspace', '@lingr/api'])
@@ -302,6 +340,7 @@ const main = async () => {
     const accountB = await authFlow('B', emailB)
     await completeProfileBasics('A', accountA.sessionCookie)
     await completeProfileBasics('B', accountB.sessionCookie)
+    await createPublishedGlimps('B', accountB.sessionCookie)
 
     const profileCompletenessA = await authFetch('/v1/profile/completeness', { cookie: accountA.sessionCookie })
     const profileA = await parseJsonSafe(profileCompletenessA)
@@ -320,7 +359,10 @@ const main = async () => {
     }
     passStep('discovery A')
     const discoveredUserId = discoveryABody?.data?.introductions?.[0]?.userId
-    if (!discoveredUserId) failStep('discovery A', `state=${discoveryABody?.data?.state || 'unknown'} reasonCode=${discoveryABody?.data?.reasonCode || 'none'} introductions=0`)
+    if (!discoveredUserId) {
+      const diagnostics = await buildDiscoveryEligibilityDiagnostics({ viewerEmail: emailA, candidateEmail: emailB })
+      failStep('discovery A', `state=${discoveryABody?.data?.state || 'unknown'} reasonCode=${discoveryABody?.data?.reasonCode || 'none'} introductions=0`, { diagnostics })
+    }
 
     const sparkA = await authFetch('/v1/discovery/spark', { cookie: accountA.sessionCookie, method: 'POST', body: { discoveredUserId } })
     const sparkABody = await parseJsonSafe(sparkA)
@@ -393,6 +435,7 @@ const main = async () => {
     await ensureOk('conversation still accessible', conversationAgain, conversationAgainBody, { route: 'GET /v1/conversations/:conversationId' })
   } finally {
     apiProcess.kill('SIGTERM')
+    if (prisma) await prisma.$disconnect()
   }
 }
 
