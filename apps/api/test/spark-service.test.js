@@ -34,6 +34,16 @@ test('invalid recipient reference rejected', async () => {
   await assert.rejects(createSparkInvitation({ viewer, payload: { recipientUserId: 'usr_missing' }, dbClient: db }), (e) => e.reasonCode === REASON_CODES.SPARK.INVALID_RECIPIENT_REFERENCE)
 })
 
+test('block prevents spark creation', async () => {
+  const viewer = createAuthenticatedViewer({ userId: 'u1' })
+  const db = {
+    blockRelation: { findFirst: async () => ({ id: 'b1' }) },
+    user: { findUnique: async () => ({ id: 'u2' }) },
+    spark: { create: async () => row() }
+  }
+  await assert.rejects(createSparkInvitation({ viewer, payload: { recipientUserId: 'usr_u2' }, dbClient: db }), (e) => e.reasonCode === REASON_CODES.SAFETY.INTERACTION_RESTRICTED)
+})
+
 test('invalid source glimps reference rejected', async () => {
   const viewer = createAuthenticatedViewer({ userId: 'u1' })
   const db = { user: { findUnique: async () => ({ id: 'u2' }) }, glimps: { findUnique: async () => null }, spark: { create: async () => row() } }

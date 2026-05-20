@@ -9,7 +9,7 @@ import {
   TRUST_SIGNAL_TYPE
 } from '../../../../packages/shared/src/contracts.js'
 import { syncLayerAfterTrustSignal } from './layer-service.js'
-import { assertConversationInteractive } from './safety-service.js'
+import { assertConversationInteractive, assertNoUserInteractionBlock } from './safety-service.js'
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
 const stripPrefixId = (value, prefix, fieldName) => {
@@ -52,6 +52,10 @@ const assertLifecycle = (session, allowed) => {
 const assertConversationParticipant = async ({ db, conversationId, userId }) => {
   const participant = await db.conversationParticipant.findFirst({ where: { conversationId, userId }, select: { id: true } })
   if (!participant) throw new ApiError({ message: 'Conversation not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
+}
+const assertConversationPairAllowed = async ({ db, conversationId }) => {
+  const participants = await db.conversationParticipant.findMany({ where: { conversationId }, select: { userId: true }, take: 2 })
+  if (participants.length === 2) await assertNoUserInteractionBlock({ db, actorUserId: participants[0].userId, targetUserId: participants[1].userId })
 }
 
 const toDto = (row) => ({
@@ -122,6 +126,7 @@ export const inviteChatApp = async ({ viewer, payload, dbClient }) => {
   assertAppId(payload?.appId)
   await assertConversationParticipant({ db, conversationId, userId })
   await assertConversationInteractive({ db, conversationId })
+  await assertConversationPairAllowed({ db, conversationId })
   const row = await db.appSession.create({ data: { conversationId, appId: payload.appId, lifecycle: APP_LIFECYCLE_STATE.INVITE, invitedByUserId: userId } })
   return toDto(row)
 }
@@ -134,6 +139,7 @@ const transition = async ({ viewer, appSessionId, nextState, fieldName, allowedF
   if (!existing) throw new ApiError({ message: 'App session not found', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.CONVERSATION.NOT_FOUND, statusCode: 404 })
   await assertConversationParticipant({ db, conversationId: existing.conversationId, userId })
   await assertConversationInteractive({ db, conversationId: existing.conversationId })
+  await assertConversationPairAllowed({ db, conversationId: existing.conversationId })
   assertLifecycle(existing, allowedFrom)
   if (existing.lifecycle === nextState && existing[fieldName] === userId) return toDto(existing)
   const row = await db.appSession.update({ where: { id }, data: { lifecycle: nextState, [fieldName]: userId } })

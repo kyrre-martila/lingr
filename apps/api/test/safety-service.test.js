@@ -21,11 +21,11 @@ test('report creation persists and logs moderation event', async () => {
 })
 
 test('paused conversation restricts messaging/actions', async () => {
-  await assert.rejects(assertConversationInteractive({ db: { conversationSafetyState: { findUnique: async () => ({ isPaused: true }) } }, conversationId: 'c1' }), (e) => e.reasonCode === REASON_CODES.SAFETY.PAUSED_FOR_SAFETY)
+  await assert.rejects(assertConversationInteractive({ db: { conversationSafetyState: { findUnique: async () => ({ isPaused: true }) } }, conversationId: 'c1' }), (e) => e.reasonCode === REASON_CODES.SAFETY.CONVERSATION_PAUSED)
 })
 
 test('blocking user prevents interaction', async () => {
-  await assert.rejects(assertNoUserInteractionBlock({ db: { blockRelation: { findFirst: async () => ({ id: 'b1' }) } }, actorUserId: 'u1', targetUserId: 'u2' }), (e) => e.reasonCode === REASON_CODES.BLOCK.USER_BLOCKED)
+  await assert.rejects(assertNoUserInteractionBlock({ db: { blockRelation: { findFirst: async () => ({ id: 'b1' }) } }, actorUserId: 'u1', targetUserId: 'u2' }), (e) => e.reasonCode === REASON_CODES.SAFETY.INTERACTION_RESTRICTED)
 })
 
 test('pause conversation requires participant permission', async () => {
