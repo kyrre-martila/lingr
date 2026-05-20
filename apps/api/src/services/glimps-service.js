@@ -1,6 +1,7 @@
 import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
 import { DOMAIN_ERROR_KIND, GLIMPS_EMOTIONAL_TONE, GLIMPS_PRIVACY_LEVEL, GLIMPS_STATE, INTERNAL_ID_STRATEGY, REASON_CODES } from '../../../../packages/shared/src/contracts.js'
+import { PRODUCT_EVENT_TYPE, recordProductEventOnce } from './product-fit-service.js'
 
 const MAX_REFLECTION = 280
 const MAX_MOOD = 80
@@ -72,6 +73,7 @@ export const createGlimps = async ({ viewer, payload, dbClient }) => {
   }
 
   const row = await db.glimps.create({ data: { userId, reflection, mood, prompt, imageNote, privacy, emotionalTone, state } })
+  if (state === GLIMPS_STATE.PUBLISHED) await recordProductEventOnce({ userId, eventType: PRODUCT_EVENT_TYPE.FIRST_GLIMPS_PUBLISHED, dbClient: db })
   return toClientGlimps(row)
 }
 

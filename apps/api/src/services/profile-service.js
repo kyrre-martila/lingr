@@ -2,6 +2,7 @@ import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
 import { Prisma } from '@prisma/client'
 import { DOMAIN_ERROR_KIND, REASON_CODES, ACCOUNT_LIFECYCLE_STATE, INTERNAL_ID_STRATEGY } from '../../../../packages/shared/src/contracts.js'
+import { PRODUCT_EVENT_TYPE, recordProductEventOnce } from './product-fit-service.js'
 
 const toLifecycleState = (status) => {
   if (status === 'paused') return ACCOUNT_LIFECYCLE_STATE.PAUSED
@@ -91,12 +92,14 @@ export const updateViewerProfileBasics = async ({ viewer, payload }) => {
   const profileCompleteness = computeCompleteness(profileData)
 
   try {
+    const existing = await db.profile.findUnique({ where: { userId: user.id }, select: { profileCompleteness: true } })
     const profile = await db.profile.upsert({
       where: { userId: user.id },
       update: { ...profileData, profileCompleteness },
       create: { userId: user.id, ...profileData, visibility: 'discoverable', profileCompleteness }
     })
 
+    if ((existing?.profileCompleteness || 0) < 100 && profile.profileCompleteness >= 100) await recordProductEventOnce({ userId: user.id, eventType: PRODUCT_EVENT_TYPE.ONBOARDING_COMPLETED, dbClient: db })
     return toClientProfile(user, profile)
   } catch (error) {
     if (error instanceof Prisma.PrismaClientValidationError) {

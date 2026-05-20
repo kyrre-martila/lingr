@@ -1,4 +1,4 @@
-import { getDailyDiscovery, sendDiscoveryNotNow, sendDiscoverySpark } from '../services/discovery-service.js'
+import { getDailyDiscovery, sendDiscoveryNotNow, sendDiscoverySpark, sendEmotionalFeedback } from '../services/discovery-service.js'
 import { DISCOVERY_REASON_CODES, DISCOVERY_STATE } from '../domain/contracts.js'
 
 const COPY = Object.freeze({
@@ -32,6 +32,34 @@ const readDismissed = () => {
   try { return new Set(JSON.parse(globalThis.sessionStorage?.getItem('lingr.discovery.dismissed') || '[]')) } catch { return new Set() }
 }
 const writeDismissed = (set) => globalThis.sessionStorage?.setItem('lingr.discovery.dismissed', JSON.stringify([...set]))
+
+
+const FEEDBACK_TAGS = [
+  ['calm', 'calm'],
+  ['thoughtful', 'thoughtful'],
+  ['overwhelming', 'overwhelming'],
+  ['meaningful', 'meaningful'],
+  ['too_slow', 'too slow'],
+  ['too_fast', 'too fast'],
+  ['not_for_me', 'not for me']
+]
+const maybeFeedbackPrompt = async (host) => {
+  if (Math.random() > 0.25) return
+  const panel = document.createElement('section')
+  panel.className = 'discovery-feedback-banner'
+  panel.innerHTML = '<p>How has Lingr felt so far?</p>'
+  const wrap = document.createElement('div')
+  FEEDBACK_TAGS.forEach(([tag, label]) => {
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.className = 'button button--ghost'
+    b.textContent = label
+    b.addEventListener('click', async () => { await sendEmotionalFeedback({ tag }); panel.innerHTML = '<p>Thanks for sharing.</p>' })
+    wrap.append(b)
+  })
+  panel.append(wrap)
+  host.prepend(panel)
+}
 
 const createTag = (text) => {
   const li = document.createElement('li')
@@ -109,11 +137,13 @@ export const createDiscoverySection = () => {
         dismissed.add(current.userId)
         writeDismissed(dismissed)
         queue.shift()
-        showCurrent()
+        await maybeFeedbackPrompt(section.querySelector('.discovery-shell'))
+    showCurrent()
       })
       host.replaceChildren(card)
     }
 
+    await maybeFeedbackPrompt(section.querySelector('.discovery-shell'))
     showCurrent()
   }
 

@@ -9,6 +9,7 @@ import { dismissDiscoveryIntroductionRoute, getDailyDiscoveryRoute, sendDiscover
 import { checkRegionRoute, listCountriesRoute, listRegionsByCountryRoute, voteRegionRoute } from './regions.js'
 import { acceptChatAppInviteRoute, completeChatAppSessionRoute, dismissChatAppInviteRoute, guessMeOwnAnswerRoute, guessMePartnerGuessRoute, guessMeStartRoute, inviteChatAppRoute, matchCardsAnswerRoute, matchCardsStartRoute, snuggleAcceptRoute, snuggleCompleteRoute, snuggleDeclineRoute, snuggleHoldRoute, snuggleReleaseRoute } from './chat-apps.js'
 import { blockUserRoute, pauseConversationRoute, reportUserRoute } from './safety.js'
+import { submitEmotionalFeedbackRoute } from './feedback.js'
 
 export const routes = Object.freeze([
   { method: 'GET', path: '/health', requiresJson: false, handler: withRouteProtection(healthRoute, { requiresAuth: false, allowOnboarding: true }) },
@@ -60,4 +61,5 @@ export const routes = Object.freeze([
   { method: 'PATCH', path: '/v1/chat-apps/:appSessionId/snuggle/hold', requiresJson: false, handler: withRouteProtection(snuggleHoldRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'PATCH', path: '/v1/chat-apps/:appSessionId/snuggle/release', requiresJson: false, handler: withRouteProtection(snuggleReleaseRoute, { requiresAuth: true, allowOnboarding: true }) },
   { method: 'PATCH', path: '/v1/chat-apps/:appSessionId/snuggle/complete', requiresJson: false, handler: withRouteProtection(snuggleCompleteRoute, { requiresAuth: true, allowOnboarding: true }) },
+  { method: 'POST', path: '/v1/feedback/emotional', requiresJson: true, handler: withRouteProtection(submitEmotionalFeedbackRoute, { requiresAuth: true, allowOnboarding: true }) },
 ])
