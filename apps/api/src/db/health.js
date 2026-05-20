@@ -1,8 +1,8 @@
 import { getDbClient } from './client.js'
 
-export const checkDatabaseHealth = async () => {
+export const checkDatabaseHealth = async ({ dbClient } = {}) => {
   try {
-    const client = getDbClient()
+    const client = dbClient ?? await getDbClient()
     await client.$queryRaw`SELECT 1`
 
     return {
