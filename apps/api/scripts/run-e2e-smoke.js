@@ -231,6 +231,23 @@ const authFlow = async (label, email) => {
   return { sessionCookie }
 }
 
+const completeProfileBasics = async (label, sessionCookie) => {
+  const payload = {
+    displayName: `Smoke ${label}`,
+    pronouns: 'they/them',
+    ageRange: '25-34',
+    bio: `E2E smoke profile ${label}`,
+    layersSummary: 'Building trust through intentional conversation.',
+    locationRegion: 'trondelag',
+    avatarAssetId: `avatar-smoke-${label.toLowerCase()}`
+  }
+
+  const response = await authFetch('/v1/profile/viewer', { cookie: sessionCookie, method: 'PATCH', body: payload })
+  const body = await parseJsonSafe(response)
+  if (!response.ok) failStep(`profile setup ${label}`, `${response.status} ${body?.error?.reasonCode || 'unknown_error'}`)
+  passStep(`profile setup ${label}`)
+}
+
 const main = async () => {
   ensureDatabaseUrl()
   await ensurePostgresReachable()
@@ -252,6 +269,8 @@ const main = async () => {
     passStep('api health')
     const accountA = await authFlow('A', 'smoke-a@lingr.local')
     const accountB = await authFlow('B', 'smoke-b@lingr.local')
+    await completeProfileBasics('A', accountA.sessionCookie)
+    await completeProfileBasics('B', accountB.sessionCookie)
 
     const profileCompletenessA = await authFetch('/v1/profile/completeness', { cookie: accountA.sessionCookie })
     const profileA = await parseJsonSafe(profileCompletenessA)

@@ -96,12 +96,31 @@ export const updateViewerProfileBasics = async ({ viewer, payload }) => {
 
 export const getViewerProfileCompleteness = async ({ viewer }) => {
   const profileResponse = await getViewerProfile({ viewer })
-  if (!profileResponse) return null
+  if (!profileResponse) {
+    throw new ApiError({
+      message: 'Profile onboarding is incomplete',
+      kind: DOMAIN_ERROR_KIND.DOMAIN,
+      reasonCode: REASON_CODES.DISCOVERY.PROFILE_INCOMPLETE,
+      statusCode: 403,
+      details: { missing: ['displayName', 'bio', 'pronouns', 'ageRange', 'layersSummary', 'locationRegion', 'avatarAssetId'] }
+    })
+  }
+
+  const requiredFields = ['displayName', 'bio', 'pronouns', 'ageRange', 'layersSummary', 'locationRegion', 'avatarUrl']
+  const missingFields = requiredFields.filter((field) => {
+    const value = profileResponse.profile[field]
+    return !value
+  })
+
+  const isComplete = profileResponse.profile.profileCompleteness >= 80
   return {
     userId: profileResponse.userId,
     lifecycleState: profileResponse.lifecycleState,
     profileCompleteness: profileResponse.profile.profileCompleteness,
-    isComplete: profileResponse.profile.profileCompleteness >= 80,
+    isComplete,
+    reasonCode: isComplete ? null : REASON_CODES.DISCOVERY.PROFILE_INCOMPLETE,
+    requiredFields,
+    missingFields,
     updatedAt: profileResponse.profile.updatedAt
   }
 }
