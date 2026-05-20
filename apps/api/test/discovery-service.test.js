@@ -30,7 +30,7 @@ test('daily limit reached is enforced deterministically', async () => {
 test('viewed people are hidden only during not-now cooldown window', async () => {
   const db = baseDb()
   db.discoveryView.findMany = async () => [{ discoveredUserId: 'u2', createdAt: new Date('2026-05-01T00:00:00Z') }]
-  db.user.findMany = async () => [{ id: 'u2', status: 'active', profile: { displayName: 'A', locationRegion: 'NO-03' }, glimpses: [] }]
+  db.user.findMany = async () => [{ id: 'u2', status: 'active', profile: { displayName: 'A', locationRegion: 'NO-03' }, glimpses: [{ id: 'g2', reflection: 'A quiet morning', mood: 'calm', prompt: 'What felt true today?', emotionalTone: 'gentle' }] }]
   const result = await getDailyDiscovery({ viewer, dbClient: db, now: new Date('2026-05-18T00:00:00Z') })
   assert.equal(result.state, DISCOVERY_STATE.READY)
 })
