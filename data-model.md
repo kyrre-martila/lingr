@@ -330,3 +330,9 @@ No admin UI is included in MVP.
   - minimum elapsed minutes from `layer1UnlockedAt`
   - required trust score
 - Progress remains invisible: trust score and thresholds are server-internal and not exposed in user-facing UI.
+
+
+## Run 11.6 Prompt 4 trust signals
+- Relationship-investment signals are emitted for meaningful app completion moments only (Match Cards reveal, Guess Me reveal, first shared Snuggle together moment, Playing now share).
+- Signals are internal and invisible; there is no score UI or progression copy.
+- Signal points are DB-configured via `trust_signal_rules`, and trust remains relationship-scoped.

@@ -5,8 +5,10 @@ import {
   APP_LIFECYCLE_STATE,
   DOMAIN_ERROR_KIND,
   INTERNAL_ID_STRATEGY,
-  REASON_CODES
+  REASON_CODES,
+  TRUST_SIGNAL_TYPE
 } from '../../../../packages/shared/src/contracts.js'
+import { syncLayerAfterTrustSignal } from './layer-service.js'
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
 const stripPrefixId = (value, prefix, fieldName) => {
@@ -171,6 +173,7 @@ export const answerMatchCardsSession = async ({ viewer, appSessionId, answer, db
   if (answered.answerByInviter && answered.answerByInvitee) {
     const revealed = await db.matchCardsSession.update({ where: { appSessionId: id }, data: { state: 'revealed', revealState: 'revealed', completed: true } })
     await db.appSession.update({ where: { id }, data: { lifecycle: APP_LIFECYCLE_STATE.COMPLETE, completedByUserId: userId } })
+    await syncLayerAfterTrustSignal({ conversationId: appSession.conversationId, signalType: TRUST_SIGNAL_TYPE.MATCH_CARDS_COMPLETED, dbClient: db })
     return toMatchCardsState(revealed)
   }
   return toMatchCardsState(answered)
@@ -209,6 +212,7 @@ export const answerGuessMeSession = async ({ viewer, appSessionId, ownAnswer, gu
   if (answered.ownAnswerByInviter && answered.ownAnswerByInvitee && answered.guessByInviter && answered.guessByInvitee) {
     const revealed = await db.guessMeSession.update({ where: { appSessionId: id }, data: { state: 'revealed', revealState: 'revealed', completed: true } })
     await db.appSession.update({ where: { id }, data: { lifecycle: APP_LIFECYCLE_STATE.COMPLETE, completedByUserId: userId } })
+    await syncLayerAfterTrustSignal({ conversationId: appSession.conversationId, signalType: TRUST_SIGNAL_TYPE.GUESS_ME_COMPLETED, dbClient: db })
     return toGuessMeState(revealed)
   }
   return toGuessMeState(answered)
@@ -246,10 +250,11 @@ export const setSnuggleHoldState = async ({ viewer, appSessionId, hold, dbClient
     data: writeToInviter ? { holdByInviter: nextHold } : { holdByInvitee: nextHold }
   })
   const together = Boolean(updated.holdByInviter && updated.holdByInvitee)
-  const withPresence = await db.snuggleSession.update({
-    where: { appSessionId: id },
-    data: { sharedMomentState: together ? 'together' : 'quiet' }
-  })
+  const withPresence = await db.snuggleSession.update({ where: { appSessionId: id }, data: { sharedMomentState: together ? 'together' : 'quiet' } })
+  if (together && row.sharedMomentState !== 'together' && !row.completed && row.completionReason !== 'trust_shared_recorded') {
+    await syncLayerAfterTrustSignal({ conversationId: appSession.conversationId, signalType: TRUST_SIGNAL_TYPE.SNUGGLE_SHARED, dbClient: db })
+    await db.snuggleSession.update({ where: { appSessionId: id }, data: { completionReason: 'trust_shared_recorded' } })
+  }
   return toSnuggleState(withPresence)
 }
 
