@@ -312,6 +312,28 @@ const buildDiscoveryEligibilityDiagnostics = async ({ viewerEmail, candidateEmai
   }
 }
 
+
+
+const buildSparkInboxDiagnostics = async ({ sparkId, discoveredUserId, viewerAId, viewerBId, sparksBBody, accountBSessionCookie }) => {
+  const createdSparkId = typeof sparkId === 'string' && sparkId.startsWith('spk_') ? sparkId.slice(4) : null
+  const createdSpark = createdSparkId
+    ? await prisma.spark.findUnique({ where: { id: createdSparkId }, select: { id: true, status: true, initiatorUserId: true, recipientUserId: true, createdAt: true, updatedAt: true } })
+    : null
+  const sparkRowsForAB = await prisma.spark.findMany({
+    where: { OR: [{ initiatorUserId: { in: [viewerAId, viewerBId] } }, { recipientUserId: { in: [viewerAId, viewerBId] } }] },
+    select: { id: true, status: true, initiatorUserId: true, recipientUserId: true, createdAt: true, updatedAt: true },
+    orderBy: { createdAt: 'desc' }
+  })
+  const viewerBProfileResponse = await authFetch('/v1/profile/viewer', { cookie: accountBSessionCookie })
+  const viewerBProfileBody = await parseJsonSafe(viewerBProfileResponse)
+  return {
+    createdSpark: createdSpark ? { ...createdSpark, sparkId: `spk_${createdSpark.id}` } : null,
+    actorIds: { viewerAId, viewerBId, discoveredUserId },
+    sparkRowsForAB: sparkRowsForAB.map((row) => ({ ...row, sparkId: `spk_${row.id}` })),
+    bListResponseBody: sparksBBody,
+    viewerBIdentity: viewerBProfileBody?.meta?.viewer || null
+  }
+}
 const main = async () => {
   const runId = Date.now()
   ensureDatabaseUrl()
@@ -352,13 +374,20 @@ const main = async () => {
     if (!profileCompletenessB.ok) failStep('profile readiness B', `${profileCompletenessB.status} ${profileB?.error?.reasonCode || 'unknown_error'}`)
     passStep('profile readiness B')
 
+    const profileViewerB = await authFetch('/v1/profile/viewer', { cookie: accountB.sessionCookie })
+    const profileViewerBBody = await parseJsonSafe(profileViewerB)
+    await ensureOk('profile viewer B', profileViewerB, profileViewerBBody, { route: 'GET /v1/profile/viewer' })
+    const viewerBUserId = profileViewerBBody?.data?.userId
+    if (!viewerBUserId) failStep('profile viewer B', 'missing userId in response body', { route: 'GET /v1/profile/viewer', body: profileViewerBBody })
+
     const discoveryA = await authFetch('/v1/discovery/daily', { cookie: accountA.sessionCookie })
     const discoveryABody = await parseJsonSafe(discoveryA)
     if (!discoveryA.ok) {
       failStep('discovery A', `${discoveryA.status} ${discoveryABody?.error?.reasonCode || 'unknown_error'}`)
     }
     passStep('discovery A')
-    const discoveredUserId = discoveryABody?.data?.introductions?.[0]?.userId
+    const introductions = discoveryABody?.data?.introductions || []
+    const discoveredUserId = introductions.find((item) => item?.userId === viewerBUserId)?.userId || introductions[0]?.userId
     if (!discoveredUserId) {
       const diagnostics = await buildDiscoveryEligibilityDiagnostics({ viewerEmail: emailA, candidateEmail: emailB })
       failStep('discovery A', `state=${discoveryABody?.data?.state || 'unknown'} reasonCode=${discoveryABody?.data?.reasonCode || 'none'} introductions=0`, { diagnostics })
@@ -373,8 +402,18 @@ const main = async () => {
     const sparksB = await authFetch('/v1/sparks/viewer', { cookie: accountB.sessionCookie })
     const sparksBBody = await parseJsonSafe(sparksB)
     await ensureOk('B lists incoming Sparks', sparksB, sparksBBody, { route: 'GET /v1/sparks/viewer' })
-    const incomingSpark = sparksBBody?.data?.find((item) => item?.sparkId === sparkId && item?.recipientUserId === discoveredUserId)
-    if (!incomingSpark) failStep('B lists incoming Sparks', `spark ${sparkId} not found in viewer list`, { route: 'GET /v1/sparks/viewer', body: sparksBBody })
+    const incomingSpark = sparksBBody?.data?.find((item) => item?.sparkId === sparkId && item?.recipientUserId === viewerBUserId)
+    if (!incomingSpark) {
+      const diagnostics = await buildSparkInboxDiagnostics({
+        sparkId,
+        discoveredUserId,
+        viewerAId: sparkABody?.meta?.viewer?.userId || null,
+        viewerBId: viewerBUserId,
+        sparksBBody,
+        accountBSessionCookie: accountB.sessionCookie
+      })
+      failStep('B lists incoming Sparks', `spark ${sparkId} not found in viewer list`, { route: 'GET /v1/sparks/viewer', body: sparksBBody, diagnostics })
+    }
 
     const acceptB = await authFetch(`/v1/sparks/${sparkId}/accept`, { cookie: accountB.sessionCookie, method: 'PATCH' })
     const acceptBBody = await parseJsonSafe(acceptB)
