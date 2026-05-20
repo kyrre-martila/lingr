@@ -281,3 +281,9 @@ Layer UI must not include:
 - Backend payload contract for layer unlock rows: `messageKey` + optional `messageParams`.
 - Frontend resolves copy through localization packs (`en`, `nb-NO`) and applies locale fallback to English when needed.
 - Copy style remains gentle and understated (no celebration, no gamification, no pressure language).
+
+## Run 11.6 Prompt 4 invisible trust behavior notes
+- Match Cards / Guess Me / Snuggle / Playing now can quietly contribute to layer trust when meaningful shared moments complete.
+- Users must not see scores, point language, progress bars, task lists, or urgency prompts.
+- Completion moments should feel editorial and calm; trust accumulation remains server-internal.
+- Repeated toggles or partial completion states must not generate repeated trust effects in user experience.

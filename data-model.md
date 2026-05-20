@@ -353,3 +353,18 @@ No admin UI is included in MVP.
 - Why this changed: plain SHA-256 hashing was deterministic and not keyed, which weakens protection against offline token-guessing workflows.
 - `LINGR_SESSION_SECRET` is required in production; non-production environments may use a controlled fallback secret for local stability.
 - Migration implication: existing pre-Run-11.7 sessions may not validate and can require re-login; no schema change or destructive migration is needed.
+
+## Run 11.6 Prompt 4 — relationship investment trust signals (implemented)
+- Trust accumulation integrates relationship investment moments from Chat Apps using canonical signals:
+  - `match_cards_completed`
+  - `guess_me_completed`
+  - `snuggle_shared`
+  - `playing_now_shared`
+- Points are never hardcoded in app logic; values come from `trust_signal_rules` only.
+- Trigger semantics are completion-scoped, not activity-scoped:
+  - Match Cards trust applies only on reciprocal reveal completion.
+  - Guess Me trust applies only when both own-answer + partner-guess fields are complete and reveal unlocks.
+  - Snuggle trust applies once per session on first mutual shared moment.
+  - Playing now trust applies only on meaningful share payloads.
+- Idempotency semantics are required so repeated actions cannot accidentally mint trust in the same session.
+- Trust remains strictly pair-scoped in `relationship_layers` and never globalized to user profile totals.
