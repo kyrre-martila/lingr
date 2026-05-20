@@ -127,7 +127,7 @@ export const getViewerProfileCompleteness = async ({ viewer }) => {
     return !value
   })
 
-  const isComplete = profileResponse.profile.profileCompleteness >= 80
+  const isComplete = missingFields.length === 0
   return {
     userId: profileResponse.userId,
     lifecycleState: profileResponse.lifecycleState,
