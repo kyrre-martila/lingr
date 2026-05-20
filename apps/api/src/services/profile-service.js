@@ -1,5 +1,6 @@
 import { getDbClient } from '../db/client.js'
 import { ApiError } from '../http/errors.js'
+import { Prisma } from '@prisma/client'
 import { DOMAIN_ERROR_KIND, REASON_CODES, ACCOUNT_LIFECYCLE_STATE, INTERNAL_ID_STRATEGY } from '../../../../packages/shared/src/contracts.js'
 
 const toLifecycleState = (status) => {
@@ -56,7 +57,7 @@ const requireAuthenticatedViewer = (viewer) => {
 export const getViewerProfile = async ({ viewer }) => {
   const userId = getViewerUserId(viewer)
   if (!userId) return null
-  const db = getDbClient()
+  const db = await getDbClient()
   const user = await db.user.findUnique({ where: { id: userId } })
   if (!user) return null
   const profile = await db.profile.findUnique({ where: { userId: user.id } })
@@ -65,7 +66,11 @@ export const getViewerProfile = async ({ viewer }) => {
 }
 
 export const updateViewerProfileBasics = async ({ viewer, payload }) => {
-  const db = getDbClient()
+  const db = await getDbClient()
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new ApiError({ message: 'Profile payload must be a JSON object', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
+  }
+
   const displayName = normalize(payload.displayName)
   if (!displayName || displayName.length > 80) {
     throw new ApiError({ message: 'displayName is required and must be <= 80 chars', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
@@ -85,13 +90,23 @@ export const updateViewerProfileBasics = async ({ viewer, payload }) => {
   }
   const profileCompleteness = computeCompleteness(profileData)
 
-  const profile = await db.profile.upsert({
-    where: { userId: user.id },
-    update: { ...profileData, profileCompleteness },
-    create: { userId: user.id, ...profileData, visibility: 'discoverable', profileCompleteness }
-  })
+  try {
+    const profile = await db.profile.upsert({
+      where: { userId: user.id },
+      update: { ...profileData, profileCompleteness },
+      create: { userId: user.id, ...profileData, visibility: 'discoverable', profileCompleteness }
+    })
 
-  return toClientProfile(user, profile)
+    return toClientProfile(user, profile)
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientValidationError) {
+      throw new ApiError({ message: 'Invalid profile update payload', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      throw new ApiError({ message: 'Profile update failed due to invalid profile data', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.VALIDATION.INVALID_PAYLOAD, statusCode: 400 })
+    }
+    throw error
+  }
 }
 
 export const getViewerProfileCompleteness = async ({ viewer }) => {
