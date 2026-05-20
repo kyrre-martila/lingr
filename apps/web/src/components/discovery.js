@@ -72,6 +72,7 @@ const renderEmpty = (host, reasonCode) => {
   const panel = document.createElement('section')
   panel.className = 'discovery-empty soft-panel'
   panel.setAttribute('aria-live', 'polite')
+  panel.innerHTML = '<h3>A quiet pause in discovery</h3><p>There are no new introductions right now. More thoughtful profiles will arrive soon.</p>'
   panel.dataset.i18n = EMPTY_REASON_COPY[reasonCode] || EMPTY_REASON_COPY[DISCOVERY_REASON_CODES.NO_AVAILABLE_PEOPLE]
   if (reasonCode === DISCOVERY_REASON_CODES.UNAVAILABLE_REGION) {
     const cta = document.createElement('button')
