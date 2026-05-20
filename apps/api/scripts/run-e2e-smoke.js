@@ -27,6 +27,29 @@ const runCapture = (command, args) => new Promise((resolve, reject) => {
   child.on('exit', (code) => resolve({ code, stdout, stderr }))
 })
 
+const commandExists = async (command) => {
+  const result = await runCapture('bash', ['-lc', `command -v ${command}`])
+  return result.code === 0 && Boolean(result.stdout.trim())
+}
+
+const tryProvisionPostgresTooling = async () => {
+  const aptGetExists = await commandExists('apt-get')
+  if (!aptGetExists) return { attempted: false, reason: 'apt-get unavailable' }
+
+  console.log('[smoke] pg_isready missing. Attempting to install PostgreSQL tooling (postgresql-client)...')
+  const update = await runCapture('bash', ['-lc', 'apt-get update'])
+  if (update.code !== 0) {
+    return { attempted: true, success: false, output: update.stdout || update.stderr || 'apt-get update failed' }
+  }
+
+  const installClient = await runCapture('bash', ['-lc', 'apt-get install -y postgresql-client postgresql'])
+  if (installClient.code !== 0) {
+    return { attempted: true, success: false, output: installClient.stdout || installClient.stderr || 'apt-get install failed' }
+  }
+
+  return { attempted: true, success: true }
+}
+
 const ensureDatabaseUrl = () => {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL
   if (!allowDefaultDatabaseUrl) {
@@ -37,18 +60,82 @@ const ensureDatabaseUrl = () => {
   return process.env.DATABASE_URL
 }
 
-const ensurePostgresReachable = async () => {
-  const ready = await runCapture('pg_isready', ['-d', process.env.DATABASE_URL])
-  if (ready.code === -1) {
-    throw new Error('Postgres tooling is missing (pg_isready not found). Install PostgreSQL client/server binaries and retry.');
+const buildPgReadyTarget = (databaseUrl) => {
+  try {
+    const parsed = new URL(databaseUrl)
+    parsed.search = ''
+    return parsed.toString()
+  } catch {
+    return databaseUrl
   }
+}
+
+const ensureLingrDatabaseAccess = async () => {
+  const sudoExists = await commandExists('sudo')
+  const runuserExists = await commandExists('runuser')
+  const psqlExists = await commandExists('psql')
+  if (!psqlExists || (!sudoExists && !runuserExists)) {
+    throw new Error('Cannot bootstrap lingr database access: missing psql and/or sudo/runuser tooling.')
+  }
+
+  const asPostgres = sudoExists
+    ? ['sudo', '-u', 'postgres', 'psql']
+    : ['runuser', '-u', 'postgres', '--', 'psql']
+
+  const roleCheck = await runCapture(asPostgres[0], [...asPostgres.slice(1), '-tAc', "SELECT 1 FROM pg_roles WHERE rolname='lingr'"])
+  if (roleCheck.code !== 0) {
+    throw new Error(`Unable to query postgres roles for bootstrap: ${roleCheck.stderr || roleCheck.stdout}`)
+  }
+  if (!roleCheck.stdout.trim()) {
+    await runCommand(asPostgres[0], [...asPostgres.slice(1), '-c', "CREATE USER lingr WITH PASSWORD 'lingr';"])
+  } else {
+    await runCommand(asPostgres[0], [...asPostgres.slice(1), '-c', "ALTER USER lingr WITH PASSWORD 'lingr';"], { allowFailure: true })
+  }
+
+  const dbCheck = await runCapture(asPostgres[0], [...asPostgres.slice(1), '-tAc', "SELECT 1 FROM pg_database WHERE datname='lingr'"])
+  if (dbCheck.code !== 0) {
+    throw new Error(`Unable to query postgres databases for bootstrap: ${dbCheck.stderr || dbCheck.stdout}`)
+  }
+  if (!dbCheck.stdout.trim()) {
+    await runCommand(asPostgres[0], [...asPostgres.slice(1), '-c', "CREATE DATABASE lingr OWNER lingr;"])
+  }
+
+  console.log('[smoke] Lingr role/database ensured for local smoke credentials.')
+}
+
+const ensurePostgresReachable = async () => {
+  const pgIsReadyExists = await commandExists('pg_isready')
+  if (!pgIsReadyExists) {
+    const provision = await tryProvisionPostgresTooling()
+    const availableAfterProvision = await commandExists('pg_isready')
+    if (!availableAfterProvision) {
+      throw new Error([
+        'Postgres tooling is missing (pg_isready not found), and automatic provisioning was not successful.',
+        `Provision attempted: ${provision.attempted ? 'yes' : 'no'}`,
+        provision.reason ? `Reason: ${provision.reason}` : '',
+        provision.output ? `Provision output: ${provision.output}` : '',
+        'Install PostgreSQL client/server binaries and retry.'
+      ].filter(Boolean).join('\n'))
+    }
+    console.log('[smoke] PostgreSQL tooling provisioned successfully.')
+  }
+
+  const pgReadyTarget = buildPgReadyTarget(process.env.DATABASE_URL)
+  const ready = await runCapture('pg_isready', ['-d', pgReadyTarget])
   if (ready.code === 0) {
     console.log('[smoke] Postgres is reachable.')
     return
   }
 
   console.log('[smoke] Postgres not reachable. Attempting to start local cluster (if installed)...')
-  const startCluster = await runCapture('pg_ctlcluster', ['16', 'main', 'start'])
+  const pgCtlClusterExists = await commandExists('pg_ctlcluster')
+  if (!pgCtlClusterExists) {
+    throw new Error('Postgres server tooling missing (pg_ctlcluster not found). Install local Postgres server packages and retry.')
+  }
+
+  const pgVersionProbe = await runCapture('bash', ['-lc', "pg_lsclusters --no-header | awk 'NR==1 {print $1}'"])
+  const clusterVersion = pgVersionProbe.code === 0 && pgVersionProbe.stdout.trim() ? pgVersionProbe.stdout.trim() : '16'
+  const startCluster = await runCapture('pg_ctlcluster', [clusterVersion, 'main', 'start'])
   if (startCluster.code !== 0) {
     throw new Error([
       'Postgres is not reachable and auto-start failed.',
@@ -61,28 +148,18 @@ const ensurePostgresReachable = async () => {
     ].join('\n'))
   }
 
-  const readyAfterStart = await runCapture('pg_isready', ['-d', process.env.DATABASE_URL])
+  const readyAfterStart = await runCapture('pg_isready', ['-d', pgReadyTarget])
   if (readyAfterStart.code !== 0) {
     throw new Error('Postgres still unreachable after cluster start attempt. Check DATABASE_URL and local Postgres logs.')
   }
 
-  const createRole = await runCapture('sudo', ['-u', 'postgres', 'psql', '-tAc', "SELECT 1 FROM pg_roles WHERE rolname='lingr'"])
-  if (createRole.code === 0 && !createRole.stdout.trim()) {
-    await runCommand('sudo', ['-u', 'postgres', 'psql', '-c', "CREATE USER lingr WITH PASSWORD 'lingr';"], { allowFailure: true })
-  }
-
-  const createDb = await runCapture('sudo', ['-u', 'postgres', 'psql', '-tAc', "SELECT 1 FROM pg_database WHERE datname='lingr'"])
-  if (createDb.code === 0 && !createDb.stdout.trim()) {
-    await runCommand('sudo', ['-u', 'postgres', 'psql', '-c', "CREATE DATABASE lingr OWNER lingr;"])
-  }
-
-  console.log('[smoke] Postgres started and lingr role/database ensured when missing.')
+  console.log('[smoke] Postgres started.')
 }
 
 const assertApiHealth = async () => {
   for (let attempt = 1; attempt <= 30; attempt += 1) {
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/health`)
+      const response = await fetch(`${API_BASE_URL}/health`)
       const body = await response.json()
       if (response.ok && body?.status === 'success' && body?.data?.status === 'ok') return
     } catch {
@@ -90,7 +167,7 @@ const assertApiHealth = async () => {
     }
     await delay(500)
   }
-  throw new Error('API health check failed at /v1/health')
+  throw new Error('API health check failed at /health')
 }
 
 const authFlow = async (label, email) => {
@@ -120,6 +197,7 @@ const authFlow = async (label, email) => {
 const main = async () => {
   ensureDatabaseUrl()
   await ensurePostgresReachable()
+  await ensureLingrDatabaseAccess()
 
   await runCommand('npm', ['run', 'db:generate', '--workspace', '@lingr/api'])
   await runCommand('npm', ['run', 'db:migrate:deploy', '--workspace', '@lingr/api'])
