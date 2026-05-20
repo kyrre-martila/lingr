@@ -3,6 +3,7 @@ import { ApiError } from '../http/errors.js'
 import { CONVERSATION_PARTICIPANT_ROLE, CONVERSATION_STATE, DOMAIN_ERROR_KIND, INTERNAL_ID_STRATEGY, REASON_CODES, SPARK_ACTION, SPARK_ACTIVE_STATES, SPARK_STATE, SPARK_TERMINAL_STATES, SPARK_TRANSITIONS } from '../../../../packages/shared/src/contracts.js'
 import { syncLayerAfterMutualSpark } from './layer-service.js'
 import { assertNoUserInteractionBlock } from './safety-service.js'
+import { PRODUCT_EVENT_TYPE, recordProductEventOnce } from './product-fit-service.js'
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
 const toExternalSparkId = (id) => `${INTERNAL_ID_STRATEGY.API_SPARK_ID_PREFIX}${id}`
@@ -96,6 +97,7 @@ export const createSparkInvitation = async ({ viewer, payload, dbClient }) => {
   const softResonanceContext = normalize(payload.softResonanceContext) || null
   try {
     const row = await db.spark.create({ data: { initiatorUserId, recipientUserId, pairMinUserId, pairMaxUserId, status: SPARK_STATE.INVITED, sourceGlimpsId, softResonanceContext } })
+    await recordProductEventOnce({ userId: initiatorUserId, eventType: PRODUCT_EVENT_TYPE.FIRST_SPARK_SENT, dbClient: db })
     return toClientSpark(row)
   } catch (error) {
     if (error?.code === 'P2002') throw new ApiError({ message: 'Active Spark already exists between users', kind: DOMAIN_ERROR_KIND.DOMAIN, reasonCode: REASON_CODES.SPARK.DUPLICATE_ACTIVE_SPARK, statusCode: 409 })
@@ -140,6 +142,8 @@ const updateSparkStatus = async ({ viewer, sparkId, nextStatus, action, dbClient
   if (nextStatus === SPARK_STATE.DECLINED) data.declinedAt = now
   const updated = await db.spark.update({ where: { id }, data })
   if (nextStatus === SPARK_STATE.ACCEPTED) {
+    await recordProductEventOnce({ userId: row.initiatorUserId, eventType: PRODUCT_EVENT_TYPE.MUTUAL_SPARK, dbClient: db })
+    await recordProductEventOnce({ userId: row.recipientUserId, eventType: PRODUCT_EVENT_TYPE.MUTUAL_SPARK, dbClient: db })
     await syncLayerAfterMutualSpark({ spark: updated, dbClient: db })
     await createOrGetConversationForSpark({ tx: db, spark: updated })
   }

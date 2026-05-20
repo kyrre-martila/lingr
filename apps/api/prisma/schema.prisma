@@ -100,6 +100,26 @@ enum ModerationEventType {
   conversation_paused
 }
 
+enum ProductEventType {
+  onboarding_completed
+  first_glimps_published
+  first_spark_sent
+  mutual_spark
+  first_conversation_created
+  first_message_sent
+  emotional_feedback_submitted
+}
+
+enum EmotionalFeedbackTag {
+  calm
+  thoughtful
+  overwhelming
+  meaningful
+  too_slow
+  too_fast
+  not_for_me
+}
+
 
 model User {
   id                 String     @id @default(cuid())
@@ -232,6 +252,31 @@ model Session {
 
   @@index([userId, status])
   @@map("sessions")
+}
+
+model ProductEvent {
+  id        String           @id @default(cuid())
+  userId    String
+  eventType ProductEventType
+  dayKey    String
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, eventType, createdAt])
+  @@index([dayKey, eventType])
+  @@map("product_events")
+}
+
+model EmotionalFeedback {
+  id        String               @id @default(cuid())
+  userId    String
+  tag       EmotionalFeedbackTag
+  note      String?
+  createdAt DateTime             @default(now())
+
+  @@index([userId, createdAt])
+  @@index([tag, createdAt])
+  @@map("emotional_feedback")
 }
 
 

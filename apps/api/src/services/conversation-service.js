@@ -4,6 +4,7 @@ import { APP_INVITE_APP_ID, CONVERSATION_PARTICIPANT_ROLE, CONVERSATION_STATE, D
 import { syncLayerAfterMessage, syncLayerAfterTrustSignal } from './layer-service.js'
 import { getVisibleProfileForRelationship } from './profile-visibility-service.js'
 import { assertConversationInteractionAllowed, assertNoUserInteractionBlock } from './safety-service.js'
+import { PRODUCT_EVENT_TYPE, recordProductEventOnce } from './product-fit-service.js'
 
 const normalize = (value) => (typeof value === 'string' ? value.trim() : '')
 const toExternalConversationId = (id) => `${INTERNAL_ID_STRATEGY.API_CONVERSATION_ID_PREFIX}${id}`
@@ -80,6 +81,8 @@ export const createConversationFromSpark = async ({ viewer, payload, dbClient })
   if (existing) return toConversationDto(existing)
   try {
     const created = await db.conversation.create({ data: { sparkId, state: spark.status === SPARK_STATE.PAUSED ? CONVERSATION_STATE.PAUSED : CONVERSATION_STATE.ACTIVE, participants: { create: [{ userId: spark.initiatorUserId, role: CONVERSATION_PARTICIPANT_ROLE.MEMBER }, { userId: spark.recipientUserId, role: CONVERSATION_PARTICIPANT_ROLE.MEMBER }] } }, include: includeConversation })
+    await recordProductEventOnce({ userId: spark.initiatorUserId, eventType: PRODUCT_EVENT_TYPE.FIRST_CONVERSATION_CREATED, dbClient: db })
+    await recordProductEventOnce({ userId: spark.recipientUserId, eventType: PRODUCT_EVENT_TYPE.FIRST_CONVERSATION_CREATED, dbClient: db })
     return toConversationDto(created)
   } catch (error) {
     if (error?.code === 'P2002') {
@@ -117,6 +120,7 @@ export const sendConversationMessage = async ({ viewer, conversationId, payload,
   if (SYSTEM_ORIGIN_MESSAGE_TYPES.has(type)) throw new ApiError({ message: 'System message types are service-origin only', kind: DOMAIN_ERROR_KIND.PERMISSION, reasonCode: REASON_CODES.PERMISSION.NOT_ALLOWED, statusCode: 403 })
   assertMessagePayload(type, payload?.content)
   const row = await db.message.create({ data: { conversationId: id, senderUserId: userId, type, visibility: MESSAGE_VISIBILITY.CONVERSATION, deliveryState: MESSAGE_DELIVERY_STATE.SENT, content: payload.content, metadata: payload.metadata || null } })
+  if (type === MESSAGE_TYPE.TEXT) await recordProductEventOnce({ userId, eventType: PRODUCT_EVENT_TYPE.FIRST_MESSAGE_SENT, dbClient: db })
   if (type === MESSAGE_TYPE.TEXT && typeof db?.$transaction === 'function') await syncLayerAfterMessage({ conversationId: id, senderUserId: userId, messageText: payload?.content?.text, dbClient: db })
   if (type === MESSAGE_TYPE.PLAYING_NOW && payload?.content?.title?.trim() && typeof db?.$transaction === 'function') await syncLayerAfterTrustSignal({ conversationId: id, signalType: TRUST_SIGNAL_TYPE.PLAYING_NOW_SHARED, dbClient: db })
   return toMessageDto(row)
