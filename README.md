@@ -221,21 +221,25 @@ Web (`apps/web` runtime):
 - `__LINGR_API_BASE_URL` should point at your local API (default in web client is `http://localhost:3000`; set this to your API port if different).
 - Mock transport is now **opt-in only** using `window.__LINGR_DEV_USE_MOCK__ = true` in local dev tools.
 
-### Startup + migration + seed order
+### Deterministic backend smoke runner (Codex/local)
 
-1. Start PostgreSQL locally.
-2. Install dependencies from repo root:
-   - `npm install`
-3. Generate Prisma client:
-   - `npm run db:generate --workspace @lingr/api`
-4. Apply Prisma migrations:
-   - `npm run db:migrate --workspace @lingr/api`
-5. Seed local E2E region defaults (open region for registration):
-   - `npm run db:seed:dev-e2e --workspace @lingr/api`
-6. Start API:
-   - `npm run dev:api`
-7. Start web app (in a second terminal):
-   - run your existing web dev command
+Use one command from repo root:
+
+- `npm run e2e:smoke --workspace @lingr/api`
+
+What this runner does:
+1. Ensures `DATABASE_URL` is set (defaults in smoke/dev context to `postgresql://lingr:lingr@localhost:5432/lingr?schema=public`).
+2. Verifies Postgres reachability.
+3. Attempts local cluster start (`pg_ctlcluster 16 main start`) and creates `lingr` role/database if missing.
+4. Runs Prisma generate + migrate deploy + dev E2E seed.
+5. Starts API and checks `/v1/health`.
+6. Runs register/login smoke for Account A and Account B.
+7. Stops at first real blocker and exits non-zero.
+
+What this runner does not do:
+- Does not mock DB or API.
+- Does not bypass onboarding/discovery product gates.
+- Does not force fake IDs or lifecycle shortcuts.
 
 ### Two-account manual test checklist
 
