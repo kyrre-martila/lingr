@@ -8,25 +8,25 @@ const createSteps = (state) => [
   {
     id: 'welcome',
     title: 'Welcome to Lingr',
-    description: 'A slower onboarding to help you enter with intention.',
-    render: () => '<p class="onboarding-copy">We will ask a few gentle questions before you begin.</p>'
+    description: 'Take a breath. There is no rush here.',
+    render: () => '<p class="onboarding-copy">We will move through a few quiet prompts so your profile feels true, not performative.</p>'
   },
   {
     id: 'name',
-    title: 'What should we call you?',
-    description: 'Your first name helps keep conversations personal.',
+    title: 'What name feels right to share here?',
+    description: 'First name only. You can always adjust this later.',
     render: () => createField({ id: 'name', label: 'Name', value: state.name, placeholder: 'Avery', required: true })
   },
   {
     id: 'age',
     title: 'How old are you?',
-    description: 'Required to shape an age-appropriate experience.',
+    description: 'This helps us keep introductions age-appropriate and safe.',
     render: () => createField({ id: 'age', label: 'Age', type: 'number', value: state.age, min: 18, max: 99, required: true })
   },
   {
     id: 'location',
     title: 'Where are you based?',
-    description: 'City and region are enough for now.',
+    description: 'City and region are enough. Exact location stays private.',
     render: () => createField({ id: 'location', label: 'Location', value: state.location, placeholder: 'Seattle, WA', required: true })
   },
   {
@@ -38,7 +38,7 @@ const createSteps = (state) => [
   {
     id: 'reflection',
     title: 'A short reflection',
-    description: 'Share what is present for you lately.',
+    description: 'Share something honest that has been on your mind lately.',
     render: () => createField({
       id: 'reflection',
       label: 'Reflection',
@@ -51,8 +51,8 @@ const createSteps = (state) => [
   },
   {
     id: 'confirm',
-    title: 'You are ready to begin',
-    description: 'Review your details and confirm when this feels right.',
+    title: 'Pause and review',
+    description: 'Read this once more and continue when it feels settled.',
     render: () => `
       <dl class="onboarding-review">
         <div><dt>Name</dt><dd>${state.name || '—'}</dd></div>
@@ -60,7 +60,7 @@ const createSteps = (state) => [
         <div><dt>Location</dt><dd>${state.location || '—'}</dd></div>
         <div><dt>Intention</dt><dd>${state.relationshipIntention || '—'}</dd></div>
       </dl>
-      <p class="onboarding-copy">Your responses stay local for now while we finish the next build phase.</p>
+      <p class="onboarding-copy">Your responses are only used to shape a calmer introduction experience.</p>
     `
   }
 ]
@@ -133,7 +133,7 @@ export const createOnboardingSection = ({ compactHeader = false } = {}) => {
     if (!required) return ''
 
     for (const field of required) {
-      if (!state[field]) return 'Please complete this step before continuing.'
+      if (!state[field]) return 'Take your time—please complete this step before continuing.'
     }
 
     if (stepId === 'age') {
@@ -161,7 +161,7 @@ export const createOnboardingSection = ({ compactHeader = false } = {}) => {
     onComplete: ({ announceError }) => {
       nextBtn.disabled = true
       nextBtn.textContent = 'Complete'
-      announceError('Onboarding complete. We will save this to your profile in a future release.')
+      announceError('You are all set. Your profile foundation is ready.')
       section.querySelector('#onboarding-title')?.focus?.()
     }
   })

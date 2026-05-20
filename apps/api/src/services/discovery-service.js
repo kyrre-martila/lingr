@@ -70,7 +70,10 @@ export const getDailyDiscovery = async ({ viewer, dbClient, now = new Date() }) 
     take: 20
   })
 
-  const filtered = people.filter((p) => !blockedSet.has(p.id) && !sparkSet.has(p.id) && !seenSet.has(p.id)).slice(0, remaining)
+  const filtered = people
+    .filter((p) => !blockedSet.has(p.id) && !sparkSet.has(p.id) && !seenSet.has(p.id))
+    .filter((p) => Array.isArray(p.glimpses) && p.glimpses.length > 0)
+    .slice(0, remaining)
   if (!filtered.length) return { state: DISCOVERY_STATE.EMPTY, reasonCode: DISCOVERY_REASON_CODES.NO_AVAILABLE_PEOPLE, limitPerDay: DISCOVERY_LIMIT_PER_DAY, remaining, introductions: [] }
 
   return { state: DISCOVERY_STATE.READY, reasonCode: null, limitPerDay: DISCOVERY_LIMIT_PER_DAY, remaining, notNowCooldownDays: DISCOVERY_NOT_NOW_COOLDOWN_DAYS, introductions: filtered.map(toDiscoveryDto) }
