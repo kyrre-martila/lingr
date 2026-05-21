@@ -15,9 +15,12 @@ const dayKeyOf = (date = new Date()) => date.toISOString().slice(0, 10)
 export const recordProductEventOnce = async ({ userId, eventType, metadata = null, dbClient }) => {
   if (!userId || !eventType) return
   const db = dbClient || await getDbClient()
-  const existing = await db.productEvent.findFirst({ where: { userId, eventType }, select: { id: true } })
-  if (existing) return
-  await db.productEvent.create({ data: { userId, eventType, dayKey: dayKeyOf(), metadata } })
+  try {
+    await db.productEvent.create({ data: { userId, eventType, dayKey: dayKeyOf(), metadata } })
+  } catch (error) {
+    if (error?.code === 'P2002') return
+    throw error
+  }
 }
 
 export const submitEmotionalFeedback = async ({ userId, tag, note, dbClient }) => {
