@@ -1,0 +1,1 @@
+export default function SettingsPage(){ return <main className='section'><div className='container'><h2>Settings</h2><p className='lead'>Safety actions: block, report, and pause conversation remain available in chat surfaces.</p></div></main> }
