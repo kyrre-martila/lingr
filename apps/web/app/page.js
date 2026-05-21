@@ -1,6 +1,2 @@
-'use client'
-import LegacyMount from '../components/LegacyMount'
-
-export default function Page() {
-  return <LegacyMount loadBuild={async () => (await import('../lib/legacy-builders')).buildLanding} />
-}
+import LandingPage from '../components/landing/LandingPage'
+export default function Page() { return <LandingPage /> }

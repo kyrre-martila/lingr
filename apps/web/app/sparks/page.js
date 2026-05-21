@@ -1,3 +1,2 @@
-'use client'
-import LegacyMount from '../../components/LegacyMount'
-export default function Page(){ return <main className='section section--paper'><div className='container'><p className='eyebrow'>Sparks & Glimps</p><LegacyMount loadBuild={async () => (await import('../../lib/legacy-builders')).createGlimpsCreationFlow} /></div></main> }
+import PageIntro from '../../components/ui/PageIntro'
+export default function Page(){return <PageIntro eyebrow='Sparks' title='Shared momentum' description='When interest is mutual, Spark unlocks Layer 1 conversation.'><div className='card'><p>No mutual sparks yet.</p><p className='onboarding-helper'>Warm empty states keep pacing low-pressure.</p></div></PageIntro>}

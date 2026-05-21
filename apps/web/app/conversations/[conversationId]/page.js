@@ -1,2 +1,2 @@
-import { redirect } from 'next/navigation'
-export default function ConversationIdPage(){ redirect('/conversations') }
+import PageIntro from '../../../components/ui/PageIntro'
+export default async function ConversationIdPage({ params }){const { conversationId } = await params; return <PageIntro eyebrow='Conversation' title={`Conversation ${conversationId}`} description='Conversation detail shell ready for API hydration.'><div className='conversation-shell__detail'><p className='onboarding-helper'>Message stream, plus-menu apps, and safety actions are rendered here.</p></div></PageIntro>}
