@@ -44,13 +44,16 @@ export const blockUser = async ({ viewer, payload, dbClient }) => {
   const db = dbClient || await getDbClient()
   const targetUserId = stripPrefixId(payload?.targetUserId, INTERNAL_ID_STRATEGY.API_USER_ID_PREFIX, 'targetUserId')
   if (targetUserId === actorUserId) throw new ApiError({ message: 'Invalid targetUserId', kind: DOMAIN_ERROR_KIND.VALIDATION, reasonCode: REASON_CODES.VALIDATION.INVALID_ID, statusCode: 400 })
-  await db.blockRelation.upsert({ where: { blockerUserId_blockedUserId: { blockerUserId: actorUserId, blockedUserId: targetUserId } }, create: { blockerUserId: actorUserId, blockedUserId: targetUserId }, update: {} })
-  const conversations = await db.conversation.findMany({ where: { participants: { some: { userId: actorUserId } }, spark: { OR: [{ initiatorUserId: targetUserId }, { recipientUserId: targetUserId }] } }, select: { id: true } })
-  for (const c of conversations) {
-    await db.conversation.update({ where: { id: c.id }, data: { state: 'paused' } })
-    await db.conversationSafetyState.upsert({ where: { conversationId: c.id }, create: { conversationId: c.id, isPaused: true, initiatedByUserId: actorUserId, reason: CONVERSATION_SAFETY_REASON.BLOCKED_USER, pausedAt: new Date() }, update: { isPaused: true, initiatedByUserId: actorUserId, reason: CONVERSATION_SAFETY_REASON.BLOCKED_USER, pausedAt: new Date() } })
-  }
-  await db.moderationEvent.create({ data: { type: MODERATION_EVENT_TYPE.USER_BLOCKED, actorUserId, targetUserId, metadata: { source: 'user_action' } } })
+  const pausedAt = new Date()
+  await db.$transaction(async (tx) => {
+    await tx.blockRelation.upsert({ where: { blockerUserId_blockedUserId: { blockerUserId: actorUserId, blockedUserId: targetUserId } }, create: { blockerUserId: actorUserId, blockedUserId: targetUserId }, update: {} })
+    const conversations = await tx.conversation.findMany({ where: { participants: { some: { userId: actorUserId } }, spark: { OR: [{ initiatorUserId: targetUserId }, { recipientUserId: targetUserId }] } }, select: { id: true } })
+    for (const c of conversations) {
+      await tx.conversation.update({ where: { id: c.id }, data: { state: 'paused' } })
+      await tx.conversationSafetyState.upsert({ where: { conversationId: c.id }, create: { conversationId: c.id, isPaused: true, initiatedByUserId: actorUserId, reason: CONVERSATION_SAFETY_REASON.BLOCKED_USER, pausedAt }, update: { isPaused: true, initiatedByUserId: actorUserId, reason: CONVERSATION_SAFETY_REASON.BLOCKED_USER, pausedAt } })
+    }
+    await tx.moderationEvent.create({ data: { type: MODERATION_EVENT_TYPE.USER_BLOCKED, actorUserId, targetUserId, metadata: { source: 'user_action' } } })
+  })
   return { blockedUserId: payload.targetUserId, status: 'blocked' }
 }
 

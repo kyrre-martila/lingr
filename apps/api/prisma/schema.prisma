@@ -262,6 +262,7 @@ model ProductEvent {
   metadata  Json?
   createdAt DateTime         @default(now())
 
+  @@unique([userId, eventType])
   @@index([userId, eventType, createdAt])
   @@index([dayKey, eventType])
   @@map("product_events")
