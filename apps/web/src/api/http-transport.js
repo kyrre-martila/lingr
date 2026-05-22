@@ -1,7 +1,7 @@
 import { DOMAIN_ERROR_KIND, REASON_CODES } from '../domain/contracts.js'
 import { createFailure } from './envelope.js'
 
-const DEFAULT_BASE_URL = 'http://localhost:3000'
+const DEFAULT_BASE_URL = 'http://localhost:4000'
 
 const normalizeBaseUrl = (value) => String(value || DEFAULT_BASE_URL).replace(/\/$/, '')
 
