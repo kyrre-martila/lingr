@@ -71,7 +71,22 @@ export const apiClient = Object.freeze({
   login: ({ email, password }) => apiRequest('/v1/auth/login', { method: 'POST', body: { email, password } }),
   logout: () => apiRequest('/v1/auth/logout', { method: 'POST' }),
   getProfile: () => apiRequest('/v1/profile/viewer'),
+  updateProfile: (payload) => apiRequest('/v1/profile/viewer', { method: 'PATCH', body: payload }),
   getProfileCompleteness: () => apiRequest('/v1/profile/completeness'),
+  listCountries: () => apiRequest('/v1/regions/countries'),
+  listRegionsByCountry: ({ countryCode, locale } = {}) => {
+    const params = new URLSearchParams()
+    if (locale) params.set('locale', String(locale))
+    const query = params.toString()
+    return apiRequest(`/v1/regions/${encodeURIComponent(countryCode || '')}${query ? `?${query}` : ''}`)
+  },
+  checkRegionAvailability: ({ countryCode, regionSlug }) => {
+    const params = new URLSearchParams()
+    if (countryCode) params.set('countryCode', String(countryCode))
+    if (regionSlug) params.set('regionSlug', String(regionSlug))
+    const query = params.toString()
+    return apiRequest(`/v1/regions/check${query ? `?${query}` : ''}`)
+  },
   getDiscoveryDaily: () => apiRequest('/v1/discovery/daily'),
   sendDiscoverySpark: ({ discoveredUserId }) => apiRequest('/v1/discovery/spark', { method: 'POST', body: { discoveredUserId } }),
   sendDiscoveryNotNow: ({ discoveredUserId }) => apiRequest('/v1/discovery/not-now', { method: 'POST', body: { discoveredUserId } }),
