@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [countries, setCountries] = useState([])
   const [regions, setRegions] = useState([])
   const [loadingRegions, setLoadingRegions] = useState(false)
-  const [status, setStatus] = useState({ loadingCountries: true, submitting: false, error: '' })
+  const [status, setStatus] = useState({ loadingCountries: true, loadingRegionsError: '', countriesError: '', submitting: false, error: '' })
 
   const title = mode === 'register' ? 'Create account' : 'Login'
   const eyebrow = mode === 'register' ? 'Start with care' : 'Welcome back'
@@ -31,11 +31,16 @@ export default function LoginPage() {
       setStatus((prev) => ({ ...prev, loadingCountries: true, error: '' }))
       try {
         const response = await apiClient.listCountries()
-        setCountries(response?.countries || [])
-        setStatus((prev) => ({ ...prev, loadingCountries: false }))
+        const nextCountries = Array.isArray(response?.countries)
+          ? response.countries
+          : Array.isArray(response?.data?.countries)
+            ? response.data.countries
+            : []
+        setCountries(nextCountries)
+        setStatus((prev) => ({ ...prev, loadingCountries: false, countriesError: '' }))
       } catch {
         setCountries([])
-        setStatus((prev) => ({ ...prev, loadingCountries: false, error: 'We could not load countries right now. Please try again.' }))
+        setStatus((prev) => ({ ...prev, loadingCountries: false, countriesError: 'We could not load countries right now. Please try again.' }))
       }
     }
 
@@ -46,15 +51,23 @@ export default function LoginPage() {
     const loadRegions = async () => {
       if (!form.countryCode || mode !== 'register') {
         setRegions([])
+        setStatus((prev) => ({ ...prev, loadingRegionsError: '' }))
         return
       }
 
       setLoadingRegions(true)
       try {
         const response = await apiClient.listRegionsByCountry({ countryCode: form.countryCode })
-        setRegions(response?.regions || [])
+        const nextRegions = Array.isArray(response?.regions)
+          ? response.regions
+          : Array.isArray(response?.data?.regions)
+            ? response.data.regions
+            : []
+        setRegions(nextRegions)
+        setStatus((prev) => ({ ...prev, loadingRegionsError: '' }))
       } catch {
         setRegions([])
+        setStatus((prev) => ({ ...prev, loadingRegionsError: 'We could not load regions for that country right now.' }))
       } finally {
         setLoadingRegions(false)
       }
@@ -121,7 +134,7 @@ export default function LoginPage() {
             <label className='flow'>
               <span>Country</span>
               <select className='onboarding-input' name='countryCode' value={form.countryCode} onChange={handleChange} required disabled={status.loadingCountries}>
-                <option value=''>Select a country</option>
+                <option value=''>{status.loadingCountries ? 'Loading countries…' : status.countriesError ? 'Could not load countries' : 'Select a country'}</option>
                 {countries.map((country) => (
                   <option key={country.id} value={country.isoCode}>{country.name}</option>
                 ))}
@@ -130,7 +143,7 @@ export default function LoginPage() {
             <label className='flow'>
               <span>Region</span>
               <select className='onboarding-input' name='regionSlug' value={form.regionSlug} onChange={handleChange} required disabled={!form.countryCode || loadingRegions}>
-                <option value=''>{loadingRegions ? 'Loading regions…' : 'Select a region'}</option>
+                <option value=''>{loadingRegions ? 'Loading regions…' : status.loadingRegionsError ? 'Could not load regions' : 'Select a region'}</option>
                 {regions.map((region) => (
                   <option key={region.id} value={region.slug}>{region.name}</option>
                 ))}
@@ -139,6 +152,8 @@ export default function LoginPage() {
           </>
         ) : null}
 
+        {status.countriesError ? <p className='onboarding-helper'>{status.countriesError}</p> : null}
+        {status.loadingRegionsError ? <p className='onboarding-helper'>{status.loadingRegionsError}</p> : null}
         {status.error ? <p className='onboarding-helper'>{status.error}</p> : null}
 
         <div>
