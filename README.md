@@ -218,7 +218,7 @@ API (`apps/api/.env`):
 - `DB_HEALTHCHECK_ENABLED` (optional, default `true`).
 
 Web (`apps/web` runtime):
-- `__LINGR_API_BASE_URL` should point at your local API (default in web client is `http://localhost:3000`; set this to your API port if different).
+- `__LINGR_API_BASE_URL` should point at your local API (default in web client is `http://localhost:4000`; set this to your API port if different).
 - Mock transport is now **opt-in only** using `window.__LINGR_DEV_USE_MOCK__ = true` in local dev tools.
 
 ### Deterministic backend smoke runner (Codex/local)
