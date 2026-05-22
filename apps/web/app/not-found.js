@@ -1,3 +1,4 @@
+import Link from 'next/link'
 export default function NotFound() {
   return (
     <main className='shell shell--narrow'>
@@ -8,9 +9,9 @@ export default function NotFound() {
           Let’s bring you back to a familiar place.
         </p>
         <div className='action-row'>
-          <a className='button button--primary' href='/'>
+          <Link className='button button--primary' href='/'>
             Go to home
-          </a>
+          </Link>
         </div>
       </section>
     </main>
