@@ -4,9 +4,32 @@ import { withRequestContext } from './middleware/request-context.js'
 import { assertJsonRequest } from './middleware/validate-json.js'
 import { withAuthContext } from './auth/middleware.js'
 import { parseJsonBody } from './middleware/parse-json.js'
+import { env } from './config/env.js'
+
+const CORS_ALLOW_HEADERS = 'content-type'
+const CORS_ALLOW_METHODS = 'GET,POST,PATCH,DELETE,OPTIONS'
+
+const applyCors = (req, res) => {
+  if (!env.webOrigin) return false
+  const origin = req.headers.origin
+  if (origin !== env.webOrigin) return false
+  res.setHeader('Access-Control-Allow-Origin', env.webOrigin)
+  res.setHeader('Access-Control-Allow-Credentials', 'true')
+  res.setHeader('Access-Control-Allow-Headers', CORS_ALLOW_HEADERS)
+  res.setHeader('Access-Control-Allow-Methods', CORS_ALLOW_METHODS)
+  return true
+}
 
 export const createApp = () => async (req, res) => {
   try {
+    applyCors(req, res)
+
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204
+      res.end()
+      return
+    }
+
     withRequestContext(req)
     await withAuthContext(req)
 

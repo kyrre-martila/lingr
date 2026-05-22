@@ -17,5 +17,6 @@ export const env = Object.freeze({
   databaseUrl: process.env.DATABASE_URL ?? '',
   databaseHealthcheckEnabled: asBool(process.env.DB_HEALTHCHECK_ENABLED, true),
   earlyAccessMode: earlyAccessMode === 'invite_only' ? 'invite_only' : 'open',
-  inviteCodes: parseInviteCodes(process.env.LINGR_INVITE_CODES)
+  inviteCodes: parseInviteCodes(process.env.LINGR_INVITE_CODES),
+  webOrigin: (process.env.LINGR_WEB_ORIGIN ?? '').trim()
 })
