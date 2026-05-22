@@ -22,7 +22,7 @@ export default function OnboardingForm() {
   const [regions, setRegions] = useState([])
   const [regionAvailability, setRegionAvailability] = useState(null)
   const [profileCompleteness, setProfileCompleteness] = useState(null)
-  const [status, setStatus] = useState({ loading: true, saving: false, error: '', success: '', authRequired: false })
+  const [status, setStatus] = useState({ loading: true, saving: false, countriesError: '', regionsError: '', error: '', success: '', authRequired: false })
 
   const selectedRegion = useMemo(
     () => regions.find((region) => region.slug === form.regionSlug) || null,
@@ -52,9 +52,14 @@ export default function OnboardingForm() {
         }
 
         setForm(nextForm)
-        setCountries(countriesResponse?.countries || [])
+        const nextCountries = Array.isArray(countriesResponse?.countries)
+          ? countriesResponse.countries
+          : Array.isArray(countriesResponse?.data?.countries)
+            ? countriesResponse.data.countries
+            : []
+        setCountries(nextCountries)
         setProfileCompleteness(completenessResponse)
-        setStatus((prev) => ({ ...prev, authRequired: false, loading: false }))
+        setStatus((prev) => ({ ...prev, authRequired: false, loading: false, countriesError: '' }))
       } catch (error) {
         if (error instanceof ApiError && AUTH_REASON_CODES.has(error.reasonCode)) {
           setStatus({ loading: false, saving: false, error: '', success: '', authRequired: true })
@@ -74,15 +79,23 @@ export default function OnboardingForm() {
         setRegions([])
         setForm((prev) => ({ ...prev, regionSlug: '' }))
         setRegionAvailability(null)
+        setStatus((prev) => ({ ...prev, regionsError: '' }))
         return
       }
 
       try {
         const response = await apiClient.listRegionsByCountry({ countryCode: form.countryCode })
-        setRegions(response?.regions || [])
+        const nextRegions = Array.isArray(response?.regions)
+          ? response.regions
+          : Array.isArray(response?.data?.regions)
+            ? response.data.regions
+            : []
+        setRegions(nextRegions)
         setRegionAvailability(null)
+        setStatus((prev) => ({ ...prev, regionsError: '' }))
       } catch {
         setRegions([])
+        setStatus((prev) => ({ ...prev, regionsError: 'We could not load regions for that country right now.' }))
       }
     }
 
@@ -177,7 +190,7 @@ export default function OnboardingForm() {
       <label className='flow'>
         <span>Country</span>
         <select className='onboarding-input' name='countryCode' value={form.countryCode} onChange={handleChange}>
-          <option value=''>Select a country</option>
+          <option value=''>{status.countriesError ? 'Could not load countries' : 'Select a country'}</option>
           {countries.map((country) => (
             <option key={country.id} value={country.isoCode}>{country.name}</option>
           ))}
@@ -186,7 +199,7 @@ export default function OnboardingForm() {
       <label className='flow'>
         <span>Region</span>
         <select className='onboarding-input' name='regionSlug' value={form.regionSlug} onChange={handleChange} disabled={!form.countryCode}>
-          <option value=''>Select a region</option>
+          <option value=''>{status.regionsError ? 'Could not load regions' : 'Select a region'}</option>
           {regions.map((region) => (
             <option key={region.id} value={region.slug}>{region.name}</option>
           ))}
@@ -199,6 +212,8 @@ export default function OnboardingForm() {
         </p>
       )}
       {status.error ? <p className='onboarding-helper'>{status.error}</p> : null}
+      {status.countriesError ? <p className='onboarding-helper'>{status.countriesError}</p> : null}
+      {status.regionsError ? <p className='onboarding-helper'>{status.regionsError}</p> : null}
       {status.success ? <p className='onboarding-helper'>{status.success}</p> : null}
       {profileCompleteness?.profileCompleteness != null ? <p className='onboarding-helper'>Profile completeness: {profileCompleteness.profileCompleteness}%</p> : null}
 
