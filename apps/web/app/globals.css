@@ -1,2 +1,2 @@
-@import '../src/styles/main.css';
+@import './main.css';
 body{min-height:100vh}

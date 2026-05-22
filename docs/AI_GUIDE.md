@@ -139,7 +139,7 @@ Avoid:
 - Localization constraint: names and UI copy are key-driven and locale-ready (`en` canonical, `nb-NO` launch pack).
 
 ## Localization implementation guardrail (Run 9 foundation)
-- Web UI must reference translation keys from namespace packs in `apps/web/src/i18n/*`.
+- Web UI must remain translation-key driven in the active Next.js frontend architecture (no legacy DOM runtime paths).
 - Do not localize backend contracts or reason codes.
 - High-touch surfaces migrate first; full migration is intentionally deferred.
 
