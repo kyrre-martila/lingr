@@ -36,6 +36,11 @@ Set/verify production web env before restart:
 ```bash
 # apps/web/.env.production
 NEXT_PUBLIC_API_BASE_URL=https://api.lingr.martila.no
+
+# apps/api/.env
+LINGR_WEB_ORIGIN=https://lingr.martila.no
+# Local Proxmox testing value:
+# LINGR_WEB_ORIGIN=http://192.168.1.44:3000
 ```
 
 ## Verification
