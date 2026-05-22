@@ -75,7 +75,15 @@ export const apiClient = Object.freeze({
   getDiscoveryDaily: () => apiRequest('/v1/discovery/daily'),
   sendDiscoverySpark: ({ discoveredUserId }) => apiRequest('/v1/discovery/spark', { method: 'POST', body: { discoveredUserId } }),
   sendDiscoveryNotNow: ({ discoveredUserId }) => apiRequest('/v1/discovery/not-now', { method: 'POST', body: { discoveredUserId } }),
-  listViewerConversations: () => apiRequest('/v1/conversations/viewer')
+  listViewerConversations: () => apiRequest('/v1/conversations/viewer'),
+  getConversationById: ({ conversationId }) => apiRequest(`/v1/conversations/${encodeURIComponent(conversationId)}`),
+  listConversationMessages: ({ conversationId, cursor, limit } = {}) => {
+    const params = new URLSearchParams()
+    if (cursor) params.set('cursor', String(cursor))
+    if (limit) params.set('limit', String(limit))
+    const query = params.toString()
+    return apiRequest(`/v1/conversations/${encodeURIComponent(conversationId)}/messages${query ? `?${query}` : ''}`)
+  }
 })
 
 export const createApiClient = ({ enableMock = false, mockClient } = {}) => {
