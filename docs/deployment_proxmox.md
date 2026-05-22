@@ -12,7 +12,7 @@
 ```bash
 git pull
 npm install
-npm run build --workspace @lingr/web
+npm run build:web
 ```
 
 Update `apps/web/.env.production`:
@@ -25,6 +25,8 @@ Start or restart web on PM2:
 pm2 start npm --name lingr-web -- run start --workspace @lingr/web -- -p 3000
 # or if it already exists
 pm2 restart lingr-web
+# restart api only when api code/config changed
+pm2 restart lingr-api
 pm2 save
 ```
 

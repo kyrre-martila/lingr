@@ -12,6 +12,7 @@
     "dev:web": "npm run dev --workspace @lingr/web",
     "build:web": "npm run build --workspace @lingr/web",
     "start:web": "npm run start --workspace @lingr/web",
+    "lint:web": "npm run lint --workspace @lingr/web",
     "build:api": "npm run db:generate --workspace @lingr/api",
     "smoke:api": "npm run e2e:smoke --workspace @lingr/api"
   }
