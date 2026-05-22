@@ -1,9 +1,9 @@
-# Legacy DOM Runtime (Isolated)
+# Legacy Web Artifacts Archive
 
-This folder contains the pre-Next.js imperative DOM runtime used during migration.
+This folder is an archive of pre-Next.js web code retained only for historical reference.
 
-- It is intentionally isolated from `app/` and React route surfaces.
-- Core public/private routes in Next.js should not import this runtime.
-- Keep this only for temporary reference/back-compat during transition.
+- It is **not** part of the active runtime path.
+- The active web runtime is the Next.js App Router code under `apps/web/app`, `apps/web/components`, and `apps/web/lib`.
+- Do not import archived files from active web runtime code.
 
-TODO (future run): remove this folder once remaining non-Next test/prototype dependencies are retired.
+As of Run 18.5 Prompt 1 cleanup, the old DOM-mount runtime entrypoints (`index.html`, `src/legacy/main.js`, and its route-page builders) were removed to reduce dual-architecture confusion.
