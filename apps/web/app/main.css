@@ -155,6 +155,8 @@ p { margin: 0 0 var(--space-3); }
 .onboarding-input { width: 100%; border: 1px solid var(--border-default); border-radius: 0.9rem; padding: 0.85rem 1rem; font: inherit; background: var(--surface-base); color: var(--text); }
 .onboarding-input:focus-visible { outline: 2px solid #d4896a80; outline-offset: 1px; border-color: var(--accent); }
 .onboarding-helper { color: var(--muted); font-size: 0.95rem; }
+.linklike-button { border: 0; padding: 0; background: transparent; color: var(--accent-strong); text-decoration: underline; cursor: pointer; font: inherit; }
+.linklike-button:hover, .linklike-button:focus-visible { color: var(--text); }
 .onboarding-options { border: 0; margin: 0; padding: 0; }
 .onboarding-options__list { display: grid; gap: var(--space-2); }
 .onboarding-option { display: flex; gap: var(--space-2); align-items: center; border: 1px solid #1c2b2518; border-radius: 0.8rem; padding: 0.8rem 0.9rem; background: #fffcf8; }

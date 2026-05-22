@@ -144,9 +144,9 @@ export default function OnboardingForm() {
     return (
       <div className='onboarding-card flow'>
         <h3>Welcome when you are ready</h3>
-        <p className='onboarding-helper'>Please sign in to complete your profile and continue to discovery.</p>
+        <p className='onboarding-helper'>Please sign in or create an account to continue onboarding.</p>
         <p>
-          <Link href='/login'>Go to login</Link>
+          <Link href='/login'>Go to login or create account</Link>
         </p>
       </div>
     )
