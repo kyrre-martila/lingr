@@ -15,10 +15,11 @@ const shouldUseMockTransport = () => {
 
 export const createDefaultTransport = () => {
   const mock = createMockTransport()
-  const http = createHttpTransport({ baseUrl: globalThis?.__LINGR_API_BASE_URL || 'http://localhost:3000' })
+  const configuredBaseUrl = globalThis?.process?.env?.NEXT_PUBLIC_API_BASE_URL || globalThis?.__LINGR_API_BASE_URL || 'http://localhost:4000'
+  const http = createHttpTransport({ baseUrl: configuredBaseUrl })
 
   return {
-    requestSync: (input) => mock.requestSync(input),
+    requestSync: (input) => (shouldUseMockTransport() ? mock.requestSync(input) : http.requestSync(input)),
     request: async (input) => {
       if (shouldUseMockTransport()) return mock.request(input)
       return http.request(input)
@@ -26,7 +27,7 @@ export const createDefaultTransport = () => {
   }
 }
 
-export const createApiClient = (transport = createMockTransport()) => ({
+export const createApiClient = (transport = createDefaultTransport()) => ({
   callSync: (operation, payload) => {
     const envelope = transport.requestSync({ operation, payload })
     return envelope.ok ? toAsyncSuccess(envelope) : toAsyncError(envelope)
