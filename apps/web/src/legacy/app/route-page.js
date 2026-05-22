@@ -1,6 +1,6 @@
-import { APP_ROUTE_META } from '../routes.js'
-import { createPageSection } from '../components/layout.js'
-import { getRouteSessionGuardHint } from '../state/session.js'
+import { APP_ROUTE_META } from '../../routes.js'
+import { createPageSection } from '../../components/layout.js'
+import { getRouteSessionGuardHint } from '../../state/session.js'
 
 export const createRoutePage = (path, contentBuilder) => {
   const meta = APP_ROUTE_META[path]

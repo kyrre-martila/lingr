@@ -1,7 +1,7 @@
-import { createOnboardingSection } from '../components/onboarding/index.js'
-import { createDiscoverySection } from '../components/discovery.js'
-import { createConversationsSection } from '../components/conversations/index.js'
-import { createProfileExperienceSection } from '../components/profile-experience.js'
+import { createOnboardingSection } from '../../components/onboarding/index.js'
+import { createDiscoverySection } from '../../components/discovery.js'
+import { createConversationsSection } from '../../components/conversations/index.js'
+import { createProfileExperienceSection } from '../../components/profile-experience.js'
 import { createRoutePage } from './route-page.js'
 
 const buildOnboardingPage = () => {
