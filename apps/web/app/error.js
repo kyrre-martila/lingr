@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 export default function GlobalError({ reset }) {
   return (
     <main className='shell shell--narrow'>
@@ -13,9 +15,9 @@ export default function GlobalError({ reset }) {
           <button type='button' className='button button--primary' onClick={() => reset()}>
             Try again
           </button>
-          <a className='button button--ghost' href='/'>
+          <Link className='button button--ghost' href='/'>
             Return home
-          </a>
+          </Link>
         </div>
       </section>
     </main>
