@@ -1,16 +1,10 @@
 import { API_RESPONSE_STATUS, REASON_CODES } from '@lingr/shared/contracts'
 
-const DEFAULT_LOCAL_API_BASE = 'http://localhost:4000'
+const API_BASE_URL = '/api/lingr'
 
-// Keep this as a direct top-level reference so Next.js can inline NEXT_PUBLIC_API_BASE_URL
-// into client bundles during `next build`.
-const NEXT_PUBLIC_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+const normalizeApiBaseUrl = (value) => String(value || API_BASE_URL).trim().replace(/\/$/, '')
 
-const normalizeApiBaseUrl = (value) => String(value || DEFAULT_LOCAL_API_BASE).trim().replace(/\/$/, '')
-
-const API_BASE_URL = normalizeApiBaseUrl(NEXT_PUBLIC_API_BASE_URL)
-
-export const resolveApiBaseUrl = () => API_BASE_URL
+export const resolveApiBaseUrl = () => normalizeApiBaseUrl(API_BASE_URL)
 
 const isSuccessEnvelope = (payload) => payload && payload.status === API_RESPONSE_STATUS.SUCCESS && 'data' in payload
 const isErrorEnvelope = (payload) => payload && payload.status === API_RESPONSE_STATUS.ERROR && payload.error && typeof payload.error.reasonCode === 'string'

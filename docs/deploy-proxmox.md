@@ -6,7 +6,7 @@
 - Web (Next.js) runs in PM2 on port `3000`.
 - Cloudflare Tunnel maps:
   - `lingr.martila.no -> http://localhost:3000`
-  - `api.lingr.martila.no -> http://localhost:4000`
+  - Optional direct API domain: `api.lingr.martila.no -> http://localhost:4000`
 
 ## Why this command
 The web app is a Next.js app and must be started with `next start` (the workspace `start` script), so PM2 serves the `.next` production build output. Do **not** run `serve` against old static files in `apps/web`.
@@ -35,12 +35,26 @@ pm2 save
 Set/verify production web env before restart:
 ```bash
 # apps/web/.env.production
-NEXT_PUBLIC_API_BASE_URL=https://api.lingr.martila.no
+# Browser calls same-origin /api/lingr; Next.js rewrites proxy to internal API host.
+LINGR_INTERNAL_API_BASE_URL=http://localhost:4000
+# Example alternative: LINGR_INTERNAL_API_BASE_URL=http://127.0.0.1:4000
 
 # apps/api/.env
 LINGR_WEB_ORIGIN=https://lingr.martila.no
 # Local Proxmox testing value:
 # LINGR_WEB_ORIGIN=http://192.168.1.44:3000
+```
+
+
+## API routing behavior
+- Browser requests use same-origin paths such as `/api/lingr/v1/regions/countries`.
+- Next.js server rewrites `/api/lingr/:path*` to `${LINGR_INTERNAL_API_BASE_URL}/:path*` (fallback `http://localhost:4000`).
+- This removes browser dependence on `NEXT_PUBLIC_API_BASE_URL` and avoids mobile/LAN clients calling their own localhost.
+- CORS is still useful for future direct API-domain deployments, but local LAN testing no longer depends on browser-to-API CORS.
+
+Manual check after deploy:
+```bash
+curl -i http://localhost:3000/api/lingr/v1/regions/countries
 ```
 
 ## Verification
