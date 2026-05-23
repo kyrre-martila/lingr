@@ -1,7 +1,14 @@
 import { API_RESPONSE_STATUS, REASON_CODES } from '@lingr/shared/contracts'
 
 const DEFAULT_LOCAL_API_BASE = 'http://localhost:4000'
-const API_BASE_URL = String(process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_LOCAL_API_BASE).trim().replace(/\/$/, '')
+
+// Keep this as a direct top-level reference so Next.js can inline NEXT_PUBLIC_API_BASE_URL
+// into client bundles during `next build`.
+const NEXT_PUBLIC_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+
+const normalizeApiBaseUrl = (value) => String(value || DEFAULT_LOCAL_API_BASE).trim().replace(/\/$/, '')
+
+const API_BASE_URL = normalizeApiBaseUrl(NEXT_PUBLIC_API_BASE_URL)
 
 export const resolveApiBaseUrl = () => API_BASE_URL
 
@@ -21,6 +28,7 @@ export class ApiError extends Error {
 
 const createRequestInit = ({ method = 'GET', body, headers }) => {
   const hasBody = body !== undefined
+
   return {
     method,
     credentials: 'include',
@@ -66,41 +74,82 @@ export async function apiRequest(path, options = {}) {
 }
 
 export const apiClient = Object.freeze({
-  register: ({ email, password, countryCode, regionSlug }) => apiRequest('/v1/auth/register', { method: 'POST', body: { email, password, countryCode, regionSlug } }),
-  login: ({ email, password }) => apiRequest('/v1/auth/login', { method: 'POST', body: { email, password } }),
-  logout: () => apiRequest('/v1/auth/logout', { method: 'POST' }),
-  getProfile: () => apiRequest('/v1/profile/viewer'),
-  updateProfile: (payload) => apiRequest('/v1/profile/viewer', { method: 'PATCH', body: payload }),
-  getProfileCompleteness: () => apiRequest('/v1/profile/completeness'),
-  listCountries: () => apiRequest('/v1/regions/countries'),
+  register: ({ email, password, countryCode, regionSlug }) =>
+    apiRequest('/v1/auth/register', {
+      method: 'POST',
+      body: { email, password, countryCode, regionSlug }
+    }),
+
+  login: ({ email, password }) =>
+    apiRequest('/v1/auth/login', {
+      method: 'POST',
+      body: { email, password }
+    }),
+
+  logout: () =>
+    apiRequest('/v1/auth/logout', {
+      method: 'POST'
+    }),
+
+  getProfile: () =>
+    apiRequest('/v1/profile/viewer'),
+
+  updateProfile: (payload) =>
+    apiRequest('/v1/profile/viewer', {
+      method: 'PATCH',
+      body: payload
+    }),
+
+  getProfileCompleteness: () =>
+    apiRequest('/v1/profile/completeness'),
+
+  listCountries: () =>
+    apiRequest('/v1/regions/countries'),
+
   listRegionsByCountry: ({ countryCode, locale } = {}) => {
     const params = new URLSearchParams()
     if (locale) params.set('locale', String(locale))
+
     const query = params.toString()
     return apiRequest(`/v1/regions/${encodeURIComponent(countryCode || '')}${query ? `?${query}` : ''}`)
   },
+
   checkRegionAvailability: ({ countryCode, regionSlug }) => {
     const params = new URLSearchParams()
     if (countryCode) params.set('countryCode', String(countryCode))
     if (regionSlug) params.set('regionSlug', String(regionSlug))
+
     const query = params.toString()
     return apiRequest(`/v1/regions/check${query ? `?${query}` : ''}`)
   },
-  getDiscoveryDaily: () => apiRequest('/v1/discovery/daily'),
-  sendDiscoverySpark: ({ discoveredUserId }) => apiRequest('/v1/discovery/spark', { method: 'POST', body: { discoveredUserId } }),
-  sendDiscoveryNotNow: ({ discoveredUserId }) => apiRequest('/v1/discovery/not-now', { method: 'POST', body: { discoveredUserId } }),
-  listViewerConversations: () => apiRequest('/v1/conversations/viewer'),
-  getConversationById: ({ conversationId }) => apiRequest(`/v1/conversations/${encodeURIComponent(conversationId)}`),
+
+  getDiscoveryDaily: () =>
+    apiRequest('/v1/discovery/daily'),
+
+  sendDiscoverySpark: ({ discoveredUserId }) =>
+    apiRequest('/v1/discovery/spark', {
+      method: 'POST',
+      body: { discoveredUserId }
+    }),
+
+  sendDiscoveryNotNow: ({ discoveredUserId }) =>
+    apiRequest('/v1/discovery/not-now', {
+      method: 'POST',
+      body: { discoveredUserId }
+    }),
+
+  listViewerConversations: () =>
+    apiRequest('/v1/conversations/viewer'),
+
+  getConversationById: ({ conversationId }) =>
+    apiRequest(`/v1/conversations/${encodeURIComponent(conversationId)}`),
+
   listConversationMessages: ({ conversationId, cursor, limit } = {}) => {
     const params = new URLSearchParams()
     if (cursor) params.set('cursor', String(cursor))
     if (limit) params.set('limit', String(limit))
+
     const query = params.toString()
     return apiRequest(`/v1/conversations/${encodeURIComponent(conversationId)}/messages${query ? `?${query}` : ''}`)
   }
 })
-
-export const createApiClient = ({ enableMock = false, mockClient } = {}) => {
-  if (enableMock && mockClient) return mockClient
-  return apiClient
-}
