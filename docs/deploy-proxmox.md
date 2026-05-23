@@ -41,8 +41,10 @@ LINGR_INTERNAL_API_BASE_URL=http://localhost:4000
 
 # apps/api/.env
 LINGR_WEB_ORIGIN=https://lingr.martila.no
+LINGR_COOKIE_SECURE=true
 # Local Proxmox testing value:
 # LINGR_WEB_ORIGIN=http://192.168.1.44:3000
+# LINGR_COOKIE_SECURE=false
 ```
 
 
@@ -56,6 +58,19 @@ Manual check after deploy:
 ```bash
 curl -i http://localhost:3000/api/lingr/v1/regions/countries
 ```
+
+Manual auth cookie check (local HTTP testing):
+```bash
+curl -i \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{"email":"test-cookie@lingr.local","password":"testpass123","countryCode":"NO","regionSlug":"trondelag"}' \
+  http://localhost:3000/api/lingr/v1/auth/register
+```
+
+Expected when `LINGR_COOKIE_SECURE=false`:
+- `Set-Cookie` includes `HttpOnly`, `Path=/`, `SameSite=Lax`
+- `Set-Cookie` does **not** include `Secure`
 
 ## Verification
 ```bash
