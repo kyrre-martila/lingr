@@ -8,15 +8,13 @@ import { env } from '../config/env.js'
 
 const SESSION_COOKIE_NAME = 'lingr_session'
 
-const isProduction = () => String(process.env.NODE_ENV || '').toLowerCase() === 'production'
-
 const createSessionCookie = (sessionToken) => {
-  const secure = isProduction() ? '; Secure' : ''
+  const secure = env.cookieSecure ? '; Secure' : ''
   return `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionToken)}; HttpOnly; Path=/; SameSite=Lax${secure}`
 }
 
 const createSessionCookieClear = () => {
-  const secure = isProduction() ? '; Secure' : ''
+  const secure = env.cookieSecure ? '; Secure' : ''
   return `${SESSION_COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${secure}`
 }
 
