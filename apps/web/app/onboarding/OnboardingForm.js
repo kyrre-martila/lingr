@@ -13,7 +13,8 @@ const initialForm = {
   bio: '',
   layersSummary: '',
   countryCode: '',
-  regionSlug: ''
+  regionSlug: '',
+  avatarAssetId: ''
 }
 
 export default function OnboardingForm() {
@@ -48,7 +49,8 @@ export default function OnboardingForm() {
           bio: profile.bio || '',
           layersSummary: profile.layersSummary || '',
           countryCode: '',
-          regionSlug: ''
+          regionSlug: '',
+          avatarAssetId: profile.avatarUrl ? String(profile.avatarUrl).replace('/assets/', '') : ''
         }
 
         setForm(nextForm)
@@ -137,7 +139,8 @@ export default function OnboardingForm() {
         ageRange: form.ageRange,
         bio: form.bio,
         layersSummary: form.layersSummary,
-        locationRegion
+        locationRegion,
+        avatarAssetId: form.avatarAssetId
       })
       const completenessResponse = await apiClient.getProfileCompleteness().catch(() => null)
       setProfileCompleteness(completenessResponse)
@@ -150,6 +153,23 @@ export default function OnboardingForm() {
       setStatus((prev) => ({ ...prev, saving: false, error: 'We could not save yet. Please review your details and try again.' }))
     }
   }
+
+
+  const readiness = profileCompleteness?.lifecycleState === 'active' || Number(profileCompleteness?.profileCompleteness || 0) >= 80
+  const missingFields = Array.isArray(profileCompleteness?.missingFields) ? profileCompleteness.missingFields : []
+  const missingFieldLabels = {
+    displayName: 'display name',
+    bio: 'bio',
+    pronouns: 'pronouns',
+    ageRange: 'age range',
+    layersSummary: 'pace summary',
+    locationRegion: 'location region',
+    avatarUrl: 'avatar',
+    avatarAssetId: 'avatar'
+  }
+  const missingFieldMessage = missingFields.length
+    ? `To finish this step, please add: ${missingFields.map((field) => missingFieldLabels[field] || field).join(', ')}.`
+    : ''
 
   if (status.loading) return <div className='onboarding-card'><p>Loading your onboarding details…</p></div>
 
@@ -187,6 +207,12 @@ export default function OnboardingForm() {
         <span>What helps someone get to know your pace?</span>
         <textarea className='onboarding-input' name='layersSummary' maxLength={300} rows={3} value={form.layersSummary} onChange={handleChange} />
       </label>
+
+      <label className='flow'>
+        <span>Avatar asset ID</span>
+        <input className='onboarding-input' name='avatarAssetId' maxLength={120} value={form.avatarAssetId} onChange={handleChange} />
+      </label>
+
       <label className='flow'>
         <span>Country</span>
         <select className='onboarding-input' name='countryCode' value={form.countryCode} onChange={handleChange}>
@@ -216,11 +242,12 @@ export default function OnboardingForm() {
       {status.regionsError ? <p className='onboarding-helper'>{status.regionsError}</p> : null}
       {status.success ? <p className='onboarding-helper'>{status.success}</p> : null}
       {profileCompleteness?.profileCompleteness != null ? <p className='onboarding-helper'>Profile completeness: {profileCompleteness.profileCompleteness}%</p> : null}
+      {missingFieldMessage ? <p className='onboarding-helper'>{missingFieldMessage}</p> : null}
 
       <div>
         <button className='button' type='submit' disabled={status.saving}>{status.saving ? 'Saving…' : 'Save profile'}</button>
       </div>
-      {profileCompleteness?.isComplete && regionAvailability?.canRegister ? (
+      {status.success && readiness ? (
         <p><Link href='/discovery'>Continue to discovery</Link></p>
       ) : null}
     </form>
