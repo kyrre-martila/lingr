@@ -9,7 +9,7 @@ export default function SplashScreen() {
       <div className='lingr-splash__veil' aria-hidden='true' />
 
       <div className='lingr-splash__content'>
-        <Image src='/assets/logo/lingr-logo.svg' alt='Lingr' className='lingr-splash__logo' width={224} height={72} priority />
+        <Image src='/assets/logo/lingr-logo.svg' alt='Lingr' className='lingr-splash__logo' width={596} height={492} priority />
         <div className='lingr-splash__loading' aria-hidden='true'>
           <span className='lingr-splash__loading-glow' />
         </div>
