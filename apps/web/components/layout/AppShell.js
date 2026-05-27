@@ -7,7 +7,7 @@ import SplashScreen from './SplashScreen'
 import { apiClient } from '../../lib/api-client'
 
 const SPLASH_SESSION_KEY = 'lingrSplashSeen'
-const SPLASH_MIN_MS = 1700
+const SPLASH_MIN_MS = 4000
 
 export default function AppShell({ children }) {
   const [showSplash, setShowSplash] = useState(false)
