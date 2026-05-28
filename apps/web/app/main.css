@@ -592,12 +592,16 @@ button:focus-visible {
 ================================== */
 .login-screen {
   position: relative;
+  height: 100vh;
   min-height: 100vh;
+  height: 100dvh;
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  overflow: hidden;
-  padding: max(env(safe-area-inset-top), var(--space-5)) 1.25rem max(env(safe-area-inset-bottom), 2.25rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  padding: max(env(safe-area-inset-top), var(--space-5)) 1.25rem max(1rem, calc(env(safe-area-inset-bottom) + 0.85rem));
   background: var(--auth-bg);
   color: var(--auth-accent);
 }
@@ -807,7 +811,6 @@ button:focus-visible {
 
 .login-screen__signup {
   margin: 0;
-  padding-bottom: env(safe-area-inset-bottom);
   color: var(--auth-muted);
   font-size: var(--text-s);
   text-align: center;

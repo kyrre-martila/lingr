@@ -8,6 +8,10 @@
   font-display: swap;
 }
 
+html {
+  min-height: 100%;
+}
+
 :root {
   --font-ui: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --text-splash-copy: clamp(1.05rem, 0.95rem + 0.65vw, 1.42rem);
@@ -15,7 +19,13 @@
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: var(--font-ui);
+}
+
+body:has(.login-screen) {
+  overflow: hidden;
+  background: var(--auth-bg);
 }
 
 .lingr-splash {
