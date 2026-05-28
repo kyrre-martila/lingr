@@ -21,7 +21,11 @@ const isAppRoute = (pathname) => pathname === '/'
   || pathname === '/conversations'
   || pathname.startsWith('/conversations/')
 
+const RESET_PASSWORD_ROUTE = '/reset-password'
+
 const isPublicRoute = (pathname) => pathname === LOGIN_ROUTE
+  || pathname === RESET_PASSWORD_ROUTE
+  || pathname === ONBOARDING_ROUTE
 
 export default function AppShell({ children }) {
   const [showSplash, setShowSplash] = useState(false)
@@ -83,7 +87,7 @@ export default function AppShell({ children }) {
           nextPath = ONBOARDING_ROUTE
         }
       } catch {
-        if (isAppRoute(pathname)) nextPath = LOGIN_ROUTE
+        if (isAppRoute(pathname) && !isPublicRoute(pathname)) nextPath = LOGIN_ROUTE
       } finally {
         finishSessionCheck(nextPath)
       }

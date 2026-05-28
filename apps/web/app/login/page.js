@@ -65,7 +65,7 @@ export default function LoginPage() {
             </span>
           </label>
 
-          <a className='login-screen__forgot' href='mailto:support@lingr.app?subject=Lingr%20password%20reset'>Forgot password?</a>
+          <Link className='login-screen__forgot' href='/reset-password'>Forgot password?</Link>
           {status.error ? <p className='login-screen__error'>{status.error}</p> : null}
 
           <button className='login-screen__button' type='submit' disabled={status.submitting}>{status.submitting ? 'Entering Lingr…' : 'Enter Lingr'}</button>

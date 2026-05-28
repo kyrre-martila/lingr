@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ApiError, apiClient } from '../../lib/api-client'
 
 const AUTH_REASON_CODES = new Set(['auth.requires_auth', 'auth.session_expired'])
@@ -17,63 +17,86 @@ const initialForm = {
   avatarAssetId: ''
 }
 
+const initialAccountForm = { email: '', password: '' }
+
 export default function OnboardingForm() {
   const [form, setForm] = useState(initialForm)
+  const [accountForm, setAccountForm] = useState(initialAccountForm)
   const [countries, setCountries] = useState([])
   const [regions, setRegions] = useState([])
   const [regionAvailability, setRegionAvailability] = useState(null)
   const [profileCompleteness, setProfileCompleteness] = useState(null)
-  const [status, setStatus] = useState({ loading: true, saving: false, countriesError: '', regionsError: '', error: '', success: '', authRequired: false })
+  const [status, setStatus] = useState({ loading: true, saving: false, registering: false, countriesError: '', regionsError: '', error: '', success: '', authRequired: false })
 
   const selectedRegion = useMemo(
     () => regions.find((region) => region.slug === form.regionSlug) || null,
     [regions, form.regionSlug]
   )
 
-  useEffect(() => {
-    const load = async () => {
-      setStatus((prev) => ({ ...prev, loading: true, error: '', success: '' }))
+  const normalizeCountries = (response) => Array.isArray(response?.countries)
+    ? response.countries
+    : Array.isArray(response?.data?.countries)
+      ? response.data.countries
+      : []
 
-      try {
-        const [profileResponse, countriesResponse, completenessResponse] = await Promise.all([
-          apiClient.getProfile(),
-          apiClient.listCountries(),
-          apiClient.getProfileCompleteness().catch(() => null)
-        ])
+  const loadOnboardingData = useCallback(async () => {
+    setStatus((prev) => ({ ...prev, loading: true, error: '', success: '' }))
 
-        const profile = profileResponse?.profile || {}
-        const nextForm = {
-          displayName: profile.displayName || '',
-          pronouns: profile.pronouns || '',
-          ageRange: profile.ageRange || '',
-          bio: profile.bio || '',
-          layersSummary: profile.layersSummary || '',
-          countryCode: '',
-          regionSlug: '',
-          avatarAssetId: profile.avatarUrl ? String(profile.avatarUrl).replace('/assets/', '') : ''
-        }
+    const countriesResult = await apiClient.listCountries()
+      .then((response) => ({ ok: true, countries: normalizeCountries(response) }))
+      .catch(() => ({ ok: false, countries: [] }))
 
-        setForm(nextForm)
-        const nextCountries = Array.isArray(countriesResponse?.countries)
-          ? countriesResponse.countries
-          : Array.isArray(countriesResponse?.data?.countries)
-            ? countriesResponse.data.countries
-            : []
-        setCountries(nextCountries)
-        setProfileCompleteness(completenessResponse)
-        setStatus((prev) => ({ ...prev, authRequired: false, loading: false, countriesError: '' }))
-      } catch (error) {
-        if (error instanceof ApiError && AUTH_REASON_CODES.has(error.reasonCode)) {
-          setStatus({ loading: false, saving: false, error: '', success: '', authRequired: true })
-          return
-        }
+    setCountries(countriesResult.countries)
 
-        setStatus((prev) => ({ ...prev, loading: false, error: 'We could not load onboarding right now. Please try again in a moment.' }))
+    try {
+      const [profileResponse, completenessResponse] = await Promise.all([
+        apiClient.getProfile(),
+        apiClient.getProfileCompleteness().catch(() => null)
+      ])
+
+      const profile = profileResponse?.profile || {}
+      const nextForm = {
+        displayName: profile.displayName || '',
+        pronouns: profile.pronouns || '',
+        ageRange: profile.ageRange || '',
+        bio: profile.bio || '',
+        layersSummary: profile.layersSummary || '',
+        countryCode: '',
+        regionSlug: '',
+        avatarAssetId: profile.avatarUrl ? String(profile.avatarUrl).replace('/assets/', '') : ''
       }
-    }
 
-    load()
+      setForm(nextForm)
+      setProfileCompleteness(completenessResponse)
+      setStatus((prev) => ({
+        ...prev,
+        authRequired: false,
+        loading: false,
+        countriesError: countriesResult.ok ? '' : 'We could not load countries right now.',
+        error: ''
+      }))
+    } catch (error) {
+      if (error instanceof ApiError && AUTH_REASON_CODES.has(error.reasonCode)) {
+        setStatus((prev) => ({
+          ...prev,
+          loading: false,
+          saving: false,
+          registering: false,
+          error: '',
+          success: '',
+          authRequired: true,
+          countriesError: countriesResult.ok ? '' : 'We could not load countries right now.'
+        }))
+        return
+      }
+
+      setStatus((prev) => ({ ...prev, loading: false, error: 'We could not load onboarding right now. Please try again in a moment.' }))
+    }
   }, [])
+
+  useEffect(() => {
+    loadOnboardingData()
+  }, [loadOnboardingData])
 
   useEffect(() => {
     const loadRegions = async () => {
@@ -127,6 +150,29 @@ export default function OnboardingForm() {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
+  const handleAccountChange = (event) => {
+    const { name, value } = event.target
+    setAccountForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleRegister = async (event) => {
+    event.preventDefault()
+    setStatus((prev) => ({ ...prev, registering: true, error: '', success: '' }))
+
+    try {
+      await apiClient.register({
+        email: accountForm.email,
+        password: accountForm.password,
+        countryCode: form.countryCode,
+        regionSlug: form.regionSlug
+      })
+      setAccountForm(initialAccountForm)
+      await loadOnboardingData()
+    } catch {
+      setStatus((prev) => ({ ...prev, registering: false, error: 'We could not create your account yet. Please review your details and try again.' }))
+    }
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     setStatus((prev) => ({ ...prev, saving: true, error: '', success: '' }))
@@ -147,13 +193,12 @@ export default function OnboardingForm() {
       setStatus((prev) => ({ ...prev, saving: false, success: 'Profile saved. You can continue whenever it feels right.' }))
     } catch (error) {
       if (error instanceof ApiError && AUTH_REASON_CODES.has(error.reasonCode)) {
-        setStatus({ loading: false, saving: false, error: '', success: '', authRequired: true })
+        setStatus((prev) => ({ ...prev, loading: false, saving: false, error: '', success: '', authRequired: true }))
         return
       }
       setStatus((prev) => ({ ...prev, saving: false, error: 'We could not save yet. Please review your details and try again.' }))
     }
   }
-
 
   const readiness = profileCompleteness?.lifecycleState === 'active' || Number(profileCompleteness?.profileCompleteness || 0) >= 80
   const missingFields = Array.isArray(profileCompleteness?.missingFields) ? profileCompleteness.missingFields : []
@@ -175,13 +220,48 @@ export default function OnboardingForm() {
 
   if (status.authRequired) {
     return (
-      <div className='onboarding-card flow'>
-        <h3>Welcome when you are ready</h3>
-        <p className='onboarding-helper'>Please sign in or create an account to continue onboarding.</p>
-        <p>
-          <Link href='/login'>Go to login or create account</Link>
-        </p>
-      </div>
+      <form className='onboarding-card flow' onSubmit={handleRegister}>
+        <h3>Create your Lingr account</h3>
+        <p className='onboarding-helper'>Start onboarding with a calm account setup. You will continue to your profile foundation after this step.</p>
+        <label className='flow'>
+          <span>Email</span>
+          <input className='onboarding-input' name='email' type='email' autoComplete='email' required value={accountForm.email} onChange={handleAccountChange} />
+        </label>
+        <label className='flow'>
+          <span>Password</span>
+          <input className='onboarding-input' name='password' type='password' autoComplete='new-password' minLength={8} required value={accountForm.password} onChange={handleAccountChange} />
+        </label>
+        <label className='flow'>
+          <span>Country</span>
+          <select className='onboarding-input' name='countryCode' required value={form.countryCode} onChange={handleChange}>
+            <option value=''>{status.countriesError ? 'Could not load countries' : 'Select a country'}</option>
+            {countries.map((country) => (
+              <option key={country.id} value={country.isoCode}>{country.name}</option>
+            ))}
+          </select>
+        </label>
+        <label className='flow'>
+          <span>Region</span>
+          <select className='onboarding-input' name='regionSlug' required value={form.regionSlug} onChange={handleChange} disabled={!form.countryCode}>
+            <option value=''>{status.regionsError ? 'Could not load regions' : 'Select a region'}</option>
+            {regions.map((region) => (
+              <option key={region.id} value={region.slug}>{region.name}</option>
+            ))}
+          </select>
+        </label>
+        {regionAvailability?.reasonCode ? (
+          <p className='onboarding-helper'>
+            {regionAvailability.reasonCode === 'region.open' ? 'Your region is open for onboarding.' : 'Your region is not open yet. You can come back when Lingr opens there.'}
+          </p>
+        ) : null}
+        {status.error ? <p className='onboarding-helper'>{status.error}</p> : null}
+        {status.countriesError ? <p className='onboarding-helper'>{status.countriesError}</p> : null}
+        {status.regionsError ? <p className='onboarding-helper'>{status.regionsError}</p> : null}
+        <div>
+          <button className='button' type='submit' disabled={status.registering}>{status.registering ? 'Creating account…' : 'Create account'}</button>
+        </div>
+        <p className='onboarding-helper'>Already have an account? <Link href='/login'>Back to login</Link></p>
+      </form>
     )
   }
 
