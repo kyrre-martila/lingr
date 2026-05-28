@@ -41,7 +41,12 @@ export default function LoginPage() {
           <label className='login-field'>
             <span className='login-field__label'>Email</span>
             <span className='login-field__control'>
-              <span className='login-field__icon' aria-hidden='true'>✉</span>
+              <span className='login-field__icon' aria-hidden='true'>
+                <svg viewBox='0 0 24 24' focusable='false'>
+                  <path d='M4.75 6.75h14.5v10.5H4.75z' />
+                  <path d='m5.25 7.25 6.75 5.5 6.75-5.5' />
+                </svg>
+              </span>
               <input name='email' type='email' autoComplete='email' placeholder='you@lingr.com' required value={form.email} onChange={handleChange} />
             </span>
           </label>
@@ -49,7 +54,13 @@ export default function LoginPage() {
           <label className='login-field'>
             <span className='login-field__label'>Password</span>
             <span className='login-field__control'>
-              <span className='login-field__icon' aria-hidden='true'>⌘</span>
+              <span className='login-field__icon' aria-hidden='true'>
+                <svg viewBox='0 0 24 24' focusable='false'>
+                  <path d='M7.25 10.75h9.5v7.5h-9.5z' />
+                  <path d='M9.25 10.75V8.9a2.75 2.75 0 0 1 5.5 0v1.85' />
+                  <path d='M12 14.05v1.85' />
+                </svg>
+              </span>
               <input name='password' type='password' autoComplete='current-password' placeholder='••••••••' required value={form.password} onChange={handleChange} />
             </span>
           </label>
